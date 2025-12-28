@@ -130,12 +130,17 @@ func NewRepository(db *sql.DB) *Repository {
 
 // GetTableName extracts table name from struct tag or struct name
 func (r *Repository) GetTableName(model interface{}) string {
+	// Check if model has TableName() method
+	if tn, ok := model.(interface{ TableName() string }); ok {
+		return tn.TableName()
+	}
+
 	t := reflect.TypeOf(model)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
 
-	// Convert struct name to snake_case
+	// Convert struct name to snake_case as fallback
 	name := t.Name()
 	return toSnakeCase(name)
 }

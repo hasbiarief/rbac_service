@@ -2,7 +2,7 @@
 
 ## Gambaran Umum
 
-Sekarang semua model telah didefinisikan dengan lengkap dan terorganisir berdasarkan domain. Setiap file model berisi struct yang berkaitan dengan domain tersebut beserta helper types dan methods.
+Semua model telah didefinisikan dengan lengkap dan terorganisir berdasarkan domain untuk mendukung **Raw SQL implementation** (tanpa GORM). Setiap file model berisi struct yang berkaitan dengan domain tersebut beserta helper types dan methods yang kompatibel dengan PostgreSQL dan lib/pq driver.
 
 ## Struktur Models
 
@@ -15,6 +15,9 @@ internal/models/
 ├── role.go         # Role and permission models
 ├── subscription.go # Subscription system models
 └── user.go         # User management models
+
+pkg/model/
+└── base.go         # Base model dengan helper methods untuk Raw SQL
 ```
 
 ## Detail Models
@@ -191,49 +194,77 @@ type AuditLog struct {
 - `ActionCount`, `UserActivityCount`, `HourlyActivity`, `StatusCount` - Helper types untuk statistik
 - `JSONB` - Custom type untuk PostgreSQL JSON fields
 
-## Fitur Model
+## Fitur Model untuk Raw SQL
 
 ### 1. **TableName Methods**
-Setiap model utama memiliki method `TableName()` untuk mapping ke database table:
+Setiap model utama memiliki method `TableName()` untuk mapping ke database table (digunakan oleh base repository):
 ```go
 func (User) TableName() string {
     return "users"
 }
 ```
 
-### 2. **JSON Tags**
+### 2. **Database Tags untuk Raw SQL**
+Field memiliki database tags untuk SQL column mapping:
+```go
+Name string `json:"name" db:"name"`
+```
+
+### 3. **Base Model Integration**
+Models menggunakan `pkg/model/BaseModel` untuk common fields dan helper methods:
+```go
+type User struct {
+    model.BaseModel  // ID, CreatedAt, UpdatedAt
+    Name         string    `json:"name" db:"name"`
+    Email        string    `json:"email" db:"email"`
+    // ... other fields
+}
+```
+
+### 4. **Raw SQL Repository Support**
+Models dirancang untuk bekerja dengan raw SQL queries:
+```go
+// Repository menggunakan model dengan SQL scanning
+func (r *UserRepository) GetByID(id int64) (*models.User, error) {
+    user := &models.User{}
+    query := `SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at FROM users WHERE id = $1`
+    
+    err := r.db.QueryRow(query, id).Scan(
+        &user.ID, &user.Name, &user.Email, &user.UserIdentity,
+        &user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+    )
+    
+    return user, err
+}
+```
+
+### 5. **JSON Tags**
 Semua field memiliki JSON tags untuk API response:
 ```go
 Name string `json:"name" db:"name"`
 ```
 
-### 3. **Database Tags**
-Field memiliki database tags untuk SQL mapping:
-```go
-Name string `json:"name" db:"name"`
-```
-
-### 4. **Pointer Fields**
+### 6. **Pointer Fields**
 Field yang nullable menggunakan pointer:
 ```go
 UserIdentity *string `json:"user_identity" db:"user_identity"`
 ParentID     *int64  `json:"parent_id" db:"parent_id"`
 ```
 
-### 5. **Time Handling**
+### 7. **Time Handling**
 Semua timestamp menggunakan `time.Time`:
 ```go
 CreatedAt time.Time `json:"created_at" db:"created_at"`
 UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 ```
 
-### 6. **Password Security**
+### 8. **Password Security**
 Password field menggunakan tag `json:"-"` untuk tidak di-serialize:
 ```go
 Password string `json:"-" db:"password"`
 ```
 
-### 7. **Custom Types**
+### 9. **Custom Types untuk PostgreSQL**
 - `JSONB` type untuk PostgreSQL JSON fields dengan custom `Value()` dan `Scan()` methods
 - Helper structs untuk complex queries dan responses
 
@@ -269,10 +300,10 @@ Semua model utama memiliki:
 - Compile-time error detection
 - Clear data contracts
 
-### 3. **Database Mapping**
-- Consistent database mapping
-- Support untuk complex queries
-- Efficient data serialization
+### 3. **Raw SQL Integration**
+- Proper mapping dengan TableName methods
+- Support untuk prepared statements
+- Efficient data scanning dari SQL results
 
 ### 4. **API Response**
 - Clean JSON serialization
@@ -284,17 +315,35 @@ Semua model utama memiliki:
 - Helper types untuk complex scenarios
 - Support untuk future requirements
 
+## Raw SQL Benefits
+
+### 1. **Performance**
+- Direct SQL queries tanpa ORM overhead
+- Optimized queries untuk specific use cases
+- Better control atas database operations
+
+### 2. **Transparency**
+- SQL queries terlihat jelas
+- Easier debugging dan optimization
+- No hidden ORM magic
+
+### 3. **PostgreSQL Features**
+- Full support untuk PostgreSQL-specific features
+- Custom types seperti JSONB
+- Advanced query capabilities
+
 ## Kesimpulan
 
-Struktur model sekarang sudah lengkap dan terorganisir dengan baik:
+Struktur model sekarang sudah lengkap dan terorganisir dengan baik untuk **Raw SQL implementation**:
 
 - ✅ **7 Domain Models** - User, Company, Branch, Role, Module, Subscription, Audit
 - ✅ **Helper Types** - 15+ helper structs untuk complex scenarios
 - ✅ **Type Safety** - Strong typing dengan proper nullable fields
-- ✅ **Database Integration** - Proper mapping dengan TableName methods
+- ✅ **Raw SQL Integration** - Proper mapping dengan TableName methods dan db tags
 - ✅ **API Ready** - Clean JSON serialization
-- ✅ **PostgreSQL Support** - Custom JSONB type untuk JSON fields
+- ✅ **PostgreSQL Support** - Custom JSONB type dan PostgreSQL-specific features
 - ✅ **Security** - Password field protection
 - ✅ **Consistency** - Standard naming dan field conventions
+- ✅ **Performance** - Optimized untuk raw SQL queries tanpa ORM overhead
 
-Model sekarang siap untuk mendukung semua fitur ERP RBAC system dengan struktur yang maintainable dan scalable.
+Model sekarang siap untuk mendukung semua fitur ERP RBAC system dengan struktur yang maintainable, scalable, dan performant menggunakan raw SQL.

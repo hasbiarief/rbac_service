@@ -54,13 +54,30 @@ func (h *RoleHandler) GetRoleByID(c *gin.Context) {
 }
 
 func (h *RoleHandler) CreateRole(c *gin.Context) {
-	var req service.CreateRoleRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	result, err := h.roleService.CreateRole(&req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Name        string `json:"name" validate:"required,min=2,max=100"`
+		Description string `json:"description"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	createReq := &service.CreateRoleRequest{
+		Name:        req.Name,
+		Description: req.Description,
+	}
+
+	result, err := h.roleService.CreateRole(createReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
@@ -76,13 +93,30 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	var req service.UpdateRoleRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	result, err := h.roleService.UpdateRole(id, &req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	updateReq := &service.UpdateRoleRequest{
+		Name:        req.Name,
+		Description: req.Description,
+	}
+
+	result, err := h.roleService.UpdateRole(id, updateReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
@@ -108,13 +142,34 @@ func (h *RoleHandler) DeleteRole(c *gin.Context) {
 
 // Advanced Role Management System
 func (h *RoleHandler) AssignUserRole(c *gin.Context) {
-	var req service.AssignUserRoleRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	if err := h.roleService.AssignUserRole(&req); err != nil {
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		UserID    int64  `json:"user_id" validate:"required,min=1"`
+		RoleID    int64  `json:"role_id" validate:"required,min=1"`
+		CompanyID int64  `json:"company_id" validate:"required,min=1"`
+		BranchID  *int64 `json:"branch_id"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	assignReq := &service.AssignUserRoleRequest{
+		UserID:    req.UserID,
+		RoleID:    req.RoleID,
+		CompanyID: req.CompanyID,
+		BranchID:  req.BranchID,
+	}
+
+	if err := h.roleService.AssignUserRole(assignReq); err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
 	}
@@ -123,13 +178,41 @@ func (h *RoleHandler) AssignUserRole(c *gin.Context) {
 }
 
 func (h *RoleHandler) BulkAssignRoles(c *gin.Context) {
-	var req service.BulkAssignRolesRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	if err := h.roleService.BulkAssignRoles(&req); err != nil {
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		UserIDs   []int64 `json:"user_ids" validate:"required,min=1"`
+		RoleID    int64   `json:"role_id" validate:"required,min=1"`
+		CompanyID int64   `json:"company_id" validate:"required,min=1"`
+		BranchID  *int64  `json:"branch_id"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	var assignments []service.AssignUserRoleRequest
+	for _, userID := range req.UserIDs {
+		assignments = append(assignments, service.AssignUserRoleRequest{
+			UserID:    userID,
+			RoleID:    req.RoleID,
+			CompanyID: req.CompanyID,
+			BranchID:  req.BranchID,
+		})
+	}
+
+	bulkReq := &service.BulkAssignRolesRequest{
+		Assignments: assignments,
+	}
+
+	if err := h.roleService.BulkAssignRoles(bulkReq); err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
 	}
@@ -144,13 +227,43 @@ func (h *RoleHandler) UpdateRoleModules(c *gin.Context) {
 		return
 	}
 
-	var req service.UpdateRoleModulesRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	if err := h.roleService.UpdateRoleModules(roleID, &req); err != nil {
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Modules []struct {
+			ModuleID  int64 `json:"module_id" validate:"required,min=1"`
+			CanRead   bool  `json:"can_read"`
+			CanWrite  bool  `json:"can_write"`
+			CanDelete bool  `json:"can_delete"`
+		} `json:"modules" validate:"required,min=1"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	var modules []service.RoleModulePermission
+	for _, m := range req.Modules {
+		modules = append(modules, service.RoleModulePermission{
+			ModuleID:  m.ModuleID,
+			CanRead:   m.CanRead,
+			CanWrite:  m.CanWrite,
+			CanDelete: m.CanDelete,
+		})
+	}
+
+	updateReq := &service.UpdateRoleModulesRequest{
+		Modules: modules,
+	}
+
+	if err := h.roleService.UpdateRoleModules(roleID, updateReq); err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
 	}

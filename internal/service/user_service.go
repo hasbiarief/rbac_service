@@ -18,8 +18,28 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 }
 
 type UserListRequest struct {
-	Limit  int `form:"limit"`
-	Offset int `form:"offset"`
+	Limit    int    `form:"limit"`
+	Offset   int    `form:"offset"`
+	Search   string `form:"search"`
+	IsActive *bool  `form:"is_active"`
+}
+
+type UserResponse struct {
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	Email        string `json:"email"`
+	UserIdentity string `json:"user_identity"`
+	IsActive     bool   `json:"is_active"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
+type UserListResponse struct {
+	Users      []*UserResponse `json:"users"`
+	Total      int64           `json:"total"`
+	Page       int             `json:"page"`
+	Limit      int             `json:"limit"`
+	TotalPages int             `json:"total_pages"`
 }
 
 type CreateUserRequest struct {
@@ -41,11 +61,57 @@ type ChangePasswordRequest struct {
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
 }
 
-func (s *UserService) GetUsers(req *UserListRequest) ([]*UserResponse, error) {
-	// For now, we'll implement a simple query. In a real system, you'd want pagination
-	// This is a placeholder implementation
-	users := []*UserResponse{} // We'll need to implement GetAll in UserRepository
-	return users, nil
+func (s *UserService) GetUsers(req *UserListRequest) (*UserListResponse, error) {
+	// Set default values
+	if req.Limit <= 0 {
+		req.Limit = 10
+	}
+	if req.Offset < 0 {
+		req.Offset = 0
+	}
+
+	// Get users from repository
+	users, err := s.userRepo.GetAll(req.Limit, req.Offset, req.Search, req.IsActive)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get total count for pagination
+	total, err := s.userRepo.GetCount(req.Search, req.IsActive)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to response format
+	var userResponses []*UserResponse
+	for _, user := range users {
+		userIdentity := ""
+		if user.UserIdentity != nil {
+			userIdentity = *user.UserIdentity
+		}
+
+		userResponses = append(userResponses, &UserResponse{
+			ID:           user.ID,
+			Name:         user.Name,
+			Email:        user.Email,
+			UserIdentity: userIdentity,
+			IsActive:     user.IsActive,
+			CreatedAt:    user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:    user.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		})
+	}
+
+	// Calculate pagination info
+	page := (req.Offset / req.Limit) + 1
+	totalPages := int((total + int64(req.Limit) - 1) / int64(req.Limit))
+
+	return &UserListResponse{
+		Users:      userResponses,
+		Total:      total,
+		Page:       page,
+		Limit:      req.Limit,
+		TotalPages: totalPages,
+	}, nil
 }
 
 func (s *UserService) GetUserByID(id int64) (*UserResponse, error) {

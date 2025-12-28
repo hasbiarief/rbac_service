@@ -220,8 +220,13 @@ func validateBody(c *gin.Context, bodyStruct interface{}) error {
 
 	bodyValue := reflect.New(bodyType).Interface()
 
-	// Bind JSON to struct
-	if err := c.ShouldBindJSON(bodyValue); err != nil {
+	// Check content type
+	contentType := c.GetHeader("Content-Type")
+	if !strings.Contains(contentType, "application/json") {
+		return fmt.Errorf("content-type must be application/json")
+	}
+
+	if err := c.ShouldBind(bodyValue); err != nil {
 		return fmt.Errorf("invalid JSON format: %v", err)
 	}
 

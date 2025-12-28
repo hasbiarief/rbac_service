@@ -2,9 +2,9 @@
 
 ## Gambaran Umum
 
-Project ini telah direstrukturisasi menjadi arsitektur modular yang lebih terorganisir dan mudah dipelihara. Setiap modul memiliki tanggung jawab yang jelas dan terpisah.
+Project ini telah direstrukturisasi menjadi arsitektur modular yang lebih terorganisir dan mudah dipelihara. Setiap modul memiliki tanggung jawab yang jelas dan terpisah dengan infrastruktur yang terpusat.
 
-## Struktur Direktori
+## Struktur Direktori Terbaru
 
 ```
 internal/
@@ -17,13 +17,36 @@ internal/
 │   ├── subscription_handler.go
 │   ├── audit_handler.go
 │   └── branch_handler.go
-├── routes/             # Konfigurasi routing
+├── routes/             # Konfigurasi routing (clean & minimal)
 │   └── routes.go
 ├── server/             # Server initialization dan dependency injection
 │   └── server.go
+├── validation/         # Modular validation rules (NEW!)
+│   ├── common_validation.go
+│   ├── auth_validation.go
+│   ├── user_validation.go
+│   ├── company_validation.go
+│   ├── role_validation.go
+│   ├── module_validation.go
+│   ├── subscription_validation.go
+│   ├── audit_validation.go
+│   └── branch_validation.go
 ├── service/            # Business logic layer
-├── repository/         # Data access layer
+├── repository/         # Data access layer (Raw SQL)
 └── models/             # Data models
+
+pkg/
+├── database/           # Database connection (Raw SQL)
+├── migration/          # File-based migration system
+├── model/              # Base model dengan helper methods
+├── response/           # Centralized response system
+└── ratelimiter/        # Rate limiting system
+
+middleware/
+├── auth.go             # JWT authentication
+├── cors.go             # CORS configuration
+├── rate_limit.go       # Rate limiting middleware
+└── validation.go       # Request validation middleware
 ```
 
 ## Komponen Utama
@@ -32,12 +55,12 @@ internal/
 
 Setiap handler bertanggung jawab untuk:
 - Memproses HTTP requests
-- Validasi input
+- Menggunakan validated body dari middleware
 - Memanggil service layer
-- Mengembalikan HTTP responses
+- Mengembalikan centralized response format
 
 **Modul Handlers:**
-- `AuthHandler` - Authentication (login, logout, refresh token)
+- `AuthHandler` - Authentication (login dual method, logout, refresh token)
 - `ModuleHandler` - Module management (CRUD, tree, hierarchy)
 - `UserHandler` - User management (CRUD, password, module access)
 - `CompanyHandler` - Company management (CRUD)
@@ -46,181 +69,331 @@ Setiap handler bertanggung jawab untuk:
 - `AuditHandler` - Audit logging (logs, statistics)
 - `BranchHandler` - Branch management (hierarchical structure)
 
-### 2. Routes (`internal/routes/`)
-
-File `routes.go` mengorganisir semua routing berdasarkan modul:
-
+**Handler Pattern (Updated):**
 ```go
-func SetupRoutes(r *gin.Engine, h *Handlers, jwtSecret string, redis *redis.Client)
+func (h *UserHandler) CreateUser(c *gin.Context) {
+    // Get validated body from middleware
+    validatedBody, exists := c.Get("validated_body")
+    if !exists {
+        response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
+        return
+    }
+
+    // Type assert to expected struct
+    req, ok := validatedBody.(*struct {
+        Name         string  `json:"name" validate:"required,min=2,max=100"`
+        Email        string  `json:"email" validate:"required,email,max=255"`
+        UserIdentity *string `json:"user_identity" validate:"omitempty,min=3,max=50"`
+        Password     string  `json:"password" validate:"omitempty,min=6,max=100"`
+    })
+    if !ok {
+        response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+        return
+    }
+
+    // Convert to service request
+    createReq := &service.CreateUserRequest{
+        Name:         req.Name,
+        Email:        req.Email,
+        UserIdentity: req.UserIdentity,
+        Password:     req.Password,
+    }
+
+    result, err := h.userService.CreateUser(createReq)
+    if err != nil {
+        response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+        return
+    }
+
+    response.Success(c, http.StatusCreated, "User created successfully", result)
+}
 ```
 
-**Pengelompokan Routes:**
-- Public routes (auth, public subscription plans)
-- Protected routes (semua endpoint yang memerlukan authentication)
-- Modular route setup functions untuk setiap modul
+### 2. Modular Validation System (`internal/validation/`)
 
-### 3. Server (`internal/server/`)
+**Keuntungan Baru:**
+- ✅ **Separation of Concerns** - Validation rules terpisah dari routes
+- ✅ **Reusability** - Rules dapat digunakan kembali
+- ✅ **Maintainability** - Mudah update dan maintain
+- ✅ **Clean Routes** - Routes file lebih bersih dan readable
 
-File `server.go` mengelola:
-- Database connection initialization
-- Repository initialization
-- Service initialization
-- Handler initialization
-- Dependency injection
-- Server startup
-
-**Struktur Utama:**
+**Struktur Validation:**
 ```go
-type Server struct {
-    router *gin.Engine
-    config *config.Config
+// common_validation.go - Shared rules
+var IDValidation = middleware.ValidationRules{
+    Params: []middleware.ParamValidation{
+        {Name: "id", Type: "int", Required: true, Min: IntPtr(1)},
+    },
 }
 
-type Repositories struct {
-    User, Module, Company, Role, Subscription, Audit, Branch
+// auth_validation.go - Authentication specific
+var LoginValidation = middleware.ValidationRules{
+    Body: &struct {
+        UserIdentity string `json:"user_identity" validate:"required"`
+        Password     string `json:"password" validate:"required,min=6"`
+    }{},
 }
 
-type Services struct {
-    Auth, Module, Company, Role, User, Subscription, Audit, Branch
+// user_validation.go - User management specific
+var CreateUserValidation = middleware.ValidationRules{
+    Body: &struct {
+        Name         string  `json:"name" validate:"required,min=2,max=100"`
+        Email        string  `json:"email" validate:"required,email,max=255"`
+        UserIdentity *string `json:"user_identity" validate:"omitempty,min=3,max=50"`
+        Password     string  `json:"password" validate:"omitempty,min=6,max=100"`
+    }{},
 }
 ```
 
-## Keuntungan Arsitektur Modular
+### 3. Clean Routes (`internal/routes/`)
 
-### 1. **Separation of Concerns**
-- Setiap handler hanya menangani satu domain
-- Business logic terpisah dari HTTP handling
-- Database access terpisah dari business logic
+Routes sekarang jauh lebih bersih dan readable:
 
-### 2. **Maintainability**
-- Kode lebih mudah dibaca dan dipahami
-- Perubahan pada satu modul tidak mempengaruhi modul lain
-- Testing lebih mudah dilakukan per modul
+**Before (1400+ lines dengan validation inline):**
+```go
+// Validation rules defined inline di routes
+loginValidation := middleware.ValidationRules{
+    Body: &struct {
+        UserIdentity string `json:"user_identity" validate:"required"`
+        Password     string `json:"password" validate:"required,min=6"`
+    }{},
+}
+auth.POST("/login", middleware.ValidateRequest(loginValidation), authHandler.Login)
+```
 
-### 3. **Scalability**
-- Mudah menambah modul baru
-- Mudah menambah endpoint baru pada modul yang ada
-- Dependency injection memudahkan testing dan mocking
+**After (Clean & Modular):**
+```go
+// Import validation rules
+import "gin-scalable-api/internal/validation"
 
-### 4. **Code Reusability**
-- Handler dapat digunakan kembali
-- Service layer dapat digunakan oleh multiple handlers
-- Repository pattern memudahkan database abstraction
+// Clean route definition
+auth.POST("/login", middleware.ValidateRequest(validation.LoginValidation), authHandler.Login)
+```
+
+### 4. Raw SQL Infrastructure (`pkg/database/`, `pkg/model/`)
+
+**Menggantikan GORM dengan Raw SQL:**
+- ✅ **Better Performance** - Query yang lebih optimal
+- ✅ **Full Control** - Complete control atas SQL queries
+- ✅ **Transparency** - SQL queries terlihat jelas
+- ✅ **Easier Debugging** - Mudah debug query issues
+- ✅ **Simple Migration** - File-based migration system
+
+**Repository Pattern:**
+```go
+func (r *UserRepository) Create(user *models.User) error {
+    query := `
+        INSERT INTO users (name, email, user_identity, password_hash, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING id, created_at, updated_at
+    `
+    
+    err := r.db.QueryRow(query, 
+        user.Name, user.Email, user.UserIdentity, user.PasswordHash, user.IsActive,
+    ).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+    
+    if err != nil {
+        return fmt.Errorf("failed to create user: %w", err)
+    }
+    
+    return nil
+}
+```
+
+### 5. Centralized Response System (`pkg/response/`)
+
+**Consistent API Response Format:**
+```go
+// Success response
+response.Success(c, http.StatusOK, "Success message", data)
+
+// Error response  
+response.Error(c, http.StatusBadRequest, "Error message", errorDetails)
+```
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "message": "Success message",
+  "data": { ... },
+  "timestamp": "2025-12-28T22:39:39Z"
+}
+```
+
+### 6. Rate Limiting System (`pkg/ratelimiter/`, `middleware/rate_limit.go`)
+
+**Features:**
+- **100 requests per minute** per IP address
+- **Redis-based** storage untuk distributed systems
+- **Automatic cleanup** expired entries
+- **Global application** pada semua endpoints
+
+## Keuntungan Arsitektur Modular Terbaru
+
+### 1. **Enhanced Separation of Concerns**
+- Validation rules terpisah dari routes
+- Handler hanya fokus pada HTTP processing
+- Service layer untuk business logic
+- Repository layer untuk data access
+
+### 2. **Improved Maintainability**
+- Routes file lebih bersih (dari 1400+ lines menjadi ~200 lines)
+- Validation rules modular dan reusable
+- Handler pattern yang consistent
+- Centralized response format
+
+### 3. **Better Performance**
+- Raw SQL queries yang optimal
+- Connection pooling
+- Redis-based caching dan rate limiting
+- Efficient validation middleware
+
+### 4. **Enhanced Security**
+- Centralized validation system
+- Rate limiting untuk semua endpoints
+- Dual authentication methods
+- SQL injection prevention dengan prepared statements
+
+### 5. **Developer Experience**
+- Clean dan readable code structure
+- Easy to add new modules
+- Consistent patterns across modules
+- Better error handling dan debugging
+
+## Migration dari Struktur Lama
+
+**Perubahan Utama:**
+
+1. **GORM → Raw SQL**
+   - Menghapus semua dependency GORM
+   - Implementasi raw SQL dengan lib/pq
+   - File-based migration system
+
+2. **Inline Validation → Modular Validation**
+   - Memindahkan validation rules ke `internal/validation/`
+   - Routes menjadi lebih clean dan readable
+   - Validation rules dapat digunakan kembali
+
+3. **Manual Response → Centralized Response**
+   - Semua handler menggunakan `pkg/response`
+   - Consistent response format
+   - Better error handling
+
+4. **No Rate Limiting → Global Rate Limiting**
+   - Implementasi rate limiting berbasis IP
+   - Redis-based storage
+   - 100 requests/minute limit
+
+**Statistik Improvement:**
+- **Routes file:** 1400+ lines → ~200 lines (85% reduction)
+- **Validation:** Inline → Modular (8 validation files)
+- **Response:** Manual → Centralized (100% consistent)
+- **Database:** GORM → Raw SQL (Better performance)
+- **Security:** Basic → Enhanced (Rate limiting + validation)
 
 ## Cara Menambah Modul Baru
 
-### 1. Buat Handler Baru
+### 1. Buat Validation Rules
 ```go
-// internal/handlers/new_module_handler.go
-type NewModuleHandler struct {
-    newModuleService *service.NewModuleService
-}
+// internal/validation/new_module_validation.go
+package validation
 
-func NewNewModuleHandler(service *service.NewModuleService) *NewModuleHandler {
-    return &NewModuleHandler{newModuleService: service}
-}
-
-func (h *NewModuleHandler) GetItems(c *gin.Context) {
-    // Implementation
+var CreateNewItemValidation = middleware.ValidationRules{
+    Body: &struct {
+        Name        string `json:"name" validate:"required,min=2,max=100"`
+        Description string `json:"description" validate:"max=500"`
+    }{},
 }
 ```
 
-### 2. Tambahkan ke Routes
+### 2. Buat Handler
+```go
+// internal/handlers/new_module_handler.go
+func (h *NewModuleHandler) CreateItem(c *gin.Context) {
+    // Get validated body from middleware
+    validatedBody, exists := c.Get("validated_body")
+    if !exists {
+        response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
+        return
+    }
+
+    // Type assert dan convert ke service request
+    // ... implementation
+
+    response.Success(c, http.StatusCreated, "Item created successfully", result)
+}
+```
+
+### 3. Tambahkan Routes
 ```go
 // internal/routes/routes.go
 func setupNewModuleRoutes(protected *gin.RouterGroup, handler *handlers.NewModuleHandler) {
-    newModule := protected.Group("/new-module")
+    items := protected.Group("/items")
     {
-        newModule.GET("", handler.GetItems)
-        newModule.POST("", handler.CreateItem)
-        // ... other routes
+        items.POST("", middleware.ValidateRequest(validation.CreateNewItemValidation), handler.CreateItem)
+        items.GET("", middleware.ValidateRequest(validation.ListValidation), handler.GetItems)
+        items.GET("/:id", middleware.ValidateRequest(validation.IDValidation), handler.GetItemByID)
     }
 }
 ```
 
-### 3. Update Server Initialization
-```go
-// internal/server/server.go
-type Repositories struct {
-    // ... existing repos
-    NewModule *repository.NewModuleRepository
-}
-
-type Services struct {
-    // ... existing services
-    NewModule *service.NewModuleService
-}
-
-func (s *Server) initializeHandlers(services *Services, repos *Repositories) *routes.Handlers {
-    return &routes.Handlers{
-        // ... existing handlers
-        NewModule: handlers.NewNewModuleHandler(services.NewModule),
-    }
-}
-```
-
-## Best Practices
+## Best Practices Terbaru
 
 ### 1. **Handler Guidelines**
-- Minimal business logic di handler
-- Selalu validasi input
-- Gunakan consistent response format
+- Selalu gunakan validated body dari middleware
+- Gunakan centralized response format
+- Convert request struct ke service struct
 - Handle errors dengan proper HTTP status codes
 
-### 2. **Service Guidelines**
+### 2. **Validation Guidelines**
+- Buat validation rules di `internal/validation/`
+- Gunakan common validation untuk rules yang sama
+- Group validation berdasarkan domain/module
+- Reuse validation rules sebisa mungkin
+
+### 3. **Service Guidelines**
 - Semua business logic ada di service layer
 - Service tidak boleh tahu tentang HTTP
 - Gunakan repository untuk database access
 - Return domain errors, bukan HTTP errors
 
-### 3. **Repository Guidelines**
-- Hanya database operations
+### 4. **Repository Guidelines**
+- Gunakan raw SQL dengan prepared statements
 - Return domain models
 - Handle database-specific errors
 - Use transactions untuk complex operations
 
-### 4. **Error Handling**
-- Consistent error response format
-- Proper HTTP status codes
-- Log errors untuk debugging
-- Don't expose internal errors ke client
-
 ## Testing Strategy
 
 ### 1. **Unit Testing**
-- Test setiap handler secara terpisah
-- Mock dependencies (services, repositories)
-- Test happy path dan error cases
+- Test validation rules secara terpisah
+- Test handler dengan mock services
+- Test service dengan mock repositories
+- Test repository dengan test database
 
 ### 2. **Integration Testing**
-- Test end-to-end flow
-- Test dengan real database
+- Test end-to-end API flow
+- Test dengan real database dan Redis
 - Test authentication dan authorization
+- Test rate limiting behavior
 
 ### 3. **API Testing**
-- Gunakan Postman collection yang sudah ada
-- Test semua endpoints
+- Gunakan Postman collection yang updated
+- Test semua validation scenarios
+- Test error handling
 - Test dengan different user roles
-
-## Migration dari Struktur Lama
-
-Struktur lama (monolithic `main.go` dengan 1400+ lines) telah berhasil dipecah menjadi:
-
-- **8 Handler files** (~100-200 lines each)
-- **1 Routes file** (~200 lines)
-- **1 Server file** (~150 lines)
-- **1 Main file** (~20 lines)
-
-**Total reduction:** Dari 1400+ lines menjadi ~1000 lines yang terdistribusi dengan baik.
 
 ## Kesimpulan
 
-Arsitektur modular ini memberikan:
-- ✅ **Better organization** - Kode terstruktur berdasarkan domain
-- ✅ **Easier maintenance** - Perubahan terisolasi per modul
-- ✅ **Better testing** - Unit testing per modul
-- ✅ **Scalability** - Mudah menambah fitur baru
-- ✅ **Team collaboration** - Developer dapat bekerja pada modul berbeda
-- ✅ **Code reusability** - Handler dan service dapat digunakan kembali
+Arsitektur modular terbaru memberikan:
 
-Project sekarang siap untuk pengembangan lebih lanjut dengan struktur yang solid dan maintainable.
+- ✅ **Clean Architecture** - Separation of concerns yang jelas
+- ✅ **Better Performance** - Raw SQL dan optimized queries
+- ✅ **Enhanced Security** - Rate limiting dan centralized validation
+- ✅ **Improved DX** - Developer experience yang lebih baik
+- ✅ **Maintainable Code** - Modular dan easy to extend
+- ✅ **Consistent API** - Centralized response format
+- ✅ **Scalable Infrastructure** - Ready untuk growth
+
+Project sekarang memiliki foundation yang solid untuk pengembangan jangka panjang dengan infrastruktur yang modern dan maintainable.

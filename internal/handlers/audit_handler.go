@@ -37,13 +37,48 @@ func (h *AuditHandler) GetAuditLogs(c *gin.Context) {
 }
 
 func (h *AuditHandler) CreateAuditLog(c *gin.Context) {
-	var req service.CreateAuditLogRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "validation failed")
 		return
 	}
 
-	auditResponse, err := h.auditService.CreateAuditLog(&req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		UserID       *int64                 `json:"user_id"`
+		UserIdentity *string                `json:"user_identity"`
+		Action       string                 `json:"action" validate:"required"`
+		Resource     string                 `json:"resource" validate:"required"`
+		ResourceID   *string                `json:"resource_id"`
+		Method       string                 `json:"method" validate:"required"`
+		URL          string                 `json:"url" validate:"required"`
+		Status       string                 `json:"status" validate:"required"`
+		StatusCode   int                    `json:"status_code" validate:"required"`
+		Message      string                 `json:"message"`
+		Metadata     map[string]interface{} `json:"metadata"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	createReq := &service.CreateAuditLogRequest{
+		UserID:       req.UserID,
+		UserIdentity: req.UserIdentity,
+		Action:       req.Action,
+		Resource:     req.Resource,
+		ResourceID:   req.ResourceID,
+		Method:       req.Method,
+		URL:          req.URL,
+		Status:       req.Status,
+		StatusCode:   req.StatusCode,
+		Message:      req.Message,
+		Metadata:     req.Metadata,
+	}
+
+	auditResponse, err := h.auditService.CreateAuditLog(createReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Failed to create audit log", err.Error())
 		return

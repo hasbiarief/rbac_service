@@ -1,387 +1,286 @@
-# 📋 SOP Backend Engineer - ERP RBAC API
+# Backend Engineer SOP - Huminor RBAC API
 
-## Gambaran Umum
+## Panduan Operasional untuk Backend Engineer
 
-Dokumen ini adalah Standard Operating Procedure (SOP) untuk backend engineer yang bekerja dengan project ERP RBAC API. Project ini menggunakan arsitektur modular dengan raw SQL, PostgreSQL, dan Clean Architecture principles.
+### 1. Setup Development Environment
 
----
-
-## 🚀 **Setup Development Environment**
-
-### Prerequisites
-- Go 1.25+
-- PostgreSQL 12+
+#### Prerequisites
+- Go 1.21+
+- PostgreSQL 13+
 - Redis 6+
-- Git
+- Air (untuk live reload)
 
-### Initial Setup
+#### Installation
 ```bash
-# 1. Clone repository
+# Clone repository
 git clone <repository-url>
 cd huminor_rbac
 
-# 2. Setup environment
-cp .env.example .env
-# Edit .env dengan konfigurasi database dan Redis
-
-# 3. Install dependencies
+# Install dependencies
 go mod download
 
-# 4. Install Air for live reload (recommended)
+# Install Air untuk live reload
 go install github.com/cosmtrek/air@latest
 
-# 5. Run migrations
+# Setup database
+createdb huminor_rbac
+```
+
+#### Environment Setup
+```bash
+# Copy environment file
+cp .env.example .env
+
+# Edit .env dengan konfigurasi database dan Redis
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_NAME=huminor_rbac
+REDIS_ADDR=localhost:6379
+JWT_SECRET=your-secret-key
+```
+
+### 2. Database Management
+
+#### Menjalankan Migrasi
+```bash
+# Jalankan semua migrasi
 make migrate-up
 
-# 6. Start development server
-air  # With live reload (recommended)
-# atau
-make run  # Manual mode
+# Rollback migrasi terakhir
+make migrate-down
+
+# Reset database (drop semua tabel dan jalankan ulang migrasi)
+make migrate-reset
+
+# Check status migrasi
+make migrate-status
 ```
 
----
+#### Membuat Tabel Baru
 
-## 🌪️ **Development dengan Air (Live Reload)**
-
-### Setup Air
+1. **Buat file migrasi baru:**
 ```bash
-# Install Air
-go install github.com/cosmtrek/air@latest
-
-# Verify installation
-air -v
+# Format: migrations/XXX_description.sql
+# Contoh: migrations/007_create_employees_table.sql
 ```
 
-### Menggunakan Air
-```bash
-# Start development server dengan live reload
-air
-
-# Features yang didapat:
-# ✅ Auto rebuild saat file .go berubah
-# ✅ Auto restart server setelah build
-# ✅ Build error langsung terlihat
-# ✅ Fast development cycle
-```
-
-### Konfigurasi Air
-File `.air.toml` sudah dikonfigurasi dengan optimal:
-- **Build Command**: `go build -o ./tmp/main ./cmd/api`
-- **Watch Extensions**: `.go`, `.tpl`, `.tmpl`, `.html`
-- **Excluded**: `*_test.go`, `tmp/`, `vendor/`
-- **Auto Restart**: Ya
-
-### Troubleshooting Air
-```bash
-# Jika Air tidak ditemukan
-export PATH=$PATH:$(go env GOPATH)/bin
-
-# Clean build artifacts
-rm -rf tmp/
-
-# Check build errors
-cat build-errors.log
-```
-
----
-
-## 🗄️ **Database Management**
-
-### Migration System
-
-Project menggunakan file-based migration system yang terletak di folder `migrations/`.
-
-#### Struktur Migration Files
-```
-migrations/
-├── 001_create_users_table.sql
-├── 002_create_companies_and_branches.sql
-├── 003_create_roles_and_modules.sql
-├── 004_seed_modules_data.sql
-├── 005_create_subscription_system.sql
-└── 006_seed_initial_data.sql
-```
-
-#### Naming Convention
-- **Format**: `{number}_{description}.sql`
-- **Number**: 3 digit sequential (001, 002, 003, ...)
-- **Description**: snake_case, descriptive action
-
-**Contoh:**
-- `007_create_employee_table.sql`
-- `008_add_department_id_to_users.sql`
-- `009_seed_default_departments.sql`
-
-### Membuat Migration Baru
-
-#### 1. Buat File Migration
-```bash
-# Buat file migration baru dengan nomor urut berikutnya
-touch migrations/007_create_employee_table.sql
-```
-
-#### 2. Template Migration File
+2. **Struktur file migrasi:**
 ```sql
--- migrations/007_create_employee_table.sql
--- Description: Create employee table with department relationship
-
--- Create employee table
+-- migrations/007_create_employees_table.sql
 CREATE TABLE employees (
     id BIGSERIAL PRIMARY KEY,
+    company_id BIGINT NOT NULL REFERENCES companies(id),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
     employee_id VARCHAR(50) UNIQUE NOT NULL,
-    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
-    department_id BIGINT REFERENCES departments(id) ON DELETE SET NULL,
     position VARCHAR(100),
-    hire_date DATE NOT NULL,
-    salary DECIMAL(15,2),
-    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'terminated')),
+    department VARCHAR(100),
+    hire_date DATE,
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes
+-- Indexes
+CREATE INDEX idx_employees_company_id ON employees(company_id);
+CREATE INDEX idx_employees_email ON employees(email);
 CREATE INDEX idx_employees_employee_id ON employees(employee_id);
-CREATE INDEX idx_employees_user_id ON employees(user_id);
-CREATE INDEX idx_employees_department_id ON employees(department_id);
-CREATE INDEX idx_employees_status ON employees(status);
+CREATE INDEX idx_employees_is_active ON employees(is_active);
 
--- Add comments
-COMMENT ON TABLE employees IS 'Employee information and employment details';
+-- Comments
+COMMENT ON TABLE employees IS 'Employee data table';
 COMMENT ON COLUMN employees.employee_id IS 'Unique employee identifier';
-COMMENT ON COLUMN employees.salary IS 'Employee salary in IDR';
 ```
 
-#### 3. Run Migration
+3. **Jalankan migrasi:**
 ```bash
-# Run single migration
 make migrate-up
-
-# Check migration status
-make migrate-status
-
-# Rollback if needed (be careful!)
-make migrate-down
 ```
 
-### Modifikasi Tabel Existing
+#### Menyesuaikan Tabel yang Sudah Ada
 
-#### 1. Buat Migration untuk Perubahan
+1. **Buat file migrasi untuk perubahan:**
 ```sql
--- migrations/008_add_department_id_to_users.sql
--- Description: Add department_id column to users table
+-- migrations/008_alter_employees_add_salary.sql
+ALTER TABLE employees ADD COLUMN salary DECIMAL(15,2);
+ALTER TABLE employees ADD COLUMN currency VARCHAR(3) DEFAULT 'IDR';
 
--- Add new column
-ALTER TABLE users ADD COLUMN department_id BIGINT REFERENCES departments(id) ON DELETE SET NULL;
+-- Update existing records if needed
+UPDATE employees SET currency = 'IDR' WHERE currency IS NULL;
 
--- Create index
-CREATE INDEX idx_users_department_id ON users(department_id);
-
--- Add comment
-COMMENT ON COLUMN users.department_id IS 'Reference to user department';
+-- Add constraints
+ALTER TABLE employees ADD CONSTRAINT chk_salary_positive CHECK (salary >= 0);
 ```
 
-#### 2. Migration untuk Data Seeding
+2. **Untuk perubahan yang kompleks, gunakan transaction:**
 ```sql
--- migrations/009_seed_default_departments.sql
--- Description: Seed default departments
+-- migrations/009_restructure_user_roles.sql
+BEGIN;
 
-INSERT INTO departments (name, code, description, is_active) VALUES
-('Human Resources', 'HR', 'Human Resources Department', true),
-('Information Technology', 'IT', 'Information Technology Department', true),
-('Finance', 'FIN', 'Finance Department', true),
-('Operations', 'OPS', 'Operations Department', true);
-```
-
----
-
-## 🏗️ **Menambah Fitur Baru (Complete Flow)**
-
-### Langkah 1: Database Schema
-
-#### 1.1 Buat Migration
-```bash
-touch migrations/010_create_departments_table.sql
-```
-
-#### 1.2 Definisi Schema
-```sql
--- migrations/010_create_departments_table.sql
-CREATE TABLE departments (
+-- Create new table
+CREATE TABLE user_role_assignments (
     id BIGSERIAL PRIMARY KEY,
-    company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(20) NOT NULL,
-    description TEXT,
-    manager_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-    parent_id BIGINT REFERENCES departments(id) ON DELETE SET NULL,
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    role_id BIGINT NOT NULL REFERENCES roles(id),
+    company_id BIGINT NOT NULL REFERENCES companies(id),
+    assigned_by BIGINT REFERENCES users(id),
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    UNIQUE(company_id, code)
+    UNIQUE(user_id, role_id, company_id)
 );
 
-CREATE INDEX idx_departments_company_id ON departments(company_id);
-CREATE INDEX idx_departments_manager_id ON departments(manager_id);
-CREATE INDEX idx_departments_parent_id ON departments(parent_id);
+-- Migrate data from old table
+INSERT INTO user_role_assignments (user_id, role_id, company_id, assigned_at)
+SELECT user_id, role_id, company_id, created_at 
+FROM user_roles 
+WHERE is_active = true;
+
+-- Drop old table (optional, bisa di-comment dulu untuk safety)
+-- DROP TABLE user_roles;
+
+COMMIT;
 ```
 
-#### 1.3 Run Migration
-```bash
-make migrate-up
-```
+### 3. Model Development
 
-### Langkah 2: Model Definition
+#### Membuat Model Baru
 
-#### 2.1 Buat Model File
-```bash
-touch internal/models/department.go
-```
-
-#### 2.2 Definisi Model
+1. **Buat file model di `internal/models/`:**
 ```go
-// internal/models/department.go
+// internal/models/employee.go
 package models
 
-import "time"
+import (
+    "time"
+    "gin-scalable-api/pkg/model"
+)
 
-type Department struct {
-    ID          int64     `json:"id" db:"id"`
-    CompanyID   int64     `json:"company_id" db:"company_id"`
-    Name        string    `json:"name" db:"name"`
-    Code        string    `json:"code" db:"code"`
-    Description *string   `json:"description" db:"description"`
-    ManagerID   *int64    `json:"manager_id" db:"manager_id"`
-    ParentID    *int64    `json:"parent_id" db:"parent_id"`
-    IsActive    bool      `json:"is_active" db:"is_active"`
-    CreatedAt   time.Time `json:"created_at" db:"created_at"`
-    UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
+type Employee struct {
+    model.BaseModel
+    CompanyID    int64     `json:"company_id" db:"company_id"`
+    Name         string    `json:"name" db:"name"`
+    Email        string    `json:"email" db:"email"`
+    EmployeeID   string    `json:"employee_id" db:"employee_id"`
+    Position     *string   `json:"position" db:"position"`
+    Department   *string   `json:"department" db:"department"`
+    HireDate     *time.Time `json:"hire_date" db:"hire_date"`
+    Salary       *float64  `json:"salary" db:"salary"`
+    Currency     string    `json:"currency" db:"currency"`
+    IsActive     bool      `json:"is_active" db:"is_active"`
 }
 
-func (Department) TableName() string {
-    return "departments"
-}
-
-// Helper types
-type DepartmentWithManager struct {
-    Department
-    ManagerName *string `json:"manager_name" db:"manager_name"`
-}
-
-type DepartmentHierarchy struct {
-    Department
-    Children []*DepartmentHierarchy `json:"children,omitempty"`
+func (e *Employee) TableName() string {
+    return "employees"
 }
 ```
 
-### Langkah 3: Repository Layer
-
-#### 3.1 Buat Repository
-```bash
-touch internal/repository/department_repository.go
-```
-
-#### 3.2 Implementasi Repository
+2. **Implementasi Repository:**
 ```go
-// internal/repository/department_repository.go
+// internal/repository/employee_repository.go
 package repository
 
 import (
     "database/sql"
+    "fmt"
     "gin-scalable-api/internal/models"
+    "gin-scalable-api/pkg/model"
 )
 
-type DepartmentRepository struct {
+type EmployeeRepository struct {
+    *model.Repository
     db *sql.DB
 }
 
-func NewDepartmentRepository(db *sql.DB) *DepartmentRepository {
-    return &DepartmentRepository{db: db}
+func NewEmployeeRepository(db *sql.DB) *EmployeeRepository {
+    return &EmployeeRepository{
+        Repository: model.NewRepository(db),
+        db:         db,
+    }
 }
 
-func (r *DepartmentRepository) GetAll(companyID int64, limit, offset int) ([]*models.Department, error) {
+func (r *EmployeeRepository) Create(employee *models.Employee) error {
     query := `
-        SELECT id, company_id, name, code, description, manager_id, parent_id, 
-               is_active, created_at, updated_at
-        FROM departments 
-        WHERE company_id = $1 AND is_active = true
-        ORDER BY name
-        LIMIT $2 OFFSET $3`
+        INSERT INTO employees (company_id, name, email, employee_id, position, department, hire_date, salary, currency, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING id, created_at, updated_at
+    `
     
-    rows, err := r.db.Query(query, companyID, limit, offset)
+    err := r.db.QueryRow(query, 
+        employee.CompanyID, employee.Name, employee.Email, employee.EmployeeID,
+        employee.Position, employee.Department, employee.HireDate, employee.Salary,
+        employee.Currency, employee.IsActive,
+    ).Scan(&employee.ID, &employee.CreatedAt, &employee.UpdatedAt)
+    
     if err != nil {
-        return nil, err
+        return fmt.Errorf("failed to create employee: %w", err)
     }
-    defer rows.Close()
-
-    var departments []*models.Department
-    for rows.Next() {
-        dept := &models.Department{}
-        err := rows.Scan(
-            &dept.ID, &dept.CompanyID, &dept.Name, &dept.Code,
-            &dept.Description, &dept.ManagerID, &dept.ParentID,
-            &dept.IsActive, &dept.CreatedAt, &dept.UpdatedAt,
-        )
-        if err != nil {
-            return nil, err
-        }
-        departments = append(departments, dept)
-    }
-
-    return departments, nil
+    
+    return nil
 }
 
-func (r *DepartmentRepository) GetByID(id int64) (*models.Department, error) {
+func (r *EmployeeRepository) GetByID(id int64) (*models.Employee, error) {
+    employee := &models.Employee{}
     query := `
-        SELECT id, company_id, name, code, description, manager_id, parent_id,
-               is_active, created_at, updated_at
-        FROM departments WHERE id = $1`
+        SELECT id, company_id, name, email, employee_id, position, department, 
+               hire_date, salary, currency, is_active, created_at, updated_at
+        FROM employees 
+        WHERE id = $1 AND is_active = true
+    `
     
-    dept := &models.Department{}
     err := r.db.QueryRow(query, id).Scan(
-        &dept.ID, &dept.CompanyID, &dept.Name, &dept.Code,
-        &dept.Description, &dept.ManagerID, &dept.ParentID,
-        &dept.IsActive, &dept.CreatedAt, &dept.UpdatedAt,
+        &employee.ID, &employee.CompanyID, &employee.Name, &employee.Email,
+        &employee.EmployeeID, &employee.Position, &employee.Department,
+        &employee.HireDate, &employee.Salary, &employee.Currency,
+        &employee.IsActive, &employee.CreatedAt, &employee.UpdatedAt,
     )
     
     if err != nil {
-        return nil, err
+        if err == sql.ErrNoRows {
+            return nil, fmt.Errorf("employee not found")
+        }
+        return nil, fmt.Errorf("failed to get employee: %w", err)
     }
     
-    return dept, nil
+    return employee, nil
 }
 
-func (r *DepartmentRepository) Create(dept *models.Department) (*models.Department, error) {
-    query := `
-        INSERT INTO departments (company_id, name, code, description, manager_id, parent_id)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, created_at, updated_at`
+func (r *EmployeeRepository) Update(employee *models.Employee) error {
+    query, values := r.BuildUpdateQuery(employee, employee.ID)
     
-    err := r.db.QueryRow(
-        query, dept.CompanyID, dept.Name, dept.Code,
-        dept.Description, dept.ManagerID, dept.ParentID,
-    ).Scan(&dept.ID, &dept.CreatedAt, &dept.UpdatedAt)
-    
+    err := r.db.QueryRow(query, values...).Scan(&employee.UpdatedAt)
     if err != nil {
-        return nil, err
+        return fmt.Errorf("failed to update employee: %w", err)
     }
     
-    return dept, nil
+    return nil
 }
 
-// Add Update, Delete, and other methods...
+func (r *EmployeeRepository) Delete(id int64) error {
+    query := `UPDATE employees SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+    
+    result, err := r.db.Exec(query, id)
+    if err != nil {
+        return fmt.Errorf("failed to delete employee: %w", err)
+    }
+    
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return fmt.Errorf("failed to get rows affected: %w", err)
+    }
+    
+    if rowsAffected == 0 {
+        return fmt.Errorf("employee not found")
+    }
+    
+    return nil
+}
 ```
 
-### Langkah 4: Service Layer
-
-#### 4.1 Buat Service
-```bash
-touch internal/service/department_service.go
-```
-
-#### 4.2 Implementasi Service
+3. **Implementasi Service:**
 ```go
-// internal/service/department_service.go
+// internal/service/employee_service.go
 package service
 
 import (
@@ -389,505 +288,396 @@ import (
     "gin-scalable-api/internal/repository"
 )
 
-type DepartmentService struct {
-    departmentRepo *repository.DepartmentRepository
+type EmployeeService struct {
+    employeeRepo *repository.EmployeeRepository
 }
 
-func NewDepartmentService(departmentRepo *repository.DepartmentRepository) *DepartmentService {
-    return &DepartmentService{
-        departmentRepo: departmentRepo,
+func NewEmployeeService(employeeRepo *repository.EmployeeRepository) *EmployeeService {
+    return &EmployeeService{
+        employeeRepo: employeeRepo,
     }
 }
 
-// Request/Response types
-type DepartmentListRequest struct {
-    CompanyID int64 `form:"company_id" binding:"required"`
-    Limit     int   `form:"limit"`
-    Offset    int   `form:"offset"`
+type EmployeeResponse struct {
+    ID         int64   `json:"id"`
+    CompanyID  int64   `json:"company_id"`
+    Name       string  `json:"name"`
+    Email      string  `json:"email"`
+    EmployeeID string  `json:"employee_id"`
+    Position   *string `json:"position"`
+    Department *string `json:"department"`
+    HireDate   *string `json:"hire_date"`
+    Salary     *float64 `json:"salary"`
+    Currency   string  `json:"currency"`
+    IsActive   bool    `json:"is_active"`
+    CreatedAt  string  `json:"created_at"`
+    UpdatedAt  string  `json:"updated_at"`
 }
 
-type CreateDepartmentRequest struct {
-    CompanyID   int64   `json:"company_id" binding:"required"`
-    Name        string  `json:"name" binding:"required,min=2,max=100"`
-    Code        string  `json:"code" binding:"required,min=2,max=20"`
-    Description *string `json:"description"`
-    ManagerID   *int64  `json:"manager_id"`
-    ParentID    *int64  `json:"parent_id"`
+type CreateEmployeeRequest struct {
+    CompanyID  int64   `json:"company_id" binding:"required"`
+    Name       string  `json:"name" binding:"required"`
+    Email      string  `json:"email" binding:"required,email"`
+    EmployeeID string  `json:"employee_id" binding:"required"`
+    Position   *string `json:"position"`
+    Department *string `json:"department"`
+    HireDate   *string `json:"hire_date"`
+    Salary     *float64 `json:"salary"`
+    Currency   string  `json:"currency"`
 }
 
-type DepartmentResponse struct {
-    ID          int64   `json:"id"`
-    CompanyID   int64   `json:"company_id"`
-    Name        string  `json:"name"`
-    Code        string  `json:"code"`
-    Description *string `json:"description"`
-    ManagerID   *int64  `json:"manager_id"`
-    ParentID    *int64  `json:"parent_id"`
-    IsActive    bool    `json:"is_active"`
-    CreatedAt   string  `json:"created_at"`
-    UpdatedAt   string  `json:"updated_at"`
-}
-
-func (s *DepartmentService) GetDepartments(req *DepartmentListRequest) ([]*DepartmentResponse, error) {
-    if req.Limit == 0 {
-        req.Limit = 10
+func (s *EmployeeService) CreateEmployee(req *CreateEmployeeRequest) (*EmployeeResponse, error) {
+    employee := &models.Employee{
+        CompanyID:  req.CompanyID,
+        Name:       req.Name,
+        Email:      req.Email,
+        EmployeeID: req.EmployeeID,
+        Position:   req.Position,
+        Department: req.Department,
+        Salary:     req.Salary,
+        Currency:   req.Currency,
+        IsActive:   true,
     }
-
-    departments, err := s.departmentRepo.GetAll(req.CompanyID, req.Limit, req.Offset)
-    if err != nil {
+    
+    if req.Currency == "" {
+        employee.Currency = "IDR"
+    }
+    
+    if err := s.employeeRepo.Create(employee); err != nil {
         return nil, err
     }
-
-    var response []*DepartmentResponse
-    for _, dept := range departments {
-        response = append(response, &DepartmentResponse{
-            ID:          dept.ID,
-            CompanyID:   dept.CompanyID,
-            Name:        dept.Name,
-            Code:        dept.Code,
-            Description: dept.Description,
-            ManagerID:   dept.ManagerID,
-            ParentID:    dept.ParentID,
-            IsActive:    dept.IsActive,
-            CreatedAt:   dept.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-            UpdatedAt:   dept.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-        })
-    }
-
-    return response, nil
-}
-
-func (s *DepartmentService) CreateDepartment(req *CreateDepartmentRequest) (*DepartmentResponse, error) {
-    dept := &models.Department{
-        CompanyID:   req.CompanyID,
-        Name:        req.Name,
-        Code:        req.Code,
-        Description: req.Description,
-        ManagerID:   req.ManagerID,
-        ParentID:    req.ParentID,
-        IsActive:    true,
-    }
-
-    createdDept, err := s.departmentRepo.Create(dept)
-    if err != nil {
-        return nil, err
-    }
-
-    return &DepartmentResponse{
-        ID:          createdDept.ID,
-        CompanyID:   createdDept.CompanyID,
-        Name:        createdDept.Name,
-        Code:        createdDept.Code,
-        Description: createdDept.Description,
-        ManagerID:   createdDept.ManagerID,
-        ParentID:    createdDept.ParentID,
-        IsActive:    createdDept.IsActive,
-        CreatedAt:   createdDept.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-        UpdatedAt:   createdDept.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+    
+    return &EmployeeResponse{
+        ID:         employee.ID,
+        CompanyID:  employee.CompanyID,
+        Name:       employee.Name,
+        Email:      employee.Email,
+        EmployeeID: employee.EmployeeID,
+        Position:   employee.Position,
+        Department: employee.Department,
+        Salary:     employee.Salary,
+        Currency:   employee.Currency,
+        IsActive:   employee.IsActive,
+        CreatedAt:  employee.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+        UpdatedAt:  employee.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
     }, nil
 }
-
-// Add other service methods...
 ```
 
-### Langkah 5: Handler Layer
-
-#### 5.1 Buat Handler
-```bash
-touch internal/handlers/department_handler.go
-```
-
-#### 5.2 Implementasi Handler
+4. **Implementasi Handler:**
 ```go
-// internal/handlers/department_handler.go
+// internal/handlers/employee_handler.go
 package handlers
 
 import (
-    "net/http"
-    "strconv"
-
     "gin-scalable-api/internal/service"
     "gin-scalable-api/pkg/response"
-
+    "net/http"
+    "strconv"
+    
     "github.com/gin-gonic/gin"
 )
 
-type DepartmentHandler struct {
-    departmentService *service.DepartmentService
+type EmployeeHandler struct {
+    employeeService *service.EmployeeService
 }
 
-func NewDepartmentHandler(departmentService *service.DepartmentService) *DepartmentHandler {
-    return &DepartmentHandler{
-        departmentService: departmentService,
+func NewEmployeeHandler(employeeService *service.EmployeeService) *EmployeeHandler {
+    return &EmployeeHandler{
+        employeeService: employeeService,
     }
 }
 
-func (h *DepartmentHandler) GetDepartments(c *gin.Context) {
-    var req service.DepartmentListRequest
-    if err := c.ShouldBindQuery(&req); err != nil {
-        response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
-        return
-    }
-
-    result, err := h.departmentService.GetDepartments(&req)
-    if err != nil {
-        response.Error(c, http.StatusInternalServerError, "Failed to get departments", err.Error())
-        return
-    }
-
-    response.Success(c, http.StatusOK, "Departments retrieved successfully", result)
-}
-
-func (h *DepartmentHandler) CreateDepartment(c *gin.Context) {
-    var req service.CreateDepartmentRequest
+func (h *EmployeeHandler) CreateEmployee(c *gin.Context) {
+    var req service.CreateEmployeeRequest
     if err := c.ShouldBindJSON(&req); err != nil {
-        response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
+        response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
         return
     }
-
-    result, err := h.departmentService.CreateDepartment(&req)
+    
+    result, err := h.employeeService.CreateEmployee(&req)
     if err != nil {
-        response.Error(c, http.StatusInternalServerError, "Failed to create department", err.Error())
+        response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
         return
     }
-
-    response.Success(c, http.StatusCreated, "Department created successfully", result)
+    
+    response.Success(c, http.StatusCreated, "Employee created successfully", result)
 }
-
-// Add other handler methods...
 ```
 
-### Langkah 6: Routes Configuration
-
-#### 6.1 Update Routes
+5. **Tambahkan ke Routes:**
 ```go
-// internal/routes/routes.go - Add to SetupRoutes function
-
-// Department routes
-setupDepartmentRoutes(protected, h.Department)
-
-// Add new function
-func setupDepartmentRoutes(protected *gin.RouterGroup, departmentHandler *handlers.DepartmentHandler) {
-    departments := protected.Group("/departments")
+// internal/routes/routes.go - tambahkan di SetupRoutes function
+func SetupRoutes(r *gin.Engine, h *Handlers, jwtSecret string, redis *redis.Client) {
+    // ... existing code ...
+    
+    protected := api.Group("")
+    protected.Use(middleware.AuthMiddleware(jwtSecret, redis))
     {
-        // List departments with validation
-        listValidation := middleware.ValidationRules{
-            Query: []middleware.QueryValidation{
-                {Name: "company_id", Type: "int", Required: true, Min: intPtr(1)},
-                {Name: "limit", Type: "int", Default: 10, Min: intPtr(1), Max: intPtr(100)},
-                {Name: "offset", Type: "int", Default: 0, Min: intPtr(0)},
-            },
-        }
-        departments.GET("", middleware.ValidateRequest(listValidation), departmentHandler.GetDepartments)
+        // ... existing routes ...
+        
+        // Employee routes
+        setupEmployeeRoutes(protected, h.Employee)
+    }
+}
 
-        // Create department with validation
-        createValidation := middleware.ValidationRules{
-            Body: &service.CreateDepartmentRequest{},
-        }
-        departments.POST("", middleware.ValidateRequest(createValidation), departmentHandler.CreateDepartment)
-
-        // Other routes...
+func setupEmployeeRoutes(protected *gin.RouterGroup, employeeHandler *handlers.EmployeeHandler) {
+    employees := protected.Group("/employees")
+    {
+        employees.GET("", employeeHandler.GetEmployees)
+        employees.GET("/:id", employeeHandler.GetEmployeeByID)
+        employees.POST("", employeeHandler.CreateEmployee)
+        employees.PUT("/:id", employeeHandler.UpdateEmployee)
+        employees.DELETE("/:id", employeeHandler.DeleteEmployee)
     }
 }
 ```
 
-### Langkah 7: Server Integration
-
-#### 7.1 Update Server
+6. **Update Dependency Injection di Server:**
 ```go
-// internal/server/server.go - Update structs
-
-type Repositories struct {
-    // ... existing repos
-    Department *repository.DepartmentRepository
-}
-
-type Services struct {
-    // ... existing services
-    Department *service.DepartmentService
-}
-
-// Update initializeRepositories
-func (s *Server) initializeRepositories(db *sql.DB) *Repositories {
-    return &Repositories{
-        // ... existing repos
-        Department: repository.NewDepartmentRepository(db),
-    }
-}
-
-// Update initializeServices
-func (s *Server) initializeServices(repos *Repositories) *Services {
-    return &Services{
-        // ... existing services
-        Department: service.NewDepartmentService(repos.Department),
-    }
-}
-
-// Update Handlers struct in routes package
-type Handlers struct {
-    // ... existing handlers
-    Department *handlers.DepartmentHandler
-}
-
-// Update initializeHandlers
-func (s *Server) initializeHandlers(services *Services, repos *Repositories) *routes.Handlers {
-    return &routes.Handlers{
-        // ... existing handlers
-        Department: handlers.NewDepartmentHandler(services.Department),
+// internal/server/server.go - tambahkan di Initialize method
+func (s *Server) Initialize() {
+    // ... existing code ...
+    
+    // Repositories
+    employeeRepo := repository.NewEmployeeRepository(s.DB)
+    
+    // Services
+    employeeService := service.NewEmployeeService(employeeRepo)
+    
+    // Handlers
+    employeeHandler := handlers.NewEmployeeHandler(employeeService)
+    
+    // Update handlers struct
+    handlers := &routes.Handlers{
+        // ... existing handlers ...
+        Employee: employeeHandler,
     }
 }
 ```
 
-### Langkah 8: Testing
+### 4. Development Workflow
 
-#### 8.1 Test dengan Postman
-```json
-// POST /api/v1/departments
-{
-    "company_id": 1,
-    "name": "Information Technology",
-    "code": "IT",
-    "description": "IT Department",
-    "manager_id": 2,
-    "parent_id": null
-}
-```
+#### Menjalankan Development Server
 
-#### 8.2 Verify Database
-```sql
-SELECT * FROM departments WHERE company_id = 1;
-```
-
----
-
-## 🚀 **Production Deployment**
-
-### Option 1: Binary Deployment
-
-#### Build untuk Production
+**Opsi 1: Manual Run**
 ```bash
-# Build optimized binary
+# Build dan jalankan
+go build -o server cmd/api/main.go
+./server
+```
+
+**Opsi 2: Live Reload dengan Air**
+```bash
+# Jalankan dengan Air untuk auto-reload
+air
+
+# Atau dengan verbose mode
+air -v
+```
+
+#### Testing
+
+```bash
+# Run all tests
+go test ./...
+
+# Run tests dengan coverage
+go test -cover ./...
+
+# Run specific test
+go test ./internal/service -v
+
+# Run tests dengan race detection
+go test -race ./...
+```
+
+#### API Testing
+
+```bash
+# Test health endpoint
+curl -X GET "http://localhost:8081/health"
+
+# Test login dengan user_identity (primary method)
+curl -X POST "http://localhost:8081/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_identity": "100000003",
+    "password": "password123"
+  }'
+
+# Test login dengan email (alternative method)
+curl -X POST "http://localhost:8081/api/v1/auth/login-email" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "superadmin@company.com",
+    "password": "password123"
+  }'
+
+# Test protected endpoint dengan token
+curl -X GET "http://localhost:8081/api/v1/users?limit=5" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+
+# Test create user
+curl -X POST "http://localhost:8081/api/v1/users" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "New User",
+    "email": "newuser@example.com",
+    "user_identity": "100000999"
+  }'
+
+# Test create company
+curl -X POST "http://localhost:8081/api/v1/companies" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "PT. New Company",
+    "code": "NEWCO"
+  }'
+```
+
+**Available Test Users:**
+- `100000001` - System Admin (full access) | Email: `admin@system.com`
+- `100000002` - HR Manager (HR modules) | Email: `hr@company.com`
+- `100000003` - Super Admin (full access) | Email: `superadmin@company.com`
+- `100000004` - HR Staff (limited HR access) | Email: `hrstaff@company.com`
+- `100000005` - Manager (management modules) | Email: `manager@company.com`
+- `100000006` - Employee (self-service only) | Email: `employee@company.com`
+
+**Default Password:** `password123`
+
+**Login Methods:**
+1. **Primary**: `/api/v1/auth/login` dengan `user_identity`
+2. **Alternative**: `/api/v1/auth/login-email` dengan `email`
+3. **Fallback**: `/api/v1/auth/login` dengan `email` sebagai `user_identity` (backward compatibility)
+
+### 5. Production Deployment
+
+#### Opsi 1: Binary Deployment
+```bash
+# Build untuk production
 CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server cmd/api/main.go
 
-# Set production mode
-export GIN_MODE=release
+# Copy binary dan jalankan di server
+./server
 ```
 
-#### Environment Variables Production
+#### Opsi 2: Docker Compose
 ```bash
-# Required environment variables
-export GIN_MODE=release
-export DB_HOST=production-db-host
-export DB_PORT=5432
-export DB_USER=db-user
-export DB_PASSWORD=secure-password
-export DB_NAME=production-db
-export REDIS_HOST=redis-host
-export REDIS_PORT=6379
-export JWT_SECRET=very-secure-jwt-secret
-export SERVER_PORT=8081
-```
-
-#### Deployment Steps
-```bash
-# 1. Upload binary ke server
-scp server user@server:/opt/huminor-rbac/
-
-# 2. Run migrations
-./server migrate
-
-# 3. Start production server
-GIN_MODE=release ./server
-
-# 4. Setup systemd service (recommended)
-sudo systemctl start huminor-rbac
-sudo systemctl enable huminor-rbac
-```
-
-### Option 2: Docker Compose (Recommended)
-
-#### Setup Environment
-```bash
-# 1. Copy production environment template
+# Setup environment production
 cp .env.production .env
 
-# 2. Edit environment variables
-nano .env
-# Update DB_PASSWORD, JWT_SECRET, REDIS_PASSWORD, dll
+# Build dan jalankan dengan Docker Compose
+docker-compose -f docker-compose.prod.yml up -d
+
+# Check logs
+docker-compose -f docker-compose.prod.yml logs -f
+
+# Stop services
+docker-compose -f docker-compose.prod.yml down
 ```
 
-#### Deploy dengan Docker Compose
+### 6. Best Practices
+
+#### Code Structure
+- Gunakan modular architecture (handler -> service -> repository)
+- Pisahkan model berdasarkan domain
+- Implementasi proper error handling
+- Gunakan centralized response format
+
+#### Database
+- Selalu gunakan transaction untuk operasi kompleks
+- Buat index untuk kolom yang sering di-query
+- Gunakan soft delete (is_active = false) daripada hard delete
+- Tambahkan comment pada tabel dan kolom penting
+
+#### Security
+- Validasi semua input menggunakan middleware validation
+- Implementasi rate limiting
+- Gunakan prepared statements untuk mencegah SQL injection
+- Hash password dengan bcrypt
+
+#### Performance
+- Implementasi pagination untuk list endpoints
+- Gunakan connection pooling untuk database
+- Cache data yang sering diakses di Redis
+- Monitor query performance
+
+### 7. Troubleshooting
+
+#### Common Issues
+
+**Database Connection Error:**
 ```bash
-# 1. Start all services
-./scripts/docker-prod.sh start
+# Check database status
+pg_isready -h localhost -p 5432
 
-# 2. Run migrations
-./scripts/docker-prod.sh migrate
-
-# 3. Check service status
-./scripts/docker-prod.sh status
-
-# 4. View logs
-./scripts/docker-prod.sh logs
+# Check connection string di .env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_NAME=huminor_rbac
 ```
 
-#### Available Services
-- **Application**: Go API server (port 8081)
-- **PostgreSQL**: Database dengan persistent storage
-- **Redis**: Cache dan session storage
-- **Nginx**: Reverse proxy dengan SSL support (optional)
-
-#### Docker Management Commands
+**Migration Error:**
 ```bash
-# Start services
-./scripts/docker-prod.sh start
-
-# Start with Nginx reverse proxy
-./scripts/docker-prod.sh start-nginx
-
-# View logs (all services)
-./scripts/docker-prod.sh logs
-
-# View logs (specific service)
-./scripts/docker-prod.sh logs app
-./scripts/docker-prod.sh logs postgres
-
-# Run database migrations
-./scripts/docker-prod.sh migrate
-
-# Create database backup
-./scripts/docker-prod.sh backup
-
-# Stop all services
-./scripts/docker-prod.sh stop
-
-# Restart services
-./scripts/docker-prod.sh restart
-
-# Clean up (remove all containers and volumes)
-./scripts/docker-prod.sh clean
-```
-
-#### Production Checklist
-- [ ] Environment variables configured dengan secure values
-- [ ] Database password changed dari default
-- [ ] JWT secret menggunakan strong random string
-- [ ] Redis password configured (jika diperlukan)
-- [ ] SSL certificates configured untuk Nginx (jika menggunakan HTTPS)
-- [ ] Firewall rules configured
-- [ ] Backup strategy implemented
-- [ ] Monitoring dan logging setup
-
-### Docker Deployment Manual
-```dockerfile
-FROM golang:1.25-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -o server cmd/api/main.go
-
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /root/
-COPY --from=builder /app/server .
-COPY --from=builder /app/migrations ./migrations
-CMD ["./server"]
-```
-
----
-
-## 🔧 **Best Practices**
-
-### Database Design
-1. **Selalu gunakan foreign key constraints**
-2. **Buat index untuk kolom yang sering di-query**
-3. **Gunakan appropriate data types**
-4. **Tambahkan comments untuk dokumentasi**
-5. **Gunakan check constraints untuk validasi**
-
-### Code Structure
-1. **Follow Clean Architecture principles**
-2. **Gunakan consistent naming conventions**
-3. **Implement proper error handling**
-4. **Add validation di semua layers**
-5. **Use centralized response format**
-
-### Migration Guidelines
-1. **Never modify existing migrations**
-2. **Always create new migration for changes**
-3. **Test migrations on development first**
-4. **Backup database before running migrations**
-5. **Document breaking changes**
-
----
-
-## 🚨 **Common Issues & Solutions**
-
-### Migration Issues
-```bash
-# Issue: Migration failed
-# Solution: Check database connection and SQL syntax
+# Check migration status
 make migrate-status
-make migrate-down  # If safe to rollback
+
+# Force version (hati-hati!)
+migrate -path migrations -database "postgres://user:pass@localhost/db?sslmode=disable" force VERSION
 ```
 
-### Build Issues
+**Route Conflicts:**
+- Pastikan tidak ada route yang sama
+- Gunakan path yang spesifik untuk menghindari konflik parameter
+- Check route registration order
+
+**Build Errors:**
 ```bash
-# Issue: Import cycle or missing dependencies
+# Clean module cache
+go clean -modcache
+
+# Re-download dependencies
+go mod download
+
+# Tidy dependencies
 go mod tidy
-go clean -cache
-go build ./...
 ```
 
-### Database Connection Issues
+### 8. Monitoring & Logging
+
+#### Health Check
 ```bash
-# Check PostgreSQL status
-sudo systemctl status postgresql
-
-# Check Redis status
-sudo systemctl status redis
+# Check server health
+curl http://localhost:8081/health
 ```
 
----
+#### Logs
+- Server logs ditampilkan di console
+- Gunakan structured logging untuk production
+- Monitor error rates dan response times
 
-## 📚 **References**
+### 9. Documentation
 
-- [Database Schema Documentation](./DATABASE_SCHEMA_DOCUMENTATION.md)
-- [Models Documentation](./MODELS_DOCUMENTATION.md)
-- [Modular Architecture](./MODULAR_ARCHITECTURE.md)
-- [API Infrastructure](./API_INFRASTRUCTURE.md)
-- [Migration Guide](./MIGRATIONS.md)
+#### API Documentation
+- Update Postman collection setelah menambah endpoint baru
+- Dokumentasikan request/response format
+- Sertakan contoh payload
 
----
-
-## ✅ **Checklist untuk Fitur Baru**
-
-### Database
-- [ ] Migration file dibuat dengan naming convention yang benar
-- [ ] Schema includes proper constraints dan indexes
-- [ ] Migration tested di development environment
-- [ ] Database comments added untuk dokumentasi
-
-### Code
-- [ ] Model struct dibuat dengan proper tags
-- [ ] Repository implements all CRUD operations
-- [ ] Service layer includes business logic dan validation
-- [ ] Handler uses centralized response format
-- [ ] Routes configured dengan proper validation
-- [ ] Server integration completed
-
-### Testing
-- [ ] API endpoints tested dengan Postman
-- [ ] Database queries verified
-- [ ] Error handling tested
-- [ ] Validation rules tested
-
-### Documentation
-- [ ] API endpoints documented
-- [ ] Database schema documented
-- [ ] Code comments added
-- [ ] README updated if needed
+#### Code Documentation
+- Tambahkan comment untuk function yang kompleks
+- Update README.md jika ada perubahan setup
+- Dokumentasikan breaking changes di CHANGELOG.md
 
 ---
 
-**🎯 Dengan mengikuti SOP ini, backend engineer dapat bekerja secara konsisten dan efisien dalam mengembangkan fitur baru atau memodifikasi existing features.**
+**Catatan Penting:**
+- Selalu test di development environment sebelum deploy ke production
+- Backup database sebelum menjalankan migration di production
+- Monitor server performance setelah deployment
+- Koordinasi dengan team untuk perubahan yang mempengaruhi API contract

@@ -47,10 +47,14 @@ type UserInfo struct {
 }
 
 func (s *AuthService) Login(req *LoginRequest, userAgent, ip string) (*LoginResponse, error) {
-	// Get user by user_identity
+	// Get user by user_identity (primary method as per Postman documentation)
 	user, err := s.userRepo.GetByUserIdentity(req.UserIdentity)
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		// Fallback: try by email for backward compatibility
+		user, err = s.userRepo.GetByEmail(req.UserIdentity)
+		if err != nil {
+			return nil, errors.New("invalid credentials")
+		}
 	}
 
 	// Check if user is active

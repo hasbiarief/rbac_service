@@ -53,13 +53,30 @@ func (h *CompanyHandler) GetCompanyByID(c *gin.Context) {
 }
 
 func (h *CompanyHandler) CreateCompany(c *gin.Context) {
-	var req service.CreateCompanyRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	result, err := h.companyService.CreateCompany(&req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Name string `json:"name" validate:"required,min=2,max=100"`
+		Code string `json:"code" validate:"required,min=2,max=20"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	createReq := &service.CreateCompanyRequest{
+		Name: req.Name,
+		Code: req.Code,
+	}
+
+	result, err := h.companyService.CreateCompany(createReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
@@ -75,13 +92,30 @@ func (h *CompanyHandler) UpdateCompany(c *gin.Context) {
 		return
 	}
 
-	var req service.UpdateCompanyRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	result, err := h.companyService.UpdateCompany(id, &req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Name string `json:"name"`
+		Code string `json:"code"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	updateReq := &service.UpdateCompanyRequest{
+		Name: req.Name,
+		Code: req.Code,
+	}
+
+	result, err := h.companyService.UpdateCompany(id, updateReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return

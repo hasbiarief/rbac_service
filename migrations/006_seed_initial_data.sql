@@ -6,11 +6,11 @@ UPDATE users SET user_identity = '100000001' WHERE id = 1;
 
 -- Insert additional test users
 INSERT INTO users (name, email, user_identity, password_hash, is_active) VALUES
-('HR Manager', 'hr@company.com', '100000002', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/VcSAg/9qm', true),
-('Super Admin', 'superadmin@company.com', '100000003', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/VcSAg/9qm', true),
-('HR Staff', 'hrstaff@company.com', '100000004', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/VcSAg/9qm', true),
-('Manager', 'manager@company.com', '100000005', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/VcSAg/9qm', true),
-('Employee', 'employee@company.com', '100000006', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/VcSAg/9qm', true)
+('HR Manager', 'hr@company.com', '100000002', '$2a$10$CyG6BmkdxPkYTKnJ6geffOXh6QwQq9V8R9oZn5eBCX6G/zX/5V6vy', true),
+('Super Admin', 'superadmin@company.com', '100000003', '$2a$10$CyG6BmkdxPkYTKnJ6geffOXh6QwQq9V8R9oZn5eBCX6G/zX/5V6vy', true),
+('HR Staff', 'hrstaff@company.com', '100000004', '$2a$10$CyG6BmkdxPkYTKnJ6geffOXh6QwQq9V8R9oZn5eBCX6G/zX/5V6vy', true),
+('Manager', 'manager@company.com', '100000005', '$2a$10$CyG6BmkdxPkYTKnJ6geffOXh6QwQq9V8R9oZn5eBCX6G/zX/5V6vy', true),
+('Employee', 'employee@company.com', '100000006', '$2a$10$CyG6BmkdxPkYTKnJ6geffOXh6QwQq9V8R9oZn5eBCX6G/zX/5V6vy', true)
 ON CONFLICT (email) DO NOTHING;
 
 -- Assign roles to users

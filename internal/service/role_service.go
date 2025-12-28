@@ -62,7 +62,7 @@ type RoleModulePermission struct {
 	CanDelete bool  `json:"can_delete"`
 }
 
-type UserResponse struct {
+type RoleUserResponse struct {
 	ID           int64  `json:"id"`
 	Name         string `json:"name"`
 	Email        string `json:"email"`
@@ -167,20 +167,20 @@ func (s *RoleService) RemoveUserRole(userID, roleID int64) error {
 	return s.roleRepo.RemoveUserRole(userID, roleID)
 }
 
-func (s *RoleService) GetUsersByRole(roleID int64, limit int) ([]*UserResponse, error) {
+func (s *RoleService) GetUsersByRole(roleID int64, limit int) ([]*RoleUserResponse, error) {
 	users, err := s.roleRepo.GetUsersByRole(roleID, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*UserResponse
+	var response []*RoleUserResponse
 	for _, user := range users {
 		userIdentity := ""
 		if user.UserIdentity != nil {
 			userIdentity = *user.UserIdentity
 		}
 
-		response = append(response, &UserResponse{
+		response = append(response, &RoleUserResponse{
 			ID:           user.ID,
 			Name:         user.Name,
 			Email:        user.Email,

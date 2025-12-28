@@ -53,13 +53,34 @@ func (h *BranchHandler) GetBranchByID(c *gin.Context) {
 }
 
 func (h *BranchHandler) CreateBranch(c *gin.Context) {
-	var req service.CreateBranchRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "validation failed")
 		return
 	}
 
-	result, err := h.branchService.CreateBranch(&req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		CompanyID int64  `json:"company_id" validate:"required,min=1"`
+		Name      string `json:"name" validate:"required,min=2,max=100"`
+		Code      string `json:"code" validate:"required,min=2,max=20"`
+		ParentID  *int64 `json:"parent_id"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	createReq := &service.CreateBranchRequest{
+		CompanyID: req.CompanyID,
+		Name:      req.Name,
+		Code:      req.Code,
+		ParentID:  req.ParentID,
+	}
+
+	result, err := h.branchService.CreateBranch(createReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Failed to create branch", err.Error())
 		return
@@ -75,13 +96,34 @@ func (h *BranchHandler) UpdateBranch(c *gin.Context) {
 		return
 	}
 
-	var req service.UpdateBranchRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "validation failed")
 		return
 	}
 
-	result, err := h.branchService.UpdateBranch(id, &req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Name     string `json:"name"`
+		Code     string `json:"code"`
+		ParentID *int64 `json:"parent_id"`
+		IsActive *bool  `json:"is_active"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	updateReq := &service.UpdateBranchRequest{
+		Name:     req.Name,
+		Code:     req.Code,
+		ParentID: req.ParentID,
+		IsActive: req.IsActive,
+	}
+
+	result, err := h.branchService.UpdateBranch(id, updateReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Failed to update branch", err.Error())
 		return

@@ -19,16 +19,69 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req service.LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "validation failed")
 		return
+	}
+
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		UserIdentity string `json:"user_identity" validate:"required"`
+		Password     string `json:"password" validate:"required,min=6"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	loginReq := &service.LoginRequest{
+		UserIdentity: req.UserIdentity,
+		Password:     req.Password,
 	}
 
 	userAgent := c.GetHeader("User-Agent")
 	ip := c.ClientIP()
 
-	authResponse, err := h.authService.Login(&req, userAgent, ip)
+	authResponse, err := h.authService.Login(loginReq, userAgent, ip)
+	if err != nil {
+		response.Error(c, http.StatusUnauthorized, "Login failed", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Login successful", authResponse)
+}
+
+func (h *AuthHandler) LoginWithEmail(c *gin.Context) {
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "validation failed")
+		return
+	}
+
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required,min=6"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
+		return
+	}
+
+	// Convert to service request - use email as user_identity
+	loginReq := &service.LoginRequest{
+		UserIdentity: req.Email,
+		Password:     req.Password,
+	}
+
+	userAgent := c.GetHeader("User-Agent")
+	ip := c.ClientIP()
+
+	authResponse, err := h.authService.Login(loginReq, userAgent, ip)
 	if err != nil {
 		response.Error(c, http.StatusUnauthorized, "Login failed", err.Error())
 		return
@@ -38,11 +91,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	var req struct {
-		RefreshToken string `json:"refresh_token" binding:"required"`
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "validation failed")
+		return
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
+
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		RefreshToken string `json:"refresh_token" validate:"required"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
 		return
 	}
 
@@ -56,11 +117,19 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
-	var req struct {
-		Token string `json:"token" binding:"required"`
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "validation failed")
+		return
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
+
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Token string `json:"token" validate:"required"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
 		return
 	}
 

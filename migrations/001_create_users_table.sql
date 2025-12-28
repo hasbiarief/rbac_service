@@ -33,5 +33,5 @@ CREATE TRIGGER update_users_updated_at
 
 -- Insert default admin user
 INSERT INTO users (name, email, user_identity, password_hash, is_active) VALUES
-('System Admin', 'admin@system.com', '100000001', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/VcSAg/9qm', true)
+('System Admin', 'admin@system.com', '100000001', '$2a$10$CyG6BmkdxPkYTKnJ6geffOXh6QwQq9V8R9oZn5eBCX6G/zX/5V6vy', true)
 ON CONFLICT (email) DO NOTHING;

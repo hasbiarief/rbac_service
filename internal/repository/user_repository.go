@@ -60,6 +60,29 @@ func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 	return user, nil
 }
 
+// GetByEmail retrieves a user by email
+func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
+	user := &models.User{}
+	query := `
+		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at
+		FROM users 
+		WHERE email = $1 AND is_active = true
+	`
+
+	err := r.db.QueryRow(query, email).Scan(
+		&user.ID, &user.Name, &user.Email, &user.UserIdentity,
+		&user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return user, nil
+}
+
 // GetByUserIdentity retrieves a user by user_identity
 func (r *UserRepository) GetByUserIdentity(userIdentity string) (*models.User, error) {
 	user := &models.User{}
@@ -116,7 +139,97 @@ func (r *UserRepository) Delete(id int64) error {
 	return nil
 }
 
-// GetUserRoles retrieves user roles
+// GetAll retrieves all users with pagination and filtering
+func (r *UserRepository) GetAll(limit, offset int, search string, isActive *bool) ([]*models.User, error) {
+	query := `
+		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at
+		FROM users 
+		WHERE 1=1
+	`
+	args := []interface{}{}
+	argIndex := 1
+
+	// Add search filter
+	if search != "" {
+		query += fmt.Sprintf(" AND (name ILIKE $%d OR email ILIKE $%d)", argIndex, argIndex+1)
+		searchPattern := "%" + search + "%"
+		args = append(args, searchPattern, searchPattern)
+		argIndex += 2
+	}
+
+	// Add active filter
+	if isActive != nil {
+		query += fmt.Sprintf(" AND is_active = $%d", argIndex)
+		args = append(args, *isActive)
+		argIndex++
+	}
+
+	// Add ordering and pagination
+	query += " ORDER BY created_at DESC"
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT $%d", argIndex)
+		args = append(args, limit)
+		argIndex++
+	}
+	if offset > 0 {
+		query += fmt.Sprintf(" OFFSET $%d", argIndex)
+		args = append(args, offset)
+	}
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		user := &models.User{}
+		err := rows.Scan(
+			&user.ID, &user.Name, &user.Email, &user.UserIdentity,
+			&user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating users: %w", err)
+	}
+
+	return users, nil
+}
+
+// GetCount returns total count of users with filtering
+func (r *UserRepository) GetCount(search string, isActive *bool) (int64, error) {
+	query := "SELECT COUNT(*) FROM users WHERE 1=1"
+	args := []interface{}{}
+	argIndex := 1
+
+	// Add search filter
+	if search != "" {
+		query += fmt.Sprintf(" AND (name ILIKE $%d OR email ILIKE $%d)", argIndex, argIndex+1)
+		searchPattern := "%" + search + "%"
+		args = append(args, searchPattern, searchPattern)
+		argIndex += 2
+	}
+
+	// Add active filter
+	if isActive != nil {
+		query += fmt.Sprintf(" AND is_active = $%d", argIndex)
+		args = append(args, *isActive)
+	}
+
+	var count int64
+	err := r.db.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get user count: %w", err)
+	}
+
+	return count, nil
+}
 func (r *UserRepository) GetUserRoles(userID int64) ([]string, error) {
 	query := `
 		SELECT r.name

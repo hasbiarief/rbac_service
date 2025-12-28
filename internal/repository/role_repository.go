@@ -22,7 +22,7 @@ func NewRoleRepository(db *sql.DB) *RoleRepository {
 // GetAll retrieves all roles with pagination and filtering
 func (r *RoleRepository) GetAll(limit, offset int, search string) ([]*models.Role, error) {
 	query := `
-		SELECT id, name, description, created_at, updated_at
+		SELECT id, name, description, is_active, created_at, updated_at
 		FROM roles
 		WHERE 1=1
 	`
@@ -59,7 +59,7 @@ func (r *RoleRepository) GetAll(limit, offset int, search string) ([]*models.Rol
 	for rows.Next() {
 		role := &models.Role{}
 		err := rows.Scan(
-			&role.ID, &role.Name, &role.Description,
+			&role.ID, &role.Name, &role.Description, &role.IsActive,
 			&role.CreatedAt, &role.UpdatedAt,
 		)
 		if err != nil {

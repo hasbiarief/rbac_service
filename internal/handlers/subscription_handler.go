@@ -65,13 +65,32 @@ func (h *SubscriptionHandler) GetAllSubscriptions(c *gin.Context) {
 }
 
 func (h *SubscriptionHandler) CreateSubscription(c *gin.Context) {
-	var req service.CreateSubscriptionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	result, err := h.subscriptionService.CreateSubscription(&req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		CompanyID    int64  `json:"company_id" validate:"required,min=1"`
+		PlanID       int64  `json:"plan_id" validate:"required,min=1"`
+		BillingCycle string `json:"billing_cycle" validate:"required,oneof=monthly yearly"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	createReq := &service.CreateSubscriptionRequest{
+		CompanyID:    req.CompanyID,
+		PlanID:       req.PlanID,
+		BillingCycle: req.BillingCycle,
+	}
+
+	result, err := h.subscriptionService.CreateSubscription(createReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
@@ -103,13 +122,30 @@ func (h *SubscriptionHandler) UpdateSubscription(c *gin.Context) {
 		return
 	}
 
-	var req service.UpdateSubscriptionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	result, err := h.subscriptionService.UpdateSubscription(id, &req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		PlanID    *int64 `json:"plan_id"`
+		AutoRenew *bool  `json:"auto_renew"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	updateReq := &service.UpdateSubscriptionRequest{
+		PlanID:    req.PlanID,
+		AutoRenew: req.AutoRenew,
+	}
+
+	result, err := h.subscriptionService.UpdateSubscription(id, updateReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
@@ -125,13 +161,30 @@ func (h *SubscriptionHandler) RenewSubscription(c *gin.Context) {
 		return
 	}
 
-	var req service.RenewSubscriptionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	if err := h.subscriptionService.RenewSubscription(id, &req); err != nil {
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		BillingCycle string `json:"billing_cycle" validate:"required,oneof=monthly yearly"`
+		PlanID       *int64 `json:"plan_id"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	renewReq := &service.RenewSubscriptionRequest{
+		BillingCycle: req.BillingCycle,
+		PlanID:       req.PlanID,
+	}
+
+	if err := h.subscriptionService.RenewSubscription(id, renewReq); err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
 	}
@@ -146,13 +199,30 @@ func (h *SubscriptionHandler) CancelSubscription(c *gin.Context) {
 		return
 	}
 
-	var req service.CancelSubscriptionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	if err := h.subscriptionService.CancelSubscription(id, &req); err != nil {
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Reason            string `json:"reason"`
+		CancelImmediately bool   `json:"cancel_immediately"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	cancelReq := &service.CancelSubscriptionRequest{
+		Reason:            req.Reason,
+		CancelImmediately: req.CancelImmediately,
+	}
+
+	if err := h.subscriptionService.CancelSubscription(id, cancelReq); err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
 	}

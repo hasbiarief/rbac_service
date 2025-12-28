@@ -65,13 +65,37 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 }
 
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	var req service.CreateUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	result, err := h.userService.CreateUser(&req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Name         string  `json:"name" validate:"required,min=2,max=100"`
+		Email        string  `json:"email" validate:"required,email,max=255"`
+		UserIdentity *string `json:"user_identity" validate:"omitempty,min=3,max=50"`
+		Password     string  `json:"password" validate:"omitempty,min=6,max=100"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	createReq := &service.CreateUserRequest{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: req.Password,
+	}
+
+	if req.UserIdentity != nil {
+		createReq.UserIdentity = *req.UserIdentity
+	}
+
+	result, err := h.userService.CreateUser(createReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
@@ -87,13 +111,32 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var req service.UpdateUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	result, err := h.userService.UpdateUser(id, &req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		IsActive *bool  `json:"is_active"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	updateReq := &service.UpdateUserRequest{
+		Name:     req.Name,
+		Email:    req.Email,
+		IsActive: req.IsActive,
+	}
+
+	result, err := h.userService.UpdateUser(id, updateReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
@@ -170,13 +213,30 @@ func (h *UserHandler) GetUserModulesByIdentity(c *gin.Context) {
 }
 
 func (h *UserHandler) CheckAccess(c *gin.Context) {
-	var req service.CheckAccessRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	hasAccess, err := h.moduleService.CheckUserAccess(&req)
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		UserIdentity string `json:"user_identity" validate:"required"`
+		ModuleURL    string `json:"module_url" validate:"required"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	checkReq := &service.CheckAccessRequest{
+		UserIdentity: req.UserIdentity,
+		ModuleURL:    req.ModuleURL,
+	}
+
+	hasAccess, err := h.moduleService.CheckUserAccess(checkReq)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
 		return
@@ -196,13 +256,32 @@ func (h *UserHandler) ChangeUserPassword(c *gin.Context) {
 		return
 	}
 
-	var req service.ChangePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	if err := h.userService.ChangeUserPassword(id, &req); err != nil {
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		CurrentPassword string `json:"current_password" validate:"required,min=6"`
+		NewPassword     string `json:"new_password" validate:"required,min=6,max=100"`
+		ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	changeReq := &service.ChangePasswordRequest{
+		CurrentPassword: req.CurrentPassword,
+		NewPassword:     req.NewPassword,
+		ConfirmPassword: req.ConfirmPassword,
+	}
+
+	if err := h.userService.ChangeUserPassword(id, changeReq); err != nil {
 		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
 		return
 	}
@@ -215,13 +294,32 @@ func (h *UserHandler) ChangeMyPassword(c *gin.Context) {
 	// In a real implementation, you'd get this from the JWT token
 	userID := int64(1)
 
-	var req service.ChangePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	if err := h.userService.ChangePassword(userID, &req); err != nil {
+	// Type assert to the expected struct
+	req, ok := validatedBody.(*struct {
+		CurrentPassword string `json:"current_password" validate:"required,min=6"`
+		NewPassword     string `json:"new_password" validate:"required,min=6,max=100"`
+		ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
+	})
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	// Convert to service request
+	changeReq := &service.ChangePasswordRequest{
+		CurrentPassword: req.CurrentPassword,
+		NewPassword:     req.NewPassword,
+		ConfirmPassword: req.ConfirmPassword,
+	}
+
+	if err := h.userService.ChangePassword(userID, changeReq); err != nil {
 		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
 		return
 	}
