@@ -1,0 +1,379 @@
+package repository
+
+import (
+	"database/sql"
+	"fmt"
+	"gin-scalable-api/internal/models"
+	"gin-scalable-api/pkg/model"
+	"time"
+)
+
+type SubscriptionRepository struct {
+	*model.Repository
+	db *sql.DB
+}
+
+func NewSubscriptionRepository(db *sql.DB) *SubscriptionRepository {
+	return &SubscriptionRepository{
+		Repository: model.NewRepository(db),
+		db:         db,
+	}
+}
+
+// GetAllPlans retrieves all subscription plans
+func (r *SubscriptionRepository) GetAllPlans() ([]*models.SubscriptionPlan, error) {
+	query := `
+		SELECT id, name, display_name, description, price_monthly, price_yearly, 
+			   max_users, max_branches, features, is_active, created_at, updated_at
+		FROM subscription_plans
+		WHERE is_active = true
+		ORDER BY price_monthly
+	`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get subscription plans: %w", err)
+	}
+	defer rows.Close()
+
+	var plans []*models.SubscriptionPlan
+	for rows.Next() {
+		plan := &models.SubscriptionPlan{}
+		err := rows.Scan(
+			&plan.ID, &plan.Name, &plan.DisplayName, &plan.Description,
+			&plan.PriceMonthly, &plan.PriceYearly, &plan.MaxUsers, &plan.MaxBranches,
+			&plan.Features, &plan.IsActive, &plan.CreatedAt, &plan.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan subscription plan: %w", err)
+		}
+		plans = append(plans, plan)
+	}
+
+	return plans, nil
+}
+
+// GetPlanByID retrieves a subscription plan by ID
+func (r *SubscriptionRepository) GetPlanByID(id int64) (*models.SubscriptionPlan, error) {
+	query := `
+		SELECT id, name, display_name, description, price_monthly, price_yearly, 
+			   max_users, max_branches, features, is_active, created_at, updated_at
+		FROM subscription_plans
+		WHERE id = $1
+	`
+
+	plan := &models.SubscriptionPlan{}
+	err := r.db.QueryRow(query, id).Scan(
+		&plan.ID, &plan.Name, &plan.DisplayName, &plan.Description,
+		&plan.PriceMonthly, &plan.PriceYearly, &plan.MaxUsers, &plan.MaxBranches,
+		&plan.Features, &plan.IsActive, &plan.CreatedAt, &plan.UpdatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("subscription plan not found")
+		}
+		return nil, fmt.Errorf("failed to get subscription plan: %w", err)
+	}
+
+	return plan, nil
+}
+
+// GetAllSubscriptions retrieves all subscriptions with pagination
+func (r *SubscriptionRepository) GetAllSubscriptions(limit, offset int) ([]*models.Subscription, error) {
+	query := `
+		SELECT s.id, s.company_id, s.plan_id, s.status, s.billing_cycle, s.start_date, 
+			   s.end_date, s.auto_renew, s.created_at, s.updated_at,
+			   c.name as company_name, sp.display_name as plan_display_name
+		FROM subscriptions s
+		JOIN companies c ON s.company_id = c.id
+		JOIN subscription_plans sp ON s.plan_id = sp.id
+		ORDER BY s.created_at DESC
+	`
+	args := []interface{}{}
+
+	if limit > 0 {
+		query += " LIMIT $1"
+		args = append(args, limit)
+		if offset > 0 {
+			query += " OFFSET $2"
+			args = append(args, offset)
+		}
+	}
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get subscriptions: %w", err)
+	}
+	defer rows.Close()
+
+	var subscriptions []*models.Subscription
+	for rows.Next() {
+		subscription := &models.Subscription{}
+		var companyName, planDisplayName string
+		err := rows.Scan(
+			&subscription.ID, &subscription.CompanyID, &subscription.PlanID,
+			&subscription.Status, &subscription.BillingCycle, &subscription.StartDate,
+			&subscription.EndDate, &subscription.AutoRenew, &subscription.CreatedAt,
+			&subscription.UpdatedAt, &companyName, &planDisplayName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan subscription: %w", err)
+		}
+
+		// Add company and plan names to metadata
+		subscription.CompanyName = companyName
+		subscription.PlanDisplayName = planDisplayName
+		subscriptions = append(subscriptions, subscription)
+	}
+
+	return subscriptions, nil
+}
+
+// GetSubscriptionByID retrieves a subscription by ID
+func (r *SubscriptionRepository) GetSubscriptionByID(id int64) (*models.Subscription, error) {
+	query := `
+		SELECT s.id, s.company_id, s.plan_id, s.status, s.billing_cycle, s.start_date, 
+			   s.end_date, s.auto_renew, s.created_at, s.updated_at,
+			   c.name as company_name, sp.display_name as plan_display_name
+		FROM subscriptions s
+		JOIN companies c ON s.company_id = c.id
+		JOIN subscription_plans sp ON s.plan_id = sp.id
+		WHERE s.id = $1
+	`
+
+	subscription := &models.Subscription{}
+	var companyName, planDisplayName string
+	err := r.db.QueryRow(query, id).Scan(
+		&subscription.ID, &subscription.CompanyID, &subscription.PlanID,
+		&subscription.Status, &subscription.BillingCycle, &subscription.StartDate,
+		&subscription.EndDate, &subscription.AutoRenew, &subscription.CreatedAt,
+		&subscription.UpdatedAt, &companyName, &planDisplayName,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("subscription not found")
+		}
+		return nil, fmt.Errorf("failed to get subscription: %w", err)
+	}
+
+	subscription.CompanyName = companyName
+	subscription.PlanDisplayName = planDisplayName
+	return subscription, nil
+}
+
+// GetCompanySubscription retrieves active subscription for a company
+func (r *SubscriptionRepository) GetCompanySubscription(companyID int64) (*models.Subscription, error) {
+	query := `
+		SELECT s.id, s.company_id, s.plan_id, s.status, s.billing_cycle, s.start_date, 
+			   s.end_date, s.auto_renew, s.created_at, s.updated_at,
+			   c.name as company_name, sp.display_name as plan_display_name
+		FROM subscriptions s
+		JOIN companies c ON s.company_id = c.id
+		JOIN subscription_plans sp ON s.plan_id = sp.id
+		WHERE s.company_id = $1 AND s.status = 'active' AND s.end_date > CURRENT_DATE
+		ORDER BY s.end_date DESC
+		LIMIT 1
+	`
+
+	subscription := &models.Subscription{}
+	var companyName, planDisplayName string
+	err := r.db.QueryRow(query, companyID).Scan(
+		&subscription.ID, &subscription.CompanyID, &subscription.PlanID,
+		&subscription.Status, &subscription.BillingCycle, &subscription.StartDate,
+		&subscription.EndDate, &subscription.AutoRenew, &subscription.CreatedAt,
+		&subscription.UpdatedAt, &companyName, &planDisplayName,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no active subscription found for company")
+		}
+		return nil, fmt.Errorf("failed to get company subscription: %w", err)
+	}
+
+	subscription.CompanyName = companyName
+	subscription.PlanDisplayName = planDisplayName
+	return subscription, nil
+}
+
+// Create creates a new subscription
+func (r *SubscriptionRepository) Create(subscription *models.Subscription) error {
+	query, values := r.BuildInsertQuery(subscription)
+
+	err := r.db.QueryRow(query, values...).Scan(
+		&subscription.ID, &subscription.CreatedAt, &subscription.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create subscription: %w", err)
+	}
+
+	return nil
+}
+
+// Update updates a subscription
+func (r *SubscriptionRepository) Update(subscription *models.Subscription) error {
+	query, values := r.BuildUpdateQuery(subscription, subscription.ID)
+
+	err := r.db.QueryRow(query, values...).Scan(&subscription.UpdatedAt)
+	if err != nil {
+		return fmt.Errorf("failed to update subscription: %w", err)
+	}
+
+	return nil
+}
+
+// RenewSubscription renews a subscription
+func (r *SubscriptionRepository) RenewSubscription(subscriptionID int64, planID *int64, billingCycle string) error {
+	var endDate time.Time
+	if billingCycle == "yearly" {
+		endDate = time.Now().AddDate(1, 0, 0)
+	} else {
+		endDate = time.Now().AddDate(0, 1, 0)
+	}
+
+	query := `
+		UPDATE subscriptions 
+		SET plan_id = COALESCE($2, plan_id),
+			billing_cycle = $3,
+			end_date = $4,
+			status = 'active',
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`
+
+	result, err := r.db.Exec(query, subscriptionID, planID, billingCycle, endDate)
+	if err != nil {
+		return fmt.Errorf("failed to renew subscription: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("subscription not found")
+	}
+
+	return nil
+}
+
+// CancelSubscription cancels a subscription
+func (r *SubscriptionRepository) CancelSubscription(subscriptionID int64, reason string, cancelImmediately bool) error {
+	var query string
+	if cancelImmediately {
+		query = `
+			UPDATE subscriptions 
+			SET status = 'cancelled',
+				end_date = CURRENT_DATE,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE id = $1
+		`
+	} else {
+		query = `
+			UPDATE subscriptions 
+			SET status = 'cancelled',
+				updated_at = CURRENT_TIMESTAMP
+			WHERE id = $1
+		`
+	}
+
+	result, err := r.db.Exec(query, subscriptionID)
+	if err != nil {
+		return fmt.Errorf("failed to cancel subscription: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("subscription not found")
+	}
+
+	return nil
+}
+
+// CheckModuleAccess checks if company has access to a specific module
+func (r *SubscriptionRepository) CheckModuleAccess(companyID, moduleID int64) (bool, error) {
+	query := `
+		SELECT EXISTS(
+			SELECT 1
+			FROM subscriptions s
+			JOIN plan_modules pm ON s.plan_id = pm.plan_id
+			WHERE s.company_id = $1 
+				AND pm.module_id = $2
+				AND pm.is_included = true
+				AND s.status = 'active'
+				AND s.end_date > CURRENT_DATE
+		)
+	`
+
+	var hasAccess bool
+	err := r.db.QueryRow(query, companyID, moduleID).Scan(&hasAccess)
+	if err != nil {
+		return false, fmt.Errorf("failed to check module access: %w", err)
+	}
+
+	return hasAccess, nil
+}
+
+// GetExpiringSubscriptions retrieves subscriptions expiring within specified days
+func (r *SubscriptionRepository) GetExpiringSubscriptions(days int) ([]*models.Subscription, error) {
+	query := `
+		SELECT s.id, s.company_id, s.plan_id, s.status, s.billing_cycle, s.start_date, 
+			   s.end_date, s.auto_renew, s.created_at, s.updated_at,
+			   c.name as company_name, sp.display_name as plan_display_name
+		FROM subscriptions s
+		JOIN companies c ON s.company_id = c.id
+		JOIN subscription_plans sp ON s.plan_id = sp.id
+		WHERE s.status = 'active' 
+			AND s.end_date <= CURRENT_DATE + INTERVAL '%d days'
+			AND s.end_date > CURRENT_DATE
+		ORDER BY s.end_date
+	`
+
+	rows, err := r.db.Query(fmt.Sprintf(query, days))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get expiring subscriptions: %w", err)
+	}
+	defer rows.Close()
+
+	var subscriptions []*models.Subscription
+	for rows.Next() {
+		subscription := &models.Subscription{}
+		var companyName, planDisplayName string
+		err := rows.Scan(
+			&subscription.ID, &subscription.CompanyID, &subscription.PlanID,
+			&subscription.Status, &subscription.BillingCycle, &subscription.StartDate,
+			&subscription.EndDate, &subscription.AutoRenew, &subscription.CreatedAt,
+			&subscription.UpdatedAt, &companyName, &planDisplayName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan subscription: %w", err)
+		}
+
+		subscription.CompanyName = companyName
+		subscription.PlanDisplayName = planDisplayName
+		subscriptions = append(subscriptions, subscription)
+	}
+
+	return subscriptions, nil
+}
+
+// UpdateExpiredSubscriptions updates expired subscriptions to inactive status
+func (r *SubscriptionRepository) UpdateExpiredSubscriptions() error {
+	query := `
+		UPDATE subscriptions 
+		SET status = 'expired',
+			updated_at = CURRENT_TIMESTAMP
+		WHERE status = 'active' AND end_date <= CURRENT_DATE
+	`
+
+	_, err := r.db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("failed to update expired subscriptions: %w", err)
+	}
+
+	return nil
+}

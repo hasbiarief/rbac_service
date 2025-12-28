@@ -1,0 +1,2325 @@
+{
+	"info": {
+		"_postman_id": "87654321-4321-4321-4321-210987654321",
+		"name": "ERP RBAC API - Module-Based System",
+		"description": "Complete API Collection for ERP with Module-Based Role Access Control (RBAC) - Updated with user_identity authentication, module system, user management, password management with bcrypt hashing, and subscription management system with tiered pricing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "87654321"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/health",
+					"host": ["{{base_url}}"],
+					"path": ["health"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Authentication (user_identity)",
+			"item": [
+				{
+					"name": "Login with user_identity",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('access_token', response.data.access_token);",
+									"        pm.environment.set('refresh_token', response.data.refresh_token);",
+									"        pm.environment.set('user_id', response.data.user.id);",
+									"        pm.environment.set('user_identity', response.data.user.user_identity);",
+									"        console.log('Tokens and user info saved to environment');",
+									"        console.log('User:', response.data.user.name);",
+									"        console.log('Roles:', response.data.user.roles);",
+									"        console.log('Accessible modules:', response.data.user.modules.length);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_identity\": \"100000003\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login as HR Manager",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('hr_access_token', response.data.access_token);",
+									"        pm.environment.set('hr_refresh_token', response.data.refresh_token);",
+									"        console.log('HR Manager tokens saved');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_identity\": \"100000004\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login as Employee",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('employee_access_token', response.data.access_token);",
+									"        pm.environment.set('employee_refresh_token', response.data.refresh_token);",
+									"        console.log('Employee tokens saved');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_identity\": \"100000006\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('access_token', response.data.access_token);",
+									"        pm.environment.set('refresh_token', response.data.refresh_token);",
+									"        console.log('New tokens saved to environment');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/refresh",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{access_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Module System",
+			"item": [
+				{
+					"name": "Get All Modules",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules?limit=20&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "category",
+									"value": "Core HR / Master Data",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Modules by Category",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules?category=Core HR / Master Data&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules"],
+							"query": [
+								{
+									"key": "category",
+									"value": "Core HR / Master Data"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Module Tree",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/tree?category=Core HR / Master Data",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "tree"],
+							"query": [
+								{
+									"key": "category",
+									"value": "Core HR / Master Data"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Module by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Module",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"category\": \"Test Category\",\n  \"name\": \"Test Module\",\n  \"url\": \"/test/module\",\n  \"icon\": \"Test\",\n  \"description\": \"Test module for validation\",\n  \"level\": 1,\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Child Module",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"category\": \"Test Category\",\n  \"name\": \"Child Test Module\",\n  \"url\": \"/test/module/child\",\n  \"icon\": \"TestChild\",\n  \"description\": \"Child test module\",\n  \"parent_id\": 90,\n  \"level\": 2,\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Module",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Test Module\",\n  \"description\": \"Updated description\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/90",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "90"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Module",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/90",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "90"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Module Children",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/1/children",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "1", "children"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Module Ancestors",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/5/ancestors",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "5", "ancestors"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Module Access",
+			"item": [
+				{
+					"name": "Get User Modules by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/3/modules?limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "3", "modules"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "category",
+									"value": "Core HR / Master Data",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Modules by Identity",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/identity/{{user_identity}}/modules?limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "identity", "{{user_identity}}", "modules"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "category",
+									"value": "Core HR / Master Data",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Modules by Category",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/identity/100000003/modules?category=Employee Self Service&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "identity", "100000003", "modules"],
+							"query": [
+								{
+									"key": "category",
+									"value": "Employee Self Service"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check User Access",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_identity\": \"{{user_identity}}\",\n  \"module_url\": \"/core-hr/employees\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/check-access",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "check-access"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Access - Different Module",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_identity\": \"100000006\",\n  \"module_url\": \"/ess/profile\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/check-access",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "check-access"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Role Management System",
+			"item": [
+				{
+					"name": "Assign User Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": 10,\n  \"role_id\": 4,\n  \"company_id\": 1,\n  \"branch_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/assign-user-role",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "assign-user-role"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove User Role",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/user/10/role/4",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "user", "10", "role", "4"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Assign Roles",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"assignments\": [\n    {\n      \"user_id\": 10,\n      \"role_id\": 4,\n      \"company_id\": 1\n    },\n    {\n      \"user_id\": 11,\n      \"role_id\": 5,\n      \"company_id\": 1,\n      \"branch_id\": 1\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/bulk-assign-roles",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "bulk-assign-roles"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Role Modules",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"modules\": [\n    {\n      \"module_id\": 1,\n      \"can_read\": true,\n      \"can_write\": true,\n      \"can_delete\": false\n    },\n    {\n      \"module_id\": 2,\n      \"can_read\": true,\n      \"can_write\": false,\n      \"can_delete\": false\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/role/4/modules",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "role", "4", "modules"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Users by Role",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/role/3/users?limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "role", "3", "users"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/user/3/roles",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "user", "3", "roles"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Access Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/user/{{user_id}}/access-summary",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "user", "{{user_id}}", "access-summary"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Audit Logging",
+			"item": [
+				{
+					"name": "Get Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/logs?limit=20&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "user_id",
+									"value": "3",
+									"disabled": true
+								},
+								{
+									"key": "action",
+									"value": "login",
+									"disabled": true
+								},
+								{
+									"key": "resource",
+									"value": "user",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "success",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Audit Logs by User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/logs?user_id={{user_id}}&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "logs"],
+							"query": [
+								{
+									"key": "user_id",
+									"value": "{{user_id}}"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Audit Logs by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/users/{{user_id}}/logs?limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "users", "{{user_id}}", "logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Audit Logs by Identity",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/users/identity/{{user_identity}}/logs?limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "users", "identity", "{{user_identity}}", "logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Audit Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "stats"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Audit Log (Manual)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": {{user_id}},\n  \"user_identity\": \"{{user_identity}}\",\n  \"action\": \"manual_test\",\n  \"resource\": \"test_resource\",\n  \"resource_id\": \"123\",\n  \"method\": \"POST\",\n  \"url\": \"/api/v1/test\",\n  \"status\": \"success\",\n  \"status_code\": 200,\n  \"message\": \"Manual audit log for testing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/logs",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "logs"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Company Management",
+			"item": [
+				{
+					"name": "Get All Companies",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/companies?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "companies"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Company by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/companies/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "companies", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Company",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"PT. Test Company\",\n  \"code\": \"TEST\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/companies",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "companies"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Company",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"PT. Updated Company\",\n  \"code\": \"UPDATED\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/companies/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "companies", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Company",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/companies/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "companies", "1"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Branch Management (Hierarchical)",
+			"item": [
+				{
+					"name": "Get All Branches",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "company_id",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Branch Hierarchy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches?company_id=1&include_hierarchy=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches"],
+							"query": [
+								{
+									"key": "company_id",
+									"value": "1"
+								},
+								{
+									"key": "include_hierarchy",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Branch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"company_id\": 1,\n  \"name\": \"Cabang Test\",\n  \"code\": \"TEST\",\n  \"parent_id\": null\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Sub-Branch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"company_id\": 1,\n  \"name\": \"Sub Cabang Test\",\n  \"code\": \"SUB_TEST\",\n  \"parent_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Role Management (Basic)",
+			"item": [
+				{
+					"name": "Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/roles?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "roles"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Role by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/roles/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "roles", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"CUSTOM_ROLE\",\n  \"description\": \"Custom role for testing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/roles",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "roles"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{user_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"New User\",\n  \"email\": \"newuser@example.com\",\n  \"user_identity\": \"100000999\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('new_user_id', response.data.id);",
+									"        pm.environment.set('new_user_identity', response.data.user_identity);",
+									"        console.log('New user created:', response.data.name);",
+									"        console.log('User ID:', response.data.id);",
+									"        console.log('User Identity:', response.data.user_identity);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@company.com\",\n  \"user_identity\": \"100000010\",\n  \"password\": \"custompassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User with Default Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Jane Smith\",\n  \"email\": \"jane.smith@company.com\",\n  \"user_identity\": \"100000011\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{user_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Name\",\n  \"email\": \"updated.email@company.com\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{new_user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{new_user_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{new_user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{new_user_id}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Password Management",
+			"item": [
+				{
+					"name": "Change Password (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"current_password\": \"password123\",\n  \"new_password\": \"newpassword456\",\n  \"confirm_password\": \"newpassword456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}/password",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{user_id}}", "password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change My Password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"current_password\": \"password123\",\n  \"new_password\": \"mynewpassword789\",\n  \"confirm_password\": \"mynewpassword789\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/me/password",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "me", "password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Test Login with New Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        console.log('Login successful with new password');",
+									"        console.log('User:', response.data.user.name);",
+									"    }",
+									"} else {",
+									"    console.log('Login failed - password change may not have worked');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_identity\": \"{{user_identity}}\",\n  \"password\": \"mynewpassword789\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Test Wrong Current Password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"current_password\": \"wrongpassword\",\n  \"new_password\": \"newpassword456\",\n  \"confirm_password\": \"newpassword456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/me/password",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "me", "password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Test Password Mismatch",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"current_password\": \"password123\",\n  \"new_password\": \"newpassword456\",\n  \"confirm_password\": \"differentpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/me/password",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "me", "password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Test Same Password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"current_password\": \"password123\",\n  \"new_password\": \"password123\",\n  \"confirm_password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/me/password",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "me", "password"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Subscription Management",
+			"item": [
+				{
+					"name": "Get All Subscription Plans (Public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/plans",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "plans"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subscription Plan by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/plans/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "plans", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Subscriptions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subscription by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscription_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscription_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Subscription",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('subscription_id', response.data.id);",
+									"        console.log('Subscription created:', response.data.id);",
+									"        console.log('Plan:', response.data.plan_display_name);",
+									"        console.log('Status:', response.data.status);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"company_id\": 1,\n  \"plan_id\": 2,\n  \"billing_cycle\": \"yearly\",\n  \"auto_renew\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Subscription",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"plan_id\": 3,\n  \"auto_renew\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscription_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscription_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Renew Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"billing_cycle\": \"yearly\",\n  \"plan_id\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscription_id}}/renew",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscription_id}}", "renew"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Switching to different solution\",\n  \"cancel_immediately\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscription_id}}/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscription_id}}", "cancel"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Company Subscription",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/companies/1/subscription",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "companies", "1", "subscription"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Company Subscription Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/companies/1/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "companies", "1", "status"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Module Access",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/module-access/1/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "module-access", "1", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subscription Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "stats"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Expiring Subscriptions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/expiring?days=30",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "expiring"],
+							"query": [
+								{
+									"key": "days",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Expired Subscriptions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/update-expired",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "update-expired"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Test Scenarios",
+			"item": [
+				{
+					"name": "Test Different User Access Levels",
+					"item": [
+						{
+							"name": "Test Super Admin Access",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/users/identity/100000003/modules",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "users", "identity", "100000003", "modules"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test HR Manager Access",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{hr_access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/users/identity/100000004/modules",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "users", "identity", "100000004", "modules"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Employee Access",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{employee_access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/users/identity/100000006/modules",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "users", "identity", "100000006", "modules"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Test Module Categories",
+					"item": [
+						{
+							"name": "Test Core HR Modules",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/modules?category=Core HR / Master Data",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "modules"],
+									"query": [
+										{
+											"key": "category",
+											"value": "Core HR / Master Data"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Payroll Modules",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/modules?category=Payroll & Compensation",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "modules"],
+									"query": [
+										{
+											"key": "category",
+											"value": "Payroll & Compensation"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test ESS Modules",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/modules?category=Employee Self Service",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "modules"],
+									"query": [
+										{
+											"key": "category",
+											"value": "Employee Self Service"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Test Error Scenarios",
+					"item": [
+						{
+							"name": "Test Without Token",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/modules",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "modules"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Invalid Token",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer invalid_token_here"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/modules",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "modules"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Invalid user_identity Login",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"user_identity\": \"999999999\",\n  \"password\": \"wrongpassword\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/auth/login",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "auth", "login"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Access Denied",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{employee_access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"user_identity\": \"100000006\",\n  \"module_url\": \"/payroll/salary\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/users/check-access",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "users", "check-access"]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "hr_access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "hr_refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "employee_access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "employee_refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_identity",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "new_user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "new_user_identity",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "subscription_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
