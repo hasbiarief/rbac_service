@@ -21,8 +21,18 @@ func (Module) TableName() string {
 }
 
 type ModuleWithChildren struct {
-	Module
-	Children []Module `json:"children,omitempty"`
+	ID               int64                 `json:"id"`
+	Category         string                `json:"category"`
+	Name             string                `json:"name"`
+	URL              string                `json:"url"`
+	Icon             string                `json:"icon"`
+	Description      string                `json:"description"`
+	ParentID         *int64                `json:"parent_id"`
+	SubscriptionTier string                `json:"subscription_tier"`
+	IsActive         bool                  `json:"is_active"`
+	CreatedAt        time.Time             `json:"created_at"`
+	UpdatedAt        time.Time             `json:"updated_at"`
+	Children         []*ModuleWithChildren `json:"children"`
 }
 
 type UserModule struct {

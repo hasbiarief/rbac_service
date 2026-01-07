@@ -224,10 +224,40 @@ func (r *SubscriptionRepository) Update(subscription *models.Subscription) error
 // RenewSubscription renews a subscription
 func (r *SubscriptionRepository) RenewSubscription(subscriptionID int64, planID *int64, billingCycle string) error {
 	var endDate time.Time
+	var nextPaymentDate time.Time
+
 	if billingCycle == "yearly" {
 		endDate = time.Now().AddDate(1, 0, 0)
+		nextPaymentDate = time.Now().AddDate(1, 0, 0)
 	} else {
 		endDate = time.Now().AddDate(0, 1, 0)
+		nextPaymentDate = time.Now().AddDate(0, 1, 0)
+	}
+
+	// Get the current subscription to determine the plan
+	currentSub, err := r.GetSubscriptionByID(subscriptionID)
+	if err != nil {
+		return fmt.Errorf("failed to get current subscription: %w", err)
+	}
+
+	// Determine which plan to use for price calculation
+	targetPlanID := currentSub.PlanID
+	if planID != nil {
+		targetPlanID = *planID
+	}
+
+	// Get the plan to calculate the correct price
+	plan, err := r.GetPlanByID(targetPlanID)
+	if err != nil {
+		return fmt.Errorf("failed to get plan for price calculation: %w", err)
+	}
+
+	// Calculate price based on billing cycle
+	var price float64
+	if billingCycle == "yearly" {
+		price = plan.PriceYearly
+	} else {
+		price = plan.PriceMonthly
 	}
 
 	query := `
@@ -235,12 +265,16 @@ func (r *SubscriptionRepository) RenewSubscription(subscriptionID int64, planID 
 		SET plan_id = COALESCE($2, plan_id),
 			billing_cycle = $3,
 			end_date = $4,
+			price = $5,
+			payment_status = 'pending',
+			last_payment_date = CURRENT_DATE,
+			next_payment_date = $6,
 			status = 'active',
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = $1
 	`
 
-	result, err := r.db.Exec(query, subscriptionID, planID, billingCycle, endDate)
+	result, err := r.db.Exec(query, subscriptionID, planID, billingCycle, endDate, price, nextPaymentDate)
 	if err != nil {
 		return fmt.Errorf("failed to renew subscription: %w", err)
 	}
@@ -373,6 +407,47 @@ func (r *SubscriptionRepository) UpdateExpiredSubscriptions() error {
 	_, err := r.db.Exec(query)
 	if err != nil {
 		return fmt.Errorf("failed to update expired subscriptions: %w", err)
+	}
+
+	return nil
+}
+
+// MarkPaymentAsPaid marks a subscription payment as paid and updates payment dates
+func (r *SubscriptionRepository) MarkPaymentAsPaid(subscriptionID int64) error {
+	// Get current subscription to determine next payment date
+	subscription, err := r.GetSubscriptionByID(subscriptionID)
+	if err != nil {
+		return fmt.Errorf("failed to get subscription: %w", err)
+	}
+
+	var nextPaymentDate time.Time
+	if subscription.BillingCycle == "yearly" {
+		nextPaymentDate = time.Now().AddDate(1, 0, 0)
+	} else {
+		nextPaymentDate = time.Now().AddDate(0, 1, 0)
+	}
+
+	query := `
+		UPDATE subscriptions 
+		SET payment_status = 'paid',
+			last_payment_date = CURRENT_DATE,
+			next_payment_date = $2,
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1
+	`
+
+	result, err := r.db.Exec(query, subscriptionID, nextPaymentDate)
+	if err != nil {
+		return fmt.Errorf("failed to mark payment as paid: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("subscription not found")
 	}
 
 	return nil

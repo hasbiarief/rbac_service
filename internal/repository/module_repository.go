@@ -157,6 +157,8 @@ func (r *ModuleRepository) Delete(id int64) error {
 
 // GetChildren retrieves child modules of a parent module
 func (r *ModuleRepository) GetChildren(parentID int64) ([]*models.Module, error) {
+	// print parentID
+	println(parentID)
 	query := `
 		SELECT id, category, name, url, icon, description, parent_id, subscription_tier, is_active, created_at, updated_at
 		FROM modules
@@ -267,6 +269,163 @@ func (r *ModuleRepository) GetTree(category string) ([]*models.Module, error) {
 	}
 
 	return modules, nil
+}
+
+// GetTreeStructure retrieves modules in hierarchical tree structure
+func (r *ModuleRepository) GetTreeStructure(category string) ([]*models.ModuleWithChildren, error) {
+	// First get all modules
+	modules, err := r.GetTree(category)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to map for easy lookup
+	moduleMap := make(map[int64]*models.ModuleWithChildren)
+	var rootModules []*models.ModuleWithChildren
+
+	// Convert all modules to ModuleWithChildren
+	for _, module := range modules {
+		moduleWithChildren := &models.ModuleWithChildren{
+			ID:               module.ID,
+			Category:         module.Category,
+			Name:             module.Name,
+			URL:              module.URL,
+			Icon:             module.Icon,
+			Description:      module.Description,
+			ParentID:         module.ParentID,
+			SubscriptionTier: module.SubscriptionTier,
+			IsActive:         module.IsActive,
+			CreatedAt:        module.CreatedAt,
+			UpdatedAt:        module.UpdatedAt,
+			Children:         []*models.ModuleWithChildren{},
+		}
+		moduleMap[module.ID] = moduleWithChildren
+	}
+
+	// Build tree structure
+	for _, module := range moduleMap {
+		if module.ParentID == nil {
+			// Root module
+			rootModules = append(rootModules, module)
+		} else {
+			// Child module - add to parent's children
+			if parent, exists := moduleMap[*module.ParentID]; exists {
+				parent.Children = append(parent.Children, module)
+			}
+		}
+	}
+
+	return rootModules, nil
+}
+
+// GetTreeByParentName retrieves modules tree structure by parent module name
+func (r *ModuleRepository) GetTreeByParentName(parentName string) ([]*models.ModuleWithChildren, error) {
+	// First find the parent module
+	parentQuery := `
+		SELECT id FROM modules 
+		WHERE name = $1 AND is_active = true
+		LIMIT 1
+	`
+
+	var parentID int64
+	err := r.db.QueryRow(parentQuery, parentName).Scan(&parentID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return []*models.ModuleWithChildren{}, nil // Return empty array if parent not found
+		}
+		return nil, fmt.Errorf("failed to find parent module: %w", err)
+	}
+
+	// Get all descendants of this parent using recursive CTE
+	query := `
+		WITH RECURSIVE module_tree AS (
+			-- Base case: the parent module itself
+			SELECT id, category, name, url, icon, description, parent_id, subscription_tier, is_active, created_at, updated_at, 0 as level
+			FROM modules 
+			WHERE id = $1 AND is_active = true
+			
+			UNION ALL
+			
+			-- Recursive case: all descendants
+			SELECT m.id, m.category, m.name, m.url, m.icon, m.description, m.parent_id, m.subscription_tier, m.is_active, m.created_at, m.updated_at, mt.level + 1
+			FROM modules m
+			INNER JOIN module_tree mt ON m.parent_id = mt.id
+			WHERE m.is_active = true
+		)
+		SELECT id, category, name, url, icon, description, parent_id, subscription_tier, is_active, created_at, updated_at
+		FROM module_tree 
+		ORDER BY level, name
+	`
+
+	rows, err := r.db.Query(query, parentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get module tree by parent name: %w", err)
+	}
+	defer rows.Close()
+
+	var modules []*models.Module
+	for rows.Next() {
+		module := &models.Module{}
+		err := rows.Scan(
+			&module.ID, &module.Category, &module.Name, &module.URL,
+			&module.Icon, &module.Description, &module.ParentID, &module.SubscriptionTier,
+			&module.IsActive, &module.CreatedAt, &module.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan module: %w", err)
+		}
+		modules = append(modules, module)
+	}
+
+	// If no modules found, return empty array
+	if len(modules) == 0 {
+		return []*models.ModuleWithChildren{}, nil
+	}
+
+	// Convert to tree structure
+	moduleMap := make(map[int64]*models.ModuleWithChildren)
+	var rootModule *models.ModuleWithChildren
+
+	// Convert all modules to ModuleWithChildren and build map
+	for _, module := range modules {
+		moduleWithChildren := &models.ModuleWithChildren{
+			ID:               module.ID,
+			Category:         module.Category,
+			Name:             module.Name,
+			URL:              module.URL,
+			Icon:             module.Icon,
+			Description:      module.Description,
+			ParentID:         module.ParentID,
+			SubscriptionTier: module.SubscriptionTier,
+			IsActive:         module.IsActive,
+			CreatedAt:        module.CreatedAt,
+			UpdatedAt:        module.UpdatedAt,
+			Children:         []*models.ModuleWithChildren{},
+		}
+		moduleMap[module.ID] = moduleWithChildren
+
+		// Identify the root module (the one we searched for)
+		if module.ID == parentID {
+			rootModule = moduleWithChildren
+		}
+	}
+
+	// Build tree structure by connecting children to parents
+	for _, module := range moduleMap {
+		if module.ParentID != nil && module.ID != parentID {
+			// This is a child module - add to parent's children
+			if parent, exists := moduleMap[*module.ParentID]; exists {
+				parent.Children = append(parent.Children, module)
+			}
+		}
+	}
+
+	// Return only the root module with its nested children
+	if rootModule != nil {
+		return []*models.ModuleWithChildren{rootModule}, nil
+	}
+
+	return []*models.ModuleWithChildren{}, nil
 }
 
 // GetUserModules retrieves modules accessible by a user

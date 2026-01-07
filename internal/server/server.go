@@ -8,16 +8,20 @@ import (
 	"gin-scalable-api/internal/service"
 	"gin-scalable-api/middleware"
 	"gin-scalable-api/pkg/database"
+	"gin-scalable-api/pkg/jobs"
+	"gin-scalable-api/pkg/rbac"
 	"gin-scalable-api/pkg/token"
 	"log"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 )
 
 type Server struct {
-	router *gin.Engine
-	config *config.Config
+	router     *gin.Engine
+	config     *config.Config
+	cleanupJob *jobs.CleanupJob
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -63,6 +67,10 @@ func (s *Server) Initialize() error {
 	// Setup routes
 	routes.SetupRoutes(s.router, handlers, s.config.JWT.Secret, redis)
 
+	// Initialize and start cleanup job (runs every 30 minutes)
+	s.cleanupJob = jobs.NewCleanupJob(services.Auth, 30*time.Minute)
+	go s.cleanupJob.Start()
+
 	return nil
 }
 
@@ -79,14 +87,15 @@ func (s *Server) initializeRepositories(db *database.DB) *Repositories {
 }
 
 func (s *Server) initializeServices(repos *Repositories, redis *redis.Client) *Services {
-	tokenService := token.NewTokenService(redis)
+	tokenService := token.NewSimpleTokenService(redis)
+	rbacService := rbac.NewRBACService(repos.User.GetDB()) // Get DB from user repository
 
 	return &Services{
 		Auth:         service.NewAuthService(repos.User, tokenService, s.config.JWT.Secret),
-		Module:       service.NewModuleService(repos.Module),
+		Module:       service.NewModuleService(repos.Module, rbacService),
 		Company:      service.NewCompanyService(repos.Company),
-		Role:         service.NewRoleService(repos.Role),
-		User:         service.NewUserService(repos.User),
+		Role:         service.NewRoleService(repos.Role, repos.User),
+		User:         service.NewUserService(repos.User, rbacService),
 		Subscription: service.NewSubscriptionService(repos.Subscription),
 		Audit:        service.NewAuditService(repos.Audit),
 		Branch:       service.NewBranchService(repos.Branch),

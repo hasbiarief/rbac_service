@@ -33,9 +33,23 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 		return
 	}
 
-	result, err := h.userService.GetUsers(&req)
+	// Get user ID from context (set by auth middleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
+		return
+	}
+
+	userIDInt64, ok := userID.(int64)
+	if !ok {
+		response.Error(c, http.StatusInternalServerError, "Internal error", "Invalid user ID type")
+		return
+	}
+
+	// Use filtered method to get users based on requesting user's permissions
+	result, err := h.userService.GetUsersFiltered(userIDInt64, &req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get users", err.Error())
 		return
 	}
 
@@ -97,7 +111,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 
 	result, err := h.userService.CreateUser(createReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to create user", err.Error())
 		return
 	}
 
@@ -138,7 +152,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 	result, err := h.userService.UpdateUser(id, updateReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -153,7 +167,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	}
 
 	if err := h.userService.DeleteUser(id); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -168,6 +182,19 @@ func (h *UserHandler) GetUserModules(c *gin.Context) {
 		return
 	}
 
+	// Check if grouped format is requested
+	grouped := c.Query("grouped")
+	if grouped == "true" {
+		result, err := h.userRepo.GetUserModulesGroupedWithSubscription(id)
+		if err != nil {
+			response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
+			return
+		}
+		response.Success(c, http.StatusOK, "Success", result)
+		return
+	}
+
+	// Default: return old format for backward compatibility
 	category := c.Query("category")
 	limit := 20
 	if l := c.Query("limit"); l != "" {
@@ -178,7 +205,7 @@ func (h *UserHandler) GetUserModules(c *gin.Context) {
 
 	result, err := h.moduleService.GetUserModules(id, category, limit)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -195,6 +222,19 @@ func (h *UserHandler) GetUserModulesByIdentity(c *gin.Context) {
 		return
 	}
 
+	// Check if grouped format is requested
+	grouped := c.Query("grouped")
+	if grouped == "true" {
+		result, err := h.userRepo.GetUserModulesGroupedWithSubscription(user.ID)
+		if err != nil {
+			response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
+			return
+		}
+		response.Success(c, http.StatusOK, "Success", result)
+		return
+	}
+
+	// Default: return old format for backward compatibility
 	category := c.Query("category")
 	limit := 20
 	if l := c.Query("limit"); l != "" {
@@ -205,7 +245,7 @@ func (h *UserHandler) GetUserModulesByIdentity(c *gin.Context) {
 
 	result, err := h.moduleService.GetUserModules(user.ID, category, limit)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -213,6 +253,19 @@ func (h *UserHandler) GetUserModulesByIdentity(c *gin.Context) {
 }
 
 func (h *UserHandler) CheckAccess(c *gin.Context) {
+	// Get user ID from context (set by auth middleware) - more efficient than using user_identity
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
+		return
+	}
+
+	userIDInt64, ok := userID.(int64)
+	if !ok {
+		response.Error(c, http.StatusInternalServerError, "Internal error", "Invalid user ID type")
+		return
+	}
+
 	// Get validated body from context (set by validation middleware)
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -230,15 +283,10 @@ func (h *UserHandler) CheckAccess(c *gin.Context) {
 		return
 	}
 
-	// Convert to service request
-	checkReq := &service.CheckAccessRequest{
-		UserIdentity: req.UserIdentity,
-		ModuleURL:    req.ModuleURL,
-	}
-
-	hasAccess, err := h.moduleService.CheckUserAccess(checkReq)
+	// Use more efficient check with user ID and RBAC service
+	hasAccess, err := h.checkUserModuleAccess(userIDInt64, req.ModuleURL)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -246,6 +294,24 @@ func (h *UserHandler) CheckAccess(c *gin.Context) {
 		"success":    true,
 		"has_access": hasAccess,
 	})
+}
+
+// checkUserModuleAccess checks if user has access to module using RBAC service (more efficient)
+func (h *UserHandler) checkUserModuleAccess(userID int64, moduleURL string) (bool, error) {
+	// Get user modules with subscription filtering
+	modules, err := h.userRepo.GetUserModulesWithSubscription(userID)
+	if err != nil {
+		return false, err
+	}
+
+	// Check if moduleURL exists in user's accessible modules
+	for _, module := range modules {
+		if module == moduleURL {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // Password Management Methods
@@ -289,40 +355,40 @@ func (h *UserHandler) ChangeUserPassword(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Password changed successfully", nil)
 }
 
-func (h *UserHandler) ChangeMyPassword(c *gin.Context) {
-	// For now, we'll use a placeholder user ID
-	// In a real implementation, you'd get this from the JWT token
-	userID := int64(1)
+// func (h *UserHandler) ChangeMyPassword(c *gin.Context) {
+// 	// For now, we'll use a placeholder user ID
+// 	// In a real implementation, you'd get this from the JWT token
+// 	userID := int64(1)
 
-	// Get validated body from context (set by validation middleware)
-	validatedBody, exists := c.Get("validated_body")
-	if !exists {
-		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
-		return
-	}
+// 	// Get validated body from context (set by validation middleware)
+// 	validatedBody, exists := c.Get("validated_body")
+// 	if !exists {
+// 		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
+// 		return
+// 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		CurrentPassword string `json:"current_password" validate:"required,min=6"`
-		NewPassword     string `json:"new_password" validate:"required,min=6,max=100"`
-		ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
-	})
-	if !ok {
-		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
-		return
-	}
+// 	// Type assert to the expected struct
+// 	req, ok := validatedBody.(*struct {
+// 		CurrentPassword string `json:"current_password" validate:"required,min=6"`
+// 		NewPassword     string `json:"new_password" validate:"required,min=6,max=100"`
+// 		ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
+// 	})
+// 	if !ok {
+// 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+// 		return
+// 	}
 
-	// Convert to service request
-	changeReq := &service.ChangePasswordRequest{
-		CurrentPassword: req.CurrentPassword,
-		NewPassword:     req.NewPassword,
-		ConfirmPassword: req.ConfirmPassword,
-	}
+// 	// Convert to service request
+// 	changeReq := &service.ChangePasswordRequest{
+// 		CurrentPassword: req.CurrentPassword,
+// 		NewPassword:     req.NewPassword,
+// 		ConfirmPassword: req.ConfirmPassword,
+// 	}
 
-	if err := h.userService.ChangePassword(userID, changeReq); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
-		return
-	}
+// 	if err := h.userService.ChangePassword(userID, changeReq); err != nil {
+// 		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+// 		return
+// 	}
 
-	response.Success(c, http.StatusOK, "Password changed successfully", nil)
-}
+// 	response.Success(c, http.StatusOK, "Password changed successfully", nil)
+// }

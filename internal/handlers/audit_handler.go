@@ -29,7 +29,7 @@ func (h *AuditHandler) GetAuditLogs(c *gin.Context) {
 
 	auditResponse, err := h.auditService.GetAuditLogs(&req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get audit logs", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get audit logs", err.Error())
 		return
 	}
 
@@ -37,50 +37,15 @@ func (h *AuditHandler) GetAuditLogs(c *gin.Context) {
 }
 
 func (h *AuditHandler) CreateAuditLog(c *gin.Context) {
-	// Get validated body from context (set by validation middleware)
-	validatedBody, exists := c.Get("validated_body")
-	if !exists {
-		response.Error(c, http.StatusBadRequest, "Invalid request format", "validation failed")
+	var req service.CreateAuditLogRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		UserID       *int64                 `json:"user_id"`
-		UserIdentity *string                `json:"user_identity"`
-		Action       string                 `json:"action" validate:"required"`
-		Resource     string                 `json:"resource" validate:"required"`
-		ResourceID   *string                `json:"resource_id"`
-		Method       string                 `json:"method" validate:"required"`
-		URL          string                 `json:"url" validate:"required"`
-		Status       string                 `json:"status" validate:"required"`
-		StatusCode   int                    `json:"status_code" validate:"required"`
-		Message      string                 `json:"message"`
-		Metadata     map[string]interface{} `json:"metadata"`
-	})
-	if !ok {
-		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
-		return
-	}
-
-	// Convert to service request
-	createReq := &service.CreateAuditLogRequest{
-		UserID:       req.UserID,
-		UserIdentity: req.UserIdentity,
-		Action:       req.Action,
-		Resource:     req.Resource,
-		ResourceID:   req.ResourceID,
-		Method:       req.Method,
-		URL:          req.URL,
-		Status:       req.Status,
-		StatusCode:   req.StatusCode,
-		Message:      req.Message,
-		Metadata:     req.Metadata,
-	}
-
-	auditResponse, err := h.auditService.CreateAuditLog(createReq)
+	auditResponse, err := h.auditService.CreateAuditLog(&req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to create audit log", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to create audit log", err.Error())
 		return
 	}
 
@@ -102,7 +67,7 @@ func (h *AuditHandler) GetUserAuditLogs(c *gin.Context) {
 
 	auditResponse, err := h.auditService.GetUserAuditLogs(userID, limit)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get user audit logs", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get user audit logs", err.Error())
 		return
 	}
 
@@ -124,7 +89,7 @@ func (h *AuditHandler) GetUserAuditLogsByIdentity(c *gin.Context) {
 
 	auditResponse, err := h.auditService.GetUserAuditLogsByIdentity(identity, limit)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get user audit logs", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get user audit logs", err.Error())
 		return
 	}
 
@@ -134,7 +99,7 @@ func (h *AuditHandler) GetUserAuditLogsByIdentity(c *gin.Context) {
 func (h *AuditHandler) GetAuditStats(c *gin.Context) {
 	statsResponse, err := h.auditService.GetAuditStats()
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get audit statistics", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get audit statistics", err.Error())
 		return
 	}
 

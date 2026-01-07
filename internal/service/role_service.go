@@ -1,17 +1,20 @@
 package service
 
 import (
+	"fmt"
 	"gin-scalable-api/internal/models"
 	"gin-scalable-api/internal/repository"
 )
 
 type RoleService struct {
 	roleRepo *repository.RoleRepository
+	userRepo *repository.UserRepository
 }
 
-func NewRoleService(roleRepo *repository.RoleRepository) *RoleService {
+func NewRoleService(roleRepo *repository.RoleRepository, userRepo *repository.UserRepository) *RoleService {
 	return &RoleService{
 		roleRepo: roleRepo,
+		userRepo: userRepo,
 	}
 }
 
@@ -160,6 +163,18 @@ func (s *RoleService) DeleteRole(id int64) error {
 }
 
 func (s *RoleService) AssignUserRole(req *AssignUserRoleRequest) error {
+	// First, check if user exists
+	_, err := s.userRepo.GetByID(req.UserID)
+	if err != nil {
+		return fmt.Errorf("user with ID %d does not exist", req.UserID)
+	}
+
+	// Check if role exists
+	_, err = s.roleRepo.GetByID(req.RoleID)
+	if err != nil {
+		return fmt.Errorf("role with ID %d does not exist", req.RoleID)
+	}
+
 	return s.roleRepo.AssignUserRole(req.UserID, req.RoleID, req.CompanyID, req.BranchID)
 }
 
@@ -237,6 +252,18 @@ func (s *RoleService) GetUserAccessSummary(userID int64) (map[string]interface{}
 }
 func (s *RoleService) BulkAssignRoles(req *BulkAssignRolesRequest) error {
 	for _, assignment := range req.Assignments {
+		// Validate user exists before assignment
+		_, err := s.userRepo.GetByID(assignment.UserID)
+		if err != nil {
+			return fmt.Errorf("user with ID %d does not exist", assignment.UserID)
+		}
+
+		// Validate role exists
+		_, err = s.roleRepo.GetByID(assignment.RoleID)
+		if err != nil {
+			return fmt.Errorf("role with ID %d does not exist", assignment.RoleID)
+		}
+
 		if err := s.roleRepo.AssignUserRole(assignment.UserID, assignment.RoleID, assignment.CompanyID, assignment.BranchID); err != nil {
 			return err
 		}

@@ -21,8 +21,8 @@ type Handlers struct {
 }
 
 func SetupRoutes(r *gin.Engine, h *Handlers, jwtSecret string, redis *redis.Client) {
-	// Apply rate limiting globally
-	r.Use(middleware.RateLimit())
+	// Apply smart rate limiting globally (different limits for different endpoints)
+	r.Use(middleware.SmartRateLimit())
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -80,6 +80,13 @@ func setupAuthRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler) {
 
 		// Logout with validation
 		auth.POST("/logout", middleware.ValidateRequest(validation.LogoutValidation), authHandler.Logout)
+
+		// Check user tokens (for frontend token validation)
+		auth.GET("/check-tokens", authHandler.CheckUserTokens)
+
+		// Admin endpoints for session management
+		auth.GET("/session-count", authHandler.GetUserSessionCount)
+		auth.POST("/cleanup-expired", authHandler.CleanupExpiredTokens)
 	}
 }
 
@@ -139,7 +146,7 @@ func setupUserRoutes(api *gin.RouterGroup, userHandler *handlers.UserHandler) {
 
 		// Password change validation
 		users.PUT("/:id/password", middleware.ValidateRequest(validation.PasswordChangeValidation), userHandler.ChangeUserPassword)
-		users.PUT("/me/password", middleware.ValidateRequest(validation.MyPasswordChangeValidation), userHandler.ChangeMyPassword)
+		// users.PUT("/me/password", middleware.ValidateRequest(validation.MyPasswordChangeValidation), userHandler.ChangeMyPassword)
 	}
 }
 
@@ -220,6 +227,7 @@ func setupProtectedSubscriptionRoutes(protected *gin.RouterGroup, subscriptionHa
 		subscription.PUT("/subscriptions/:id", middleware.ValidateRequest(validation.UpdateSubscriptionValidation), subscriptionHandler.UpdateSubscription)
 		subscription.POST("/subscriptions/:id/renew", middleware.ValidateRequest(validation.RenewSubscriptionValidation), subscriptionHandler.RenewSubscription)
 		subscription.POST("/subscriptions/:id/cancel", middleware.ValidateRequest(validation.CancelSubscriptionValidation), subscriptionHandler.CancelSubscription)
+		subscription.POST("/subscriptions/:id/mark-paid", middleware.ValidateRequest(validation.IDValidation), subscriptionHandler.MarkPaymentAsPaid)
 
 		// Company subscription management
 		subscription.GET("/companies/:id/subscription", middleware.ValidateRequest(validation.IDValidation), subscriptionHandler.GetCompanySubscription)
@@ -240,8 +248,8 @@ func setupAuditRoutes(protected *gin.RouterGroup, auditHandler *handlers.AuditHa
 	{
 		audit.GET("/logs", auditHandler.GetAuditLogs)
 
-		// Create audit log with validation
-		audit.POST("/logs", middleware.ValidateRequest(validation.CreateAuditLogValidation), auditHandler.CreateAuditLog)
+		// Create audit log
+		audit.POST("/logs", auditHandler.CreateAuditLog)
 
 		// User ID validation
 		audit.GET("/users/:userId/logs", middleware.ValidateRequest(validation.UserIDValidation), auditHandler.GetUserAuditLogs)
@@ -259,6 +267,8 @@ func setupBranchRoutes(protected *gin.RouterGroup, branchHandler *handlers.Branc
 
 		// ID validation for single branch operations
 		branches.GET("/:id", middleware.ValidateRequest(validation.IDValidation), branchHandler.GetBranchByID)
+		branches.GET("/:id/hierarchy", middleware.ValidateRequest(validation.IDValidation), branchHandler.GetBranchHierarchy)
+		branches.GET("/:id/children", middleware.ValidateRequest(validation.IDValidation), branchHandler.GetBranchChildren)
 
 		// Create branch with validation
 		branches.POST("", middleware.ValidateRequest(validation.CreateBranchValidation), branchHandler.CreateBranch)
@@ -269,6 +279,5 @@ func setupBranchRoutes(protected *gin.RouterGroup, branchHandler *handlers.Branc
 
 		// Company ID validation
 		branches.GET("/company/:companyId", middleware.ValidateRequest(validation.CompanyIDValidation), branchHandler.GetCompanyBranches)
-		branches.GET("/:id/children", middleware.ValidateRequest(validation.IDValidation), branchHandler.GetBranchChildren)
 	}
 }

@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "87654321-4321-4321-4321-210987654321",
 		"name": "ERP RBAC API - Module-Based System",
-		"description": "Complete API Collection for ERP with Module-Based Role Access Control (RBAC) - Updated with user_identity authentication, module system, user management, password management with bcrypt hashing, and subscription management system with tiered pricing",
+		"description": "Complete API Collection for ERP with Module-Based Role Access Control (RBAC) - Updated with user_identity authentication, module system, user management, password management with bcrypt hashing, subscription management system with tiered pricing, and payment tracking with mark-as-paid functionality",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "87654321"
 	},
@@ -33,14 +33,10 @@
 									"if (pm.response.code === 200) {",
 									"    const response = pm.response.json();",
 									"    if (response.success && response.data) {",
-									"        pm.environment.set('access_token', response.data.access_token);",
-									"        pm.environment.set('refresh_token', response.data.refresh_token);",
-									"        pm.environment.set('user_id', response.data.user.id);",
-									"        pm.environment.set('user_identity', response.data.user.user_identity);",
-									"        console.log('Tokens and user info saved to environment');",
-									"        console.log('User:', response.data.user.name);",
-									"        console.log('Roles:', response.data.user.roles);",
-									"        console.log('Accessible modules:', response.data.user.modules.length);",
+									"        pm.environment.set('accessToken', response.data.access_token);",
+									"        pm.environment.set('refreshToken', response.data.refresh_token);",
+									"        pm.environment.set('userIdentity', response.data.user.user_identity);",
+									"        pm.environment.set('userId', response.data.user.id);",
 									"    }",
 									"}"
 								],
@@ -58,7 +54,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"user_identity\": \"100000003\",\n  \"password\": \"password123\"\n}"
+							"raw": "{\n  \"user_identity\": \"{{userIdentity}}\",\n  \"password\": \"{{userPassword}}\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/auth/login",
@@ -78,14 +74,10 @@
 									"if (pm.response.code === 200) {",
 									"    const response = pm.response.json();",
 									"    if (response.success && response.data) {",
-									"        pm.environment.set('access_token', response.data.access_token);",
-									"        pm.environment.set('refresh_token', response.data.refresh_token);",
-									"        pm.environment.set('user_id', response.data.user.id);",
-									"        pm.environment.set('user_identity', response.data.user.user_identity);",
-									"        console.log('Tokens and user info saved to environment');",
-									"        console.log('User:', response.data.user.name);",
-									"        console.log('Roles:', response.data.user.roles);",
-									"        console.log('Accessible modules:', response.data.user.modules.length);",
+									"        pm.environment.set('accessToken', response.data.access_token);",
+									"        pm.environment.set('refreshToken', response.data.refresh_token);",
+									"        pm.environment.set('userIdentity', response.data.user.user_identity);",
+									"        pm.environment.set('userId', response.data.user.id);",
 									"    }",
 									"}"
 								],
@@ -103,92 +95,12 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"superadmin@company.com\",\n  \"password\": \"password123\"\n}"
+							"raw": "{\n  \"user_identity\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/auth/login-email",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "login-email"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Login as HR Manager",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    const response = pm.response.json();",
-									"    if (response.success && response.data) {",
-									"        pm.environment.set('hr_access_token', response.data.access_token);",
-									"        pm.environment.set('hr_refresh_token', response.data.refresh_token);",
-									"        console.log('HR Manager tokens saved');",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"user_identity\": \"100000004\",\n  \"password\": \"password123\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/login",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "login"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Login as Employee",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    const response = pm.response.json();",
-									"    if (response.success && response.data) {",
-									"        pm.environment.set('employee_access_token', response.data.access_token);",
-									"        pm.environment.set('employee_refresh_token', response.data.refresh_token);",
-									"        console.log('Employee tokens saved');",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"user_identity\": \"100000006\",\n  \"password\": \"password123\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/login",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "login"]
 						}
 					},
 					"response": []
@@ -203,9 +115,8 @@
 									"if (pm.response.code === 200) {",
 									"    const response = pm.response.json();",
 									"    if (response.success && response.data) {",
-									"        pm.environment.set('access_token', response.data.access_token);",
-									"        pm.environment.set('refresh_token', response.data.refresh_token);",
-									"        console.log('New tokens saved to environment');",
+									"        pm.environment.set('accessToken', response.data.access_token);",
+									"        pm.environment.set('refreshToken', response.data.refresh_token);",
 									"    }",
 									"}"
 								],
@@ -223,7 +134,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+							"raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/auth/refresh",
@@ -245,12 +156,82 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"token\": \"{{access_token}}\"\n}"
+							"raw": "{\n  \"token\": \"{{accessToken}}\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/auth/logout",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "logout"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout by User ID (when token expired)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": {{userId}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check User Tokens",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/check-tokens?user_id={{userId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "check-tokens"],
+							"query": [
+								{
+									"key": "user_id",
+									"value": "{{userId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Session Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/session-count?user_id={{userId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "session-count"],
+							"query": [
+								{
+									"key": "user_id",
+									"value": "{{userId}}"
+								}
+							]
 						}
 					},
 					"response": []
@@ -267,7 +248,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -310,7 +291,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -332,23 +313,24 @@
 					"response": []
 				},
 				{
-					"name": "Get Module Tree",
+					"name": "Get Module Tree by Parent",
 					"request": {
 						"method": "GET",
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/modules/tree?category=Core HR / Master Data",
+							"raw": "{{base_url}}/api/v1/modules/tree?parent=Core HR Management",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "modules", "tree"],
 							"query": [
 								{
-									"key": "category",
-									"value": "Core HR / Master Data"
+									"key": "parent",
+									"value": "Core HR Management",
+									"description": "Get nested tree structure for specific parent module"
 								}
 							]
 						}
@@ -362,7 +344,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -380,7 +362,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -389,7 +371,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"category\": \"Test Category\",\n  \"name\": \"Test Module\",\n  \"url\": \"/test/module\",\n  \"icon\": \"Test\",\n  \"description\": \"Test module for validation\",\n  \"level\": 1,\n  \"is_active\": true\n}"
+							"raw": "{\n  \"category\": \"Test Category\",\n  \"name\": \"Test Module\",\n  \"url\": \"/test/module\",\n  \"icon\": \"Test\",\n  \"description\": \"Test module for validation\",\n  \"level\": 1,\n  \"subscription_tier\": \"basic\",\n  \"is_active\": true\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/modules",
@@ -406,7 +388,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -415,7 +397,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"category\": \"Test Category\",\n  \"name\": \"Child Test Module\",\n  \"url\": \"/test/module/child\",\n  \"icon\": \"TestChild\",\n  \"description\": \"Child test module\",\n  \"parent_id\": 90,\n  \"level\": 2,\n  \"is_active\": true\n}"
+							"raw": "{\n  \"category\": \"Test Category\",\n  \"name\": \"Child Test Module\",\n  \"url\": \"/test/module/child\",\n  \"icon\": \"TestChild\",\n  \"description\": \"Child test module\",\n  \"parent_id\": 90,\n  \"level\": 2,\n  \"subscription_tier\": \"basic\",\n  \"is_active\": true\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/modules",
@@ -432,7 +414,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -458,7 +440,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -476,7 +458,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -494,7 +476,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -517,7 +499,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -546,13 +528,13 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/users/identity/{{user_identity}}/modules?limit=20",
+							"raw": "{{base_url}}/api/v1/users/identity/{{userIdentity}}/modules?limit=20",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "identity", "{{user_identity}}", "modules"],
+							"path": ["api", "v1", "users", "identity", "{{userIdentity}}", "modules"],
 							"query": [
 								{
 									"key": "limit",
@@ -575,13 +557,13 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/users/identity/100000003/modules?category=Employee Self Service&limit=10",
+							"raw": "{{base_url}}/api/v1/users/identity/{{userIdentity}}/modules?category=Employee Self Service&limit=10",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "identity", "100000003", "modules"],
+							"path": ["api", "v1", "users", "identity", "{{userIdentity}}", "modules"],
 							"query": [
 								{
 									"key": "category",
@@ -603,7 +585,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -612,33 +594,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"user_identity\": \"{{user_identity}}\",\n  \"module_url\": \"/core-hr/employees\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/users/check-access",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "check-access"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Check Access - Different Module",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"user_identity\": \"100000006\",\n  \"module_url\": \"/ess/profile\"\n}"
+							"raw": "{\n  \"user_identity\": \"{{userIdentity}}\",\n  \"module_url\": \"/core-hr/employees\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/users/check-access",
@@ -660,7 +616,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -669,7 +625,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"user_id\": 10,\n  \"role_id\": 4,\n  \"company_id\": 1,\n  \"branch_id\": 1\n}"
+							"raw": "{\n  \"user_id\": 2,\n  \"role_id\": 4,\n  \"company_id\": 1,\n  \"branch_id\": 1\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/role-management/assign-user-role",
@@ -686,7 +642,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -704,7 +660,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -713,7 +669,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"assignments\": [\n    {\n      \"user_id\": 10,\n      \"role_id\": 4,\n      \"company_id\": 1\n    },\n    {\n      \"user_id\": 11,\n      \"role_id\": 5,\n      \"company_id\": 1,\n      \"branch_id\": 1\n    }\n  ]\n}"
+							"raw": "{\n  \"user_ids\": [2, 3],\n  \"role_id\": 4,\n  \"company_id\": 1,\n  \"branch_id\": 1\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/role-management/bulk-assign-roles",
@@ -730,7 +686,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -756,7 +712,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -780,7 +736,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -798,13 +754,13 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/role-management/user/{{user_id}}/access-summary",
+							"raw": "{{base_url}}/api/v1/role-management/user/{{userId}}/access-summary",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "role-management", "user", "{{user_id}}", "access-summary"]
+							"path": ["api", "v1", "role-management", "user", "{{userId}}", "access-summary"]
 						}
 					},
 					"response": []
@@ -821,7 +777,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -869,17 +825,17 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/audit/logs?user_id={{user_id}}&limit=10",
+							"raw": "{{base_url}}/api/v1/audit/logs?user_id={{userId}}&limit=10",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "audit", "logs"],
 							"query": [
 								{
 									"key": "user_id",
-									"value": "{{user_id}}"
+									"value": "{{userId}}"
 								},
 								{
 									"key": "limit",
@@ -897,13 +853,13 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/audit/users/{{user_id}}/logs?limit=10",
+							"raw": "{{base_url}}/api/v1/audit/users/{{userId}}/logs?limit=10",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "audit", "users", "{{user_id}}", "logs"],
+							"path": ["api", "v1", "audit", "users", "{{userId}}", "logs"],
 							"query": [
 								{
 									"key": "limit",
@@ -921,13 +877,13 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/audit/users/identity/{{user_identity}}/logs?limit=10",
+							"raw": "{{base_url}}/api/v1/audit/users/identity/{{userIdentity}}/logs?limit=10",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "audit", "users", "identity", "{{user_identity}}", "logs"],
+							"path": ["api", "v1", "audit", "users", "identity", "{{userIdentity}}", "logs"],
 							"query": [
 								{
 									"key": "limit",
@@ -945,7 +901,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -963,7 +919,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -972,7 +928,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"user_id\": {{user_id}},\n  \"user_identity\": \"{{user_identity}}\",\n  \"action\": \"manual_test\",\n  \"resource\": \"test_resource\",\n  \"resource_id\": \"123\",\n  \"method\": \"POST\",\n  \"url\": \"/api/v1/test\",\n  \"status\": \"success\",\n  \"status_code\": 200,\n  \"message\": \"Manual audit log for testing\"\n}"
+							"raw": "{\n  \"user_id\": {{userId}},\n  \"user_identity\": \"{{userIdentity}}\",\n  \"action\": \"manual_test\",\n  \"resource\": \"test_resource\",\n  \"resource_id\": \"123\",\n  \"method\": \"POST\",\n  \"url\": \"/api/v1/test\",\n  \"status\": \"success\",\n  \"status_code\": 200,\n  \"message\": \"Manual audit log for testing\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/audit/logs",
@@ -994,7 +950,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1032,7 +988,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1050,7 +1006,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1076,7 +1032,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1102,7 +1058,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1125,7 +1081,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1168,7 +1124,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1190,13 +1146,108 @@
 					"response": []
 				},
 				{
+					"name": "Get Branch Hierarchy (Nested Structure)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches?nested=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches"],
+							"query": [
+								{
+									"key": "nested",
+									"value": "true"
+								},
+								{
+									"key": "company_id",
+									"value": "1",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Company Branches (Nested Structure)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches/company/1?nested=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches", "company", "1"],
+							"query": [
+								{
+									"key": "nested",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Branch Hierarchy by ID (Flat)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches/3/hierarchy",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches", "3", "hierarchy"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Branch Hierarchy by ID (Nested)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches/3/hierarchy?nested=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches", "3", "hierarchy"],
+							"query": [
+								{
+									"key": "nested",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Create Branch",
 					"request": {
 						"method": "POST",
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1222,7 +1273,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1253,7 +1304,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1286,7 +1337,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1304,7 +1355,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1335,7 +1386,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1363,13 +1414,13 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"raw": "{{base_url}}/api/v1/users/{{userId}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "{{user_id}}"]
+							"path": ["api", "v1", "users", "{{userId}}"]
 						}
 					},
 					"response": []
@@ -1381,7 +1432,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1432,7 +1483,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1441,7 +1492,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@company.com\",\n  \"user_identity\": \"100000010\",\n  \"password\": \"custompassword123\"\n}"
+							"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@company.com\",\n  \"user_identity\": \"100000010\",\n  \"password\": \"{{userPassword}}\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/users",
@@ -1458,7 +1509,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1484,7 +1535,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1512,13 +1563,13 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"raw": "{{base_url}}/api/v1/users/{{userId}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "{{user_id}}"]
+							"path": ["api", "v1", "users", "{{userId}}"]
 						}
 					},
 					"response": []
@@ -1530,7 +1581,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1556,7 +1607,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1573,13 +1624,13 @@
 			"name": "Password Management",
 			"item": [
 				{
-					"name": "Change Password (Admin)",
+					"name": "Change Password",
 					"request": {
 						"method": "PUT",
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1588,157 +1639,12 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"current_password\": \"password123\",\n  \"new_password\": \"newpassword456\",\n  \"confirm_password\": \"newpassword456\"\n}"
+							"raw": "{\n  \"current_password\": \"{{userPassword}}\",\n  \"new_password\": \"newpassword456\",\n  \"confirm_password\": \"newpassword456\"\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/v1/users/{{user_id}}/password",
+							"raw": "{{base_url}}/api/v1/users/{{userId}}/password",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "{{user_id}}", "password"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Change My Password",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"current_password\": \"password123\",\n  \"new_password\": \"mynewpassword789\",\n  \"confirm_password\": \"mynewpassword789\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/users/me/password",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "me", "password"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Test Login with New Password",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    const response = pm.response.json();",
-									"    if (response.success && response.data) {",
-									"        console.log('Login successful with new password');",
-									"        console.log('User:', response.data.user.name);",
-									"    }",
-									"} else {",
-									"    console.log('Login failed - password change may not have worked');",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"user_identity\": \"{{user_identity}}\",\n  \"password\": \"mynewpassword789\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/auth/login",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "login"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Test Wrong Current Password",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"current_password\": \"wrongpassword\",\n  \"new_password\": \"newpassword456\",\n  \"confirm_password\": \"newpassword456\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/users/me/password",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "me", "password"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Test Password Mismatch",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"current_password\": \"password123\",\n  \"new_password\": \"newpassword456\",\n  \"confirm_password\": \"differentpassword\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/users/me/password",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "me", "password"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Test Same Password",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"current_password\": \"password123\",\n  \"new_password\": \"password123\",\n  \"confirm_password\": \"password123\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/users/me/password",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "users", "me", "password"]
+							"path": ["api", "v1", "users", "{{userId}}", "password"]
 						}
 					},
 					"response": []
@@ -1754,9 +1660,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/v1/subscription/plans",
+							"raw": "{{base_url}}/api/v1/plans",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "subscription", "plans"]
+							"path": ["api", "v1", "plans"]
 						}
 					},
 					"response": []
@@ -1767,9 +1673,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/v1/subscription/plans/1",
+							"raw": "{{base_url}}/api/v1/plans/1",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "subscription", "plans", "1"]
+							"path": ["api", "v1", "plans", "1"]
 						}
 					},
 					"response": []
@@ -1781,7 +1687,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1809,13 +1715,13 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscription_id}}",
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscriptionId}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "subscription", "subscriptions", "{{subscription_id}}"]
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscriptionId}}"]
 						}
 					},
 					"response": []
@@ -1830,7 +1736,7 @@
 									"if (pm.response.code === 201) {",
 									"    const response = pm.response.json();",
 									"    if (response.success && response.data) {",
-									"        pm.environment.set('subscription_id', response.data.id);",
+									"        pm.environment.set('subscriptionId', response.data.id);",
 									"        console.log('Subscription created:', response.data.id);",
 									"        console.log('Plan:', response.data.plan_display_name);",
 									"        console.log('Status:', response.data.status);",
@@ -1846,7 +1752,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1872,7 +1778,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1884,9 +1790,9 @@
 							"raw": "{\n  \"plan_id\": 3,\n  \"auto_renew\": false\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscription_id}}",
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscriptionId}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "subscription", "subscriptions", "{{subscription_id}}"]
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscriptionId}}"]
 						}
 					},
 					"response": []
@@ -1898,7 +1804,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1910,9 +1816,9 @@
 							"raw": "{\n  \"billing_cycle\": \"yearly\",\n  \"plan_id\": 3\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscription_id}}/renew",
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscriptionId}}/renew",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "subscription", "subscriptions", "{{subscription_id}}", "renew"]
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscriptionId}}", "renew"]
 						}
 					},
 					"response": []
@@ -1924,7 +1830,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							},
 							{
 								"key": "Content-Type",
@@ -1936,9 +1842,31 @@
 							"raw": "{\n  \"reason\": \"Switching to different solution\",\n  \"cancel_immediately\": false\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscription_id}}/cancel",
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscriptionId}}/cancel",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "subscription", "subscriptions", "{{subscription_id}}", "cancel"]
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscriptionId}}", "cancel"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Payment as Paid",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscriptionId}}/mark-paid",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscriptionId}}", "mark-paid"]
 						}
 					},
 					"response": []
@@ -1950,7 +1878,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1968,7 +1896,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -1986,7 +1914,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -2004,7 +1932,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -2022,7 +1950,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -2046,7 +1974,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
+								"value": "Bearer {{accessToken}}"
 							}
 						],
 						"url": {
@@ -2072,13 +2000,13 @@
 								"header": [
 									{
 										"key": "Authorization",
-										"value": "Bearer {{access_token}}"
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"url": {
-									"raw": "{{base_url}}/api/v1/users/identity/100000003/modules",
+									"raw": "{{base_url}}/api/v1/users/identity/{{userIdentity}}/modules",
 									"host": ["{{base_url}}"],
-									"path": ["api", "v1", "users", "identity", "100000003", "modules"]
+									"path": ["api", "v1", "users", "identity", "{{userIdentity}}", "modules"]
 								}
 							},
 							"response": []
@@ -2131,7 +2059,7 @@
 								"header": [
 									{
 										"key": "Authorization",
-										"value": "Bearer {{access_token}}"
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"url": {
@@ -2155,7 +2083,7 @@
 								"header": [
 									{
 										"key": "Authorization",
-										"value": "Bearer {{access_token}}"
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"url": {
@@ -2179,7 +2107,7 @@
 								"header": [
 									{
 										"key": "Authorization",
-										"value": "Bearer {{access_token}}"
+										"value": "Bearer {{accessToken}}"
 									}
 								],
 								"url": {
@@ -2362,7 +2290,7 @@
 			"type": "string"
 		},
 		{
-			"key": "subscription_id",
+			"key": "subscriptionId",
 			"value": "",
 			"type": "string"
 		}

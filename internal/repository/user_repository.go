@@ -19,6 +19,11 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	}
 }
 
+// GetDB returns the database connection
+func (r *UserRepository) GetDB() *sql.DB {
+	return r.db
+}
+
 // Create creates a new user
 func (r *UserRepository) Create(user *models.User) error {
 	query := `
@@ -37,18 +42,18 @@ func (r *UserRepository) Create(user *models.User) error {
 	return nil
 }
 
-// GetByID retrieves a user by ID
+// GetByID retrieves a user by ID (excluding soft deleted)
 func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 	user := &models.User{}
 	query := `
-		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at
+		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at, deleted_at
 		FROM users 
-		WHERE id = $1
+		WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	err := r.db.QueryRow(query, id).Scan(
 		&user.ID, &user.Name, &user.Email, &user.UserIdentity,
-		&user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+		&user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -60,18 +65,18 @@ func (r *UserRepository) GetByID(id int64) (*models.User, error) {
 	return user, nil
 }
 
-// GetByEmail retrieves a user by email
+// GetByEmail retrieves a user by email (excluding soft deleted)
 func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
 	user := &models.User{}
 	query := `
-		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at
+		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at, deleted_at
 		FROM users 
-		WHERE email = $1 AND is_active = true
+		WHERE email = $1 AND is_active = true AND deleted_at IS NULL
 	`
 
 	err := r.db.QueryRow(query, email).Scan(
 		&user.ID, &user.Name, &user.Email, &user.UserIdentity,
-		&user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+		&user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -83,18 +88,18 @@ func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
 	return user, nil
 }
 
-// GetByUserIdentity retrieves a user by user_identity
+// GetByUserIdentity retrieves a user by user_identity (excluding soft deleted)
 func (r *UserRepository) GetByUserIdentity(userIdentity string) (*models.User, error) {
 	user := &models.User{}
 	query := `
-		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at
+		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at, deleted_at
 		FROM users 
-		WHERE user_identity = $1 AND is_active = true
+		WHERE user_identity = $1 AND is_active = true AND deleted_at IS NULL
 	`
 
 	err := r.db.QueryRow(query, userIdentity).Scan(
 		&user.ID, &user.Name, &user.Email, &user.UserIdentity,
-		&user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+		&user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -118,9 +123,13 @@ func (r *UserRepository) Update(user *models.User) error {
 	return nil
 }
 
-// Delete soft deletes a user
+// Delete soft deletes a user by setting deleted_at timestamp
 func (r *UserRepository) Delete(id int64) error {
-	query := `UPDATE users SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	query := `
+		UPDATE users 
+		SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
+		WHERE id = $1 AND deleted_at IS NULL
+	`
 
 	result, err := r.db.Exec(query, id)
 	if err != nil {
@@ -133,18 +142,18 @@ func (r *UserRepository) Delete(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("user not found")
+		return fmt.Errorf("user not found or already deleted")
 	}
 
 	return nil
 }
 
-// GetAll retrieves all users with pagination and filtering
+// GetAll retrieves all users with pagination and filtering (excluding soft deleted)
 func (r *UserRepository) GetAll(limit, offset int, search string, isActive *bool) ([]*models.User, error) {
 	query := `
-		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at
+		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at, deleted_at
 		FROM users 
-		WHERE 1=1
+		WHERE deleted_at IS NULL
 	`
 	args := []interface{}{}
 	argIndex := 1
@@ -187,7 +196,7 @@ func (r *UserRepository) GetAll(limit, offset int, search string, isActive *bool
 		user := &models.User{}
 		err := rows.Scan(
 			&user.ID, &user.Name, &user.Email, &user.UserIdentity,
-			&user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
+			&user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
@@ -202,9 +211,9 @@ func (r *UserRepository) GetAll(limit, offset int, search string, isActive *bool
 	return users, nil
 }
 
-// GetCount returns total count of users with filtering
+// GetCount returns total count of users with filtering (excluding soft deleted)
 func (r *UserRepository) GetCount(search string, isActive *bool) (int64, error) {
-	query := "SELECT COUNT(*) FROM users WHERE 1=1"
+	query := "SELECT COUNT(*) FROM users WHERE deleted_at IS NULL"
 	args := []interface{}{}
 	argIndex := 1
 
@@ -304,6 +313,59 @@ func (r *UserRepository) GetUserModulesWithSubscription(userID int64) ([]string,
 	return modules, nil
 }
 
+// GetUserModulesGroupedWithSubscription retrieves user modules grouped by category with subscription filtering
+func (r *UserRepository) GetUserModulesGroupedWithSubscription(userID int64) (map[string][][]string, error) {
+	// First, get user's company ID
+	var companyID int64
+	err := r.db.QueryRow("SELECT company_id FROM user_roles WHERE user_id = $1 LIMIT 1", userID).Scan(&companyID)
+	if err != nil {
+		return r.getUserBasicModulesGrouped(userID)
+	}
+
+	// Query modules with subscription filtering - include icon, description, and parent_id for sorting
+	query := `
+		SELECT DISTINCT m.name, m.url, m.icon, m.description, m.category, m.parent_id,
+			CASE WHEN m.parent_id IS NULL THEN 0 ELSE 1 END as sort_order
+		FROM user_roles ur
+		JOIN role_modules rm ON ur.role_id = rm.role_id
+		JOIN modules m ON rm.module_id = m.id
+		JOIN plan_modules pm ON m.id = pm.module_id AND pm.is_included = true
+		JOIN subscriptions s ON pm.plan_id = s.plan_id
+		WHERE ur.user_id = $1 
+			AND rm.can_read = true
+			AND m.is_active = true
+			AND s.company_id = $2
+			AND s.status = 'active'
+			AND s.end_date > CURRENT_DATE
+		ORDER BY m.category, sort_order, m.name
+	`
+
+	rows, err := r.db.Query(query, userID, companyID)
+	if err != nil {
+		return r.getUserBasicModulesGrouped(userID)
+	}
+	defer rows.Close()
+
+	modules := make(map[string][][]string)
+	for rows.Next() {
+		var moduleName, moduleURL, moduleIcon, moduleDescription, category string
+		var parentID *int64
+		var sortOrder int
+		if err := rows.Scan(&moduleName, &moduleURL, &moduleIcon, &moduleDescription, &category, &parentID, &sortOrder); err != nil {
+			continue
+		}
+
+		// Add module to category with [name, url, icon, description]
+		modules[category] = append(modules[category], []string{moduleName, moduleURL, moduleIcon, moduleDescription})
+	}
+
+	if len(modules) == 0 {
+		return r.getUserBasicModulesGrouped(userID)
+	}
+
+	return modules, nil
+}
+
 // getUserBasicModules returns basic tier modules only
 func (r *UserRepository) getUserBasicModules(userID int64) ([]string, error) {
 	query := `
@@ -331,6 +393,43 @@ func (r *UserRepository) getUserBasicModules(userID int64) ([]string, error) {
 			continue
 		}
 		modules = append(modules, moduleURL)
+	}
+
+	return modules, nil
+}
+
+// getUserBasicModulesGrouped returns basic tier modules grouped by category
+func (r *UserRepository) getUserBasicModulesGrouped(userID int64) (map[string][][]string, error) {
+	query := `
+		SELECT DISTINCT m.name, m.url, m.icon, m.description, m.category, m.parent_id,
+			CASE WHEN m.parent_id IS NULL THEN 0 ELSE 1 END as sort_order
+		FROM user_roles ur
+		JOIN role_modules rm ON ur.role_id = rm.role_id
+		JOIN modules m ON rm.module_id = m.id
+		WHERE ur.user_id = $1 
+			AND rm.can_read = true
+			AND m.is_active = true
+			AND (m.subscription_tier = 'basic' OR m.subscription_tier IS NULL)
+		ORDER BY m.category, sort_order, m.name
+	`
+
+	rows, err := r.db.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get basic modules grouped: %w", err)
+	}
+	defer rows.Close()
+
+	modules := make(map[string][][]string)
+	for rows.Next() {
+		var moduleName, moduleURL, moduleIcon, moduleDescription, category string
+		var parentID *int64
+		var sortOrder int
+		if err := rows.Scan(&moduleName, &moduleURL, &moduleIcon, &moduleDescription, &category, &parentID, &sortOrder); err != nil {
+			continue
+		}
+
+		// Add module to category with [name, url, icon, description]
+		modules[category] = append(modules[category], []string{moduleName, moduleURL, moduleIcon, moduleDescription})
 	}
 
 	return modules, nil

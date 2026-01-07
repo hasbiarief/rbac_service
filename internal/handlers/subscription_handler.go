@@ -24,7 +24,7 @@ func NewSubscriptionHandler(subscriptionService *service.SubscriptionService) *S
 func (h *SubscriptionHandler) GetAllPlans(c *gin.Context) {
 	result, err := h.subscriptionService.GetAllPlans()
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h *SubscriptionHandler) GetAllSubscriptions(c *gin.Context) {
 
 	result, err := h.subscriptionService.GetAllSubscriptions(&req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -92,7 +92,7 @@ func (h *SubscriptionHandler) CreateSubscription(c *gin.Context) {
 
 	result, err := h.subscriptionService.CreateSubscription(createReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -147,7 +147,7 @@ func (h *SubscriptionHandler) UpdateSubscription(c *gin.Context) {
 
 	result, err := h.subscriptionService.UpdateSubscription(id, updateReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -185,7 +185,7 @@ func (h *SubscriptionHandler) RenewSubscription(c *gin.Context) {
 	}
 
 	if err := h.subscriptionService.RenewSubscription(id, renewReq); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -223,7 +223,7 @@ func (h *SubscriptionHandler) CancelSubscription(c *gin.Context) {
 	}
 
 	if err := h.subscriptionService.CancelSubscription(id, cancelReq); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -277,7 +277,7 @@ func (h *SubscriptionHandler) CheckModuleAccess(c *gin.Context) {
 
 	hasAccess, err := h.subscriptionService.CheckModuleAccess(companyID, moduleID)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -296,7 +296,7 @@ func (h *SubscriptionHandler) GetExpiringSubscriptions(c *gin.Context) {
 
 	result, err := h.subscriptionService.GetExpiringSubscriptions(days)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -305,7 +305,7 @@ func (h *SubscriptionHandler) GetExpiringSubscriptions(c *gin.Context) {
 
 func (h *SubscriptionHandler) UpdateExpiredSubscriptions(c *gin.Context) {
 	if err := h.subscriptionService.UpdateExpiredSubscriptions(); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -315,9 +315,24 @@ func (h *SubscriptionHandler) UpdateExpiredSubscriptions(c *gin.Context) {
 func (h *SubscriptionHandler) GetSubscriptionStats(c *gin.Context) {
 	result, err := h.subscriptionService.GetSubscriptionStats()
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
 	response.Success(c, http.StatusOK, "Success", result)
+}
+
+func (h *SubscriptionHandler) MarkPaymentAsPaid(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid subscription ID")
+		return
+	}
+
+	if err := h.subscriptionService.MarkPaymentAsPaid(id); err != nil {
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Payment marked as paid successfully", nil)
 }

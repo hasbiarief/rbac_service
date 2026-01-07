@@ -30,7 +30,7 @@ func (h *RoleHandler) GetRoles(c *gin.Context) {
 
 	result, err := h.roleService.GetRoles(&req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get roles", err.Error())
 		return
 	}
 
@@ -79,7 +79,7 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 
 	result, err := h.roleService.CreateRole(createReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to create role", err.Error())
 		return
 	}
 
@@ -118,7 +118,7 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 
 	result, err := h.roleService.UpdateRole(id, updateReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -133,7 +133,7 @@ func (h *RoleHandler) DeleteRole(c *gin.Context) {
 	}
 
 	if err := h.roleService.DeleteRole(id); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -170,7 +170,7 @@ func (h *RoleHandler) AssignUserRole(c *gin.Context) {
 	}
 
 	if err := h.roleService.AssignUserRole(assignReq); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to assign user role", err.Error())
 		return
 	}
 
@@ -213,7 +213,7 @@ func (h *RoleHandler) BulkAssignRoles(c *gin.Context) {
 	}
 
 	if err := h.roleService.BulkAssignRoles(bulkReq); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to assign roles", err.Error())
 		return
 	}
 
@@ -264,7 +264,7 @@ func (h *RoleHandler) UpdateRoleModules(c *gin.Context) {
 	}
 
 	if err := h.roleService.UpdateRoleModules(roleID, updateReq); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -285,7 +285,7 @@ func (h *RoleHandler) RemoveUserRole(c *gin.Context) {
 	}
 
 	if err := h.roleService.RemoveUserRole(userID, roleID); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -308,7 +308,7 @@ func (h *RoleHandler) GetUsersByRole(c *gin.Context) {
 
 	result, err := h.roleService.GetUsersByRole(roleID, limit)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -324,7 +324,7 @@ func (h *RoleHandler) GetUserRoles(c *gin.Context) {
 
 	result, err := h.roleService.GetUserRoles(userID)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -340,7 +340,7 @@ func (h *RoleHandler) GetUserAccessSummary(c *gin.Context) {
 
 	result, err := h.roleService.GetUserAccessSummary(userID)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 

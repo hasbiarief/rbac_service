@@ -5,15 +5,18 @@ import (
 	"gin-scalable-api/internal/models"
 	"gin-scalable-api/internal/repository"
 	"gin-scalable-api/pkg/password"
+	"gin-scalable-api/pkg/rbac"
 )
 
 type UserService struct {
-	userRepo *repository.UserRepository
+	userRepo    *repository.UserRepository
+	rbacService *rbac.RBACService
 }
 
-func NewUserService(userRepo *repository.UserRepository) *UserService {
+func NewUserService(userRepo *repository.UserRepository, rbacService *rbac.RBACService) *UserService {
 	return &UserService{
-		userRepo: userRepo,
+		userRepo:    userRepo,
+		rbacService: rbacService,
 	}
 }
 
@@ -111,6 +114,47 @@ func (s *UserService) GetUsers(req *UserListRequest) (*UserListResponse, error) 
 		Page:       page,
 		Limit:      req.Limit,
 		TotalPages: totalPages,
+	}, nil
+}
+
+// GetUsersFiltered returns users filtered by requesting user's permissions
+func (s *UserService) GetUsersFiltered(requestingUserID int64, req *UserListRequest) (*UserListResponse, error) {
+	// Check if requesting user is super admin - if so, return all users
+	isSuperAdmin, err := s.rbacService.IsSuperAdmin(requestingUserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check super admin status: %w", err)
+	}
+
+	if isSuperAdmin {
+		return s.GetUsers(req)
+	}
+
+	// For non-super admin users, implement role-based filtering
+	// For now, let's check if they have HR_ADMIN or HR_MANAGER role
+	isHRAdmin, err := s.rbacService.HasRole(requestingUserID, "HR_ADMIN")
+	if err != nil {
+		return nil, fmt.Errorf("failed to check HR_ADMIN role: %w", err)
+	}
+
+	isHRManager, err := s.rbacService.HasRole(requestingUserID, "HR_MANAGER")
+	if err != nil {
+		return nil, fmt.Errorf("failed to check HR_MANAGER role: %w", err)
+	}
+
+	// HR_ADMIN and HR_MANAGER can see all users
+	if isHRAdmin || isHRManager {
+		return s.GetUsers(req)
+	}
+
+	// Other roles can only see their own profile
+	// For now, return empty list for other roles
+	// In a real implementation, you might want to return only the requesting user's data
+	return &UserListResponse{
+		Users:      []*UserResponse{},
+		Total:      0,
+		Page:       1,
+		Limit:      req.Limit,
+		TotalPages: 0,
 	}, nil
 }
 

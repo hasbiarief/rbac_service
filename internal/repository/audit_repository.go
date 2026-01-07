@@ -101,13 +101,8 @@ func (r *AuditRepository) GetAll(limit, offset int, userID *int64, action, resou
 			log.ResourceID = &resourceIDStr
 		}
 
-		if ipAddress != nil {
-			log.URL = *ipAddress // Using URL field to store IP address
-		}
-
-		if userAgent != nil {
-			log.Method = *userAgent // Using Method field to store user agent
-		}
+		log.IP = ipAddress
+		log.UserAgent = userAgent
 
 		if success {
 			log.Status = "success"
@@ -182,13 +177,8 @@ func (r *AuditRepository) GetUserLogs(userID int64, limit int) ([]*models.AuditL
 			log.ResourceID = &resourceIDStr
 		}
 
-		if ipAddress != nil {
-			log.URL = *ipAddress
-		}
-
-		if userAgent != nil {
-			log.Method = *userAgent
-		}
+		log.IP = ipAddress
+		log.UserAgent = userAgent
 
 		if success {
 			log.Status = "success"
@@ -264,13 +254,8 @@ func (r *AuditRepository) GetUserLogsByIdentity(userIdentity string, limit int) 
 			log.ResourceID = &resourceIDStr
 		}
 
-		if ipAddress != nil {
-			log.URL = *ipAddress
-		}
-
-		if userAgent != nil {
-			log.Method = *userAgent
-		}
+		log.IP = ipAddress
+		log.UserAgent = userAgent
 
 		if success {
 			log.Status = "success"
@@ -316,14 +301,16 @@ func (r *AuditRepository) Create(log *models.AuditLog) error {
 		}
 	}
 
+	// Use IP field for IP address, not URL
 	var ipAddress *string
-	if log.URL != "" {
-		ipAddress = &log.URL
+	if log.IP != nil && *log.IP != "" {
+		ipAddress = log.IP
 	}
 
+	// Use UserAgent field for user agent, not Method
 	var userAgent *string
-	if log.Method != "" {
-		userAgent = &log.Method
+	if log.UserAgent != nil && *log.UserAgent != "" {
+		userAgent = log.UserAgent
 	}
 
 	success := log.Status == "success"
@@ -360,20 +347,14 @@ func (r *AuditRepository) GetStats() (*models.AuditStats, error) {
 		return nil, fmt.Errorf("failed to get total logs: %w", err)
 	}
 
-	// Get total unique users (this field doesn't exist in current AuditStats, so we'll skip it)
-	// err = r.db.QueryRow("SELECT COUNT(DISTINCT user_id) FROM audit_logs WHERE user_id IS NOT NULL").Scan(&stats.TotalUsers)
-	// if err != nil {
-	//	return nil, fmt.Errorf("failed to get total users: %w", err)
-	// }
-
 	// Get successful logs (success = true) - map to SuccessLogs
-	err = r.db.QueryRow("SELECT COUNT(*) FROM audit_logs WHERE status = 'success'").Scan(&stats.SuccessLogs)
+	err = r.db.QueryRow("SELECT COUNT(*) FROM audit_logs WHERE success = true").Scan(&stats.SuccessLogs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get successful logs: %w", err)
 	}
 
 	// Get failed logs (success = false) - map to ErrorLogs
-	err = r.db.QueryRow("SELECT COUNT(*) FROM audit_logs WHERE status = 'error'").Scan(&stats.ErrorLogs)
+	err = r.db.QueryRow("SELECT COUNT(*) FROM audit_logs WHERE success = false").Scan(&stats.ErrorLogs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get failed logs: %w", err)
 	}
@@ -383,17 +364,6 @@ func (r *AuditRepository) GetStats() (*models.AuditStats, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get today logs: %w", err)
 	}
-
-	// Skip ThisWeekLogs and ThisMonthLogs as they don't exist in current AuditStats
-	// err = r.db.QueryRow("SELECT COUNT(*) FROM audit_logs WHERE created_at >= DATE_TRUNC('week', CURRENT_DATE)").Scan(&stats.ThisWeekLogs)
-	// if err != nil {
-	//	return nil, fmt.Errorf("failed to get this week logs: %w", err)
-	// }
-
-	// err = r.db.QueryRow("SELECT COUNT(*) FROM audit_logs WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)").Scan(&stats.ThisMonthLogs)
-	// if err != nil {
-	//	return nil, fmt.Errorf("failed to get this month logs: %w", err)
-	// }
 
 	return stats, nil
 }

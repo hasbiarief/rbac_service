@@ -170,21 +170,38 @@ func (s *SubscriptionService) GetSubscriptionByID(id int64) (*SubscriptionRespon
 }
 
 func (s *SubscriptionService) CreateSubscription(req *CreateSubscriptionRequest) (*SubscriptionResponse, error) {
+	// Get the plan to determine the price
+	plan, err := s.subscriptionRepo.GetPlanByID(req.PlanID)
+	if err != nil {
+		return nil, err
+	}
+
 	var endDate time.Time
+	var price float64
+	var nextPaymentDate time.Time
+
 	if req.BillingCycle == "yearly" {
 		endDate = time.Now().AddDate(1, 0, 0)
+		price = plan.PriceYearly
+		nextPaymentDate = time.Now().AddDate(1, 0, 0) // Next payment in 1 year
 	} else {
 		endDate = time.Now().AddDate(0, 1, 0)
+		price = plan.PriceMonthly
+		nextPaymentDate = time.Now().AddDate(0, 1, 0) // Next payment in 1 month
 	}
 
 	subscription := &models.Subscription{
-		CompanyID:    req.CompanyID,
-		PlanID:       req.PlanID,
-		Status:       "active",
-		BillingCycle: req.BillingCycle,
-		StartDate:    time.Now(),
-		EndDate:      endDate,
-		AutoRenew:    req.AutoRenew,
+		CompanyID:       req.CompanyID,
+		PlanID:          req.PlanID,
+		Status:          "active",
+		BillingCycle:    req.BillingCycle,
+		StartDate:       time.Now(),
+		EndDate:         endDate,
+		Price:           price,
+		Currency:        "IDR",
+		PaymentStatus:   "pending",
+		NextPaymentDate: &nextPaymentDate,
+		AutoRenew:       req.AutoRenew,
 	}
 
 	if err := s.subscriptionRepo.Create(subscription); err != nil {
@@ -217,11 +234,33 @@ func (s *SubscriptionService) UpdateSubscription(id int64, req *UpdateSubscripti
 		return nil, err
 	}
 
-	if req.PlanID != nil {
+	// If plan is being changed, update the price accordingly
+	if req.PlanID != nil && *req.PlanID != subscription.PlanID {
+		plan, err := s.subscriptionRepo.GetPlanByID(*req.PlanID)
+		if err != nil {
+			return nil, err
+		}
+
 		subscription.PlanID = *req.PlanID
+
+		// Update price based on current billing cycle
+		if subscription.BillingCycle == "yearly" {
+			subscription.Price = plan.PriceYearly
+		} else {
+			subscription.Price = plan.PriceMonthly
+		}
 	}
+
 	if req.AutoRenew != nil {
 		subscription.AutoRenew = *req.AutoRenew
+	}
+
+	// Ensure required fields are set (in case they're missing from DB)
+	if subscription.Currency == "" {
+		subscription.Currency = "IDR"
+	}
+	if subscription.PaymentStatus == "" {
+		subscription.PaymentStatus = "pending"
 	}
 
 	if err := s.subscriptionRepo.Update(subscription); err != nil {
@@ -321,4 +360,9 @@ func (s *SubscriptionService) GetSubscriptionStats() (map[string]interface{}, er
 	// This is a placeholder implementation
 	// In a real implementation, you would query the database for actual statistics
 	return stats, nil
+}
+
+// MarkPaymentAsPaid marks a subscription payment as paid
+func (s *SubscriptionService) MarkPaymentAsPaid(subscriptionID int64) error {
+	return s.subscriptionRepo.MarkPaymentAsPaid(subscriptionID)
 }

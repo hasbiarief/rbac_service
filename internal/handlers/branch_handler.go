@@ -27,9 +27,22 @@ func (h *BranchHandler) GetBranches(c *gin.Context) {
 		return
 	}
 
+	// Check if nested structure is requested
+	nested := c.DefaultQuery("nested", "false") == "true"
+
+	if nested {
+		result, err := h.branchService.GetBranchesNested(&req)
+		if err != nil {
+			response.ErrorWithAutoStatus(c, "Failed to get branches", err.Error())
+			return
+		}
+		response.Success(c, http.StatusOK, "Branches retrieved successfully (nested)", result)
+		return
+	}
+
 	result, err := h.branchService.GetBranches(&req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get branches", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get branches", err.Error())
 		return
 	}
 
@@ -82,7 +95,7 @@ func (h *BranchHandler) CreateBranch(c *gin.Context) {
 
 	result, err := h.branchService.CreateBranch(createReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to create branch", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to create branch", err.Error())
 		return
 	}
 
@@ -125,7 +138,7 @@ func (h *BranchHandler) UpdateBranch(c *gin.Context) {
 
 	result, err := h.branchService.UpdateBranch(id, updateReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to update branch", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to update branch", err.Error())
 		return
 	}
 
@@ -140,7 +153,7 @@ func (h *BranchHandler) DeleteBranch(c *gin.Context) {
 	}
 
 	if err := h.branchService.DeleteBranch(id); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to delete branch", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to delete branch", err.Error())
 		return
 	}
 
@@ -157,9 +170,22 @@ func (h *BranchHandler) GetCompanyBranches(c *gin.Context) {
 	// Get includeHierarchy from query parameter, default to true
 	includeHierarchy := c.DefaultQuery("include_hierarchy", "true") == "true"
 
+	// Check if nested structure is requested
+	nested := c.DefaultQuery("nested", "false") == "true"
+
+	if nested {
+		result, err := h.branchService.GetCompanyBranchesNested(companyID)
+		if err != nil {
+			response.ErrorWithAutoStatus(c, "Failed to get company branches", err.Error())
+			return
+		}
+		response.Success(c, http.StatusOK, "Company branches retrieved successfully (nested)", result)
+		return
+	}
+
 	result, err := h.branchService.GetCompanyBranches(companyID, includeHierarchy)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get company branches", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get company branches", err.Error())
 		return
 	}
 
@@ -175,9 +201,32 @@ func (h *BranchHandler) GetBranchChildren(c *gin.Context) {
 
 	result, err := h.branchService.GetBranchChildren(id)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get branch children", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get branch children", err.Error())
 		return
 	}
 
 	response.Success(c, http.StatusOK, "Branch children retrieved successfully", result)
+}
+func (h *BranchHandler) GetBranchHierarchy(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid branch ID", "Branch ID must be a valid number")
+		return
+	}
+
+	// Check if nested structure is requested
+	nested := c.DefaultQuery("nested", "false") == "true"
+
+	result, err := h.branchService.GetBranchHierarchyByID(id, nested)
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to get branch hierarchy", err.Error())
+		return
+	}
+
+	message := "Branch hierarchy retrieved successfully"
+	if nested {
+		message += " (nested)"
+	}
+
+	response.Success(c, http.StatusOK, message, result)
 }

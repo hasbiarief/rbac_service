@@ -29,7 +29,7 @@ func (h *CompanyHandler) GetCompanies(c *gin.Context) {
 
 	result, err := h.companyService.GetCompanies(&req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get companies", err.Error())
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *CompanyHandler) CreateCompany(c *gin.Context) {
 
 	result, err := h.companyService.CreateCompany(createReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to create company", err.Error())
 		return
 	}
 
@@ -117,7 +117,7 @@ func (h *CompanyHandler) UpdateCompany(c *gin.Context) {
 
 	result, err := h.companyService.UpdateCompany(id, updateReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -132,7 +132,7 @@ func (h *CompanyHandler) DeleteCompany(c *gin.Context) {
 	}
 
 	if err := h.companyService.DeleteCompany(id); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 

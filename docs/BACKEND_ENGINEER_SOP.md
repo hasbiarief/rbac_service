@@ -38,7 +38,7 @@ DB_USER=your_username
 DB_PASSWORD=your_password
 DB_NAME=huminor_rbac
 REDIS_ADDR=localhost:6379
-JWT_SECRET=your-secret-key
+TOKEN_SECRET=your-secret-key
 ```
 
 ### 2. Database Management
@@ -514,7 +514,7 @@ curl -X POST "http://localhost:8081/api/v1/auth/login-email" \
     "password": "password123"
   }'
 
-# Test protected endpoint dengan token
+# Test protected endpoint dengan custom token
 curl -X GET "http://localhost:8081/api/v1/users?limit=5" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
@@ -599,6 +599,9 @@ docker-compose -f docker-compose.prod.yml down
 - Implementasi rate limiting
 - Gunakan prepared statements untuk mencegah SQL injection
 - Hash password dengan bcrypt
+- **Custom Token System**: Token disimpan di Redis untuk easy revocation
+- **Token TTL**: Access token 15 menit, refresh token 7 hari
+- **Session Control**: 1 user = 1 access + 1 refresh token maksimal
 
 #### Performance
 - Implementasi pagination untuk list endpoints

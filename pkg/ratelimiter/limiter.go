@@ -18,8 +18,18 @@ func NewLimiter() *IPRateLimiter {
 	return &IPRateLimiter{
 		ips: make(map[string]*rate.Limiter),
 		mu:  &sync.RWMutex{},
-		r:   rate.Every(time.Minute), // 1 request per minute
-		b:   100,                     // burst of 100 requests
+		r:   rate.Every(time.Second / 10), // 10 requests per second
+		b:   50,                           // burst of 50 requests
+	}
+}
+
+// NewLimiterWithConfig creates a rate limiter with custom configuration
+func NewLimiterWithConfig(requestsPerSecond int, burst int) *IPRateLimiter {
+	return &IPRateLimiter{
+		ips: make(map[string]*rate.Limiter),
+		mu:  &sync.RWMutex{},
+		r:   rate.Every(time.Second / time.Duration(requestsPerSecond)),
+		b:   burst,
 	}
 }
 

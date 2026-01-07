@@ -12,6 +12,8 @@ var CreateAuditLogValidation = middleware.ValidationRules{
 		ResourceID   *string                `json:"resource_id"`
 		Method       string                 `json:"method" validate:"required"`
 		URL          string                 `json:"url" validate:"required"`
+		UserAgent    *string                `json:"user_agent"`
+		IP           *string                `json:"ip" validate:"omitempty,ip"`
 		Status       string                 `json:"status" validate:"required"`
 		StatusCode   int                    `json:"status_code" validate:"required"`
 		Message      string                 `json:"message"`

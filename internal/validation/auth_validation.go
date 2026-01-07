@@ -25,6 +25,7 @@ var RefreshValidation = middleware.ValidationRules{
 
 var LogoutValidation = middleware.ValidationRules{
 	Body: &struct {
-		Token string `json:"token" validate:"required"`
+		Token  string `json:"token"`
+		UserID int64  `json:"user_id"`
 	}{},
 }

@@ -12,11 +12,11 @@ import (
 
 type AuthService struct {
 	userRepo     *repository.UserRepository
-	tokenService *token.TokenService
+	tokenService *token.SimpleTokenService
 	jwtSecret    string
 }
 
-func NewAuthService(userRepo *repository.UserRepository, tokenService *token.TokenService, jwtSecret string) *AuthService {
+func NewAuthService(userRepo *repository.UserRepository, tokenService *token.SimpleTokenService, jwtSecret string) *AuthService {
 	return &AuthService{
 		userRepo:     userRepo,
 		tokenService: tokenService,
@@ -37,13 +37,13 @@ type LoginResponse struct {
 }
 
 type UserInfo struct {
-	ID           int64    `json:"id"`
-	Name         string   `json:"name"`
-	Email        string   `json:"email"`
-	UserIdentity string   `json:"user_identity"`
-	IsActive     bool     `json:"is_active"`
-	Roles        []string `json:"roles"`
-	Modules      []string `json:"modules"`
+	ID           int64                 `json:"id"`
+	Name         string                `json:"name"`
+	Email        string                `json:"email"`
+	UserIdentity string                `json:"user_identity"`
+	IsActive     bool                  `json:"is_active"`
+	Roles        []string              `json:"roles"`
+	Modules      map[string][][]string `json:"modules"`
 }
 
 func (s *AuthService) Login(req *LoginRequest, userAgent, ip string) (*LoginResponse, error) {
@@ -73,10 +73,16 @@ func (s *AuthService) Login(req *LoginRequest, userAgent, ip string) (*LoginResp
 		roles = []string{} // Default to empty if error
 	}
 
-	// Get user modules with subscription filtering
-	modules, err := s.userRepo.GetUserModulesWithSubscription(user.ID)
+	// Get user modules with subscription filtering (grouped by category)
+	modules, err := s.userRepo.GetUserModulesGroupedWithSubscription(user.ID)
 	if err != nil {
-		modules = []string{} // Default to empty if error
+		modules = make(map[string][][]string) // Default to empty if error
+	}
+
+	// Get user modules as URLs for token abilities
+	moduleURLs, err := s.userRepo.GetUserModulesWithSubscription(user.ID)
+	if err != nil {
+		moduleURLs = []string{} // Default to empty if error
 	}
 
 	// Generate access token
@@ -100,12 +106,12 @@ func (s *AuthService) Login(req *LoginRequest, userAgent, ip string) (*LoginResp
 	// Set token expiration
 	expiresAt := time.Now().Add(15 * time.Minute) // 15 minutes for access token
 
-	// Store access token
+	// Store access token (overwrites any existing token for this user)
 	accessMetadata := token.TokenMetadata{
 		UserID:    user.ID,
 		UserAgent: userAgent,
 		IP:        ip,
-		Abilities: modules, // Use modules as abilities
+		Abilities: moduleURLs, // Use URLs for abilities
 		ExpiresAt: expiresAt.Unix(),
 	}
 
@@ -113,7 +119,7 @@ func (s *AuthService) Login(req *LoginRequest, userAgent, ip string) (*LoginResp
 		return nil, err
 	}
 
-	// Store refresh token
+	// Store refresh token (overwrites any existing token for this user)
 	refreshMetadata := token.RefreshTokenMetadata{
 		UserID:   user.ID,
 		FamilyID: familyID,
@@ -177,9 +183,15 @@ func (s *AuthService) RefreshToken(refreshToken string) (*LoginResponse, error) 
 		roles = []string{}
 	}
 
-	modules, err := s.userRepo.GetUserModulesWithSubscription(user.ID)
+	modules, err := s.userRepo.GetUserModulesGroupedWithSubscription(user.ID)
 	if err != nil {
-		modules = []string{}
+		modules = make(map[string][][]string)
+	}
+
+	// Get user modules as URLs for token abilities
+	moduleURLs, err := s.userRepo.GetUserModulesWithSubscription(user.ID)
+	if err != nil {
+		moduleURLs = []string{}
 	}
 
 	// Generate new access token
@@ -197,12 +209,12 @@ func (s *AuthService) RefreshToken(refreshToken string) (*LoginResponse, error) 
 	// Set token expiration
 	expiresAt := time.Now().Add(15 * time.Minute)
 
-	// Store new access token
+	// Store new access token (overwrites existing)
 	accessMetadata := token.TokenMetadata{
 		UserID:    user.ID,
-		UserAgent: "", // We don't have user agent in refresh
-		IP:        "", // We don't have IP in refresh
-		Abilities: modules,
+		UserAgent: "",         // We don't have user agent in refresh
+		IP:        "",         // We don't have IP in refresh
+		Abilities: moduleURLs, // Use URLs for abilities
 		ExpiresAt: expiresAt.Unix(),
 	}
 
@@ -210,7 +222,7 @@ func (s *AuthService) RefreshToken(refreshToken string) (*LoginResponse, error) 
 		return nil, err
 	}
 
-	// Store new refresh token with same family ID
+	// Store new refresh token (overwrites existing) with same family ID
 	newRefreshMetadata := token.RefreshTokenMetadata{
 		UserID:   user.ID,
 		FamilyID: refreshMetadata.FamilyID,
@@ -219,9 +231,6 @@ func (s *AuthService) RefreshToken(refreshToken string) (*LoginResponse, error) 
 	if err := s.tokenService.StoreRefreshToken(newRefreshToken, newRefreshMetadata, 7*24*time.Hour); err != nil {
 		return nil, err
 	}
-
-	// Delete old refresh token
-	s.tokenService.RevokeToken(refreshToken, "refresh")
 
 	// Handle UserIdentity pointer
 	userIdentity := ""
@@ -246,20 +255,54 @@ func (s *AuthService) RefreshToken(refreshToken string) (*LoginResponse, error) 
 }
 
 func (s *AuthService) Logout(accessToken string) error {
-	// Validate that the token exists before revoking it
-	_, err := s.tokenService.GetAccessToken(accessToken)
+	// Try to get token metadata to find user ID
+	metadata, err := s.tokenService.GetAccessToken(accessToken)
 	if err != nil {
-		return errors.New("invalid token")
+		// If token is not found (expired/invalid), we can't determine user ID
+		// In this case, we'll return success since the token is already gone
+		return nil
 	}
 
-	// Delete access token
-	if err := s.tokenService.RevokeToken(accessToken, "access"); err != nil {
+	// Delete ALL tokens for this user (access and refresh tokens)
+	if err := s.tokenService.RevokeAllUserTokens(metadata.UserID); err != nil {
 		return err
 	}
 
-	// Optionally, you could also delete all refresh tokens for this user
-	// This would log them out from all devices
-	// For now, we'll just delete the access token
+	return nil
+}
+
+// LogoutByUserID logs out user by user ID (alternative when token is expired)
+func (s *AuthService) LogoutByUserID(userID int64) error {
+	// Delete ALL tokens for this user (access and refresh tokens)
+	if err := s.tokenService.RevokeAllUserTokens(userID); err != nil {
+		return err
+	}
 
 	return nil
+}
+
+// CheckUserTokens checks if user has valid tokens in Redis
+func (s *AuthService) CheckUserTokens(userID int64) (*token.UserTokensResponse, error) {
+	return s.tokenService.GetUserTokens(userID)
+}
+
+// CleanupExpiredTokens removes expired tokens from Redis
+func (s *AuthService) CleanupExpiredTokens() error {
+	return s.tokenService.CleanupExpiredTokens()
+}
+
+// GetUserSessionCount returns the number of active sessions for a user
+func (s *AuthService) GetUserSessionCount(userID int64) (int, error) {
+	return s.tokenService.GetUserSessionCount(userID)
+}
+
+// GetUserRefreshTokenCount returns the number of active refresh tokens for a user
+func (s *AuthService) GetUserRefreshTokenCount(userID int64) (int, error) {
+	// Get all refresh tokens for user
+	tokensResponse, err := s.tokenService.GetUserTokens(userID)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(tokensResponse.RefreshTokens), nil
 }

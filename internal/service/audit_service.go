@@ -25,6 +25,8 @@ type AuditLogResponse struct {
 	ResourceID   *string                `json:"resource_id"`
 	Method       string                 `json:"method"`
 	URL          string                 `json:"url"`
+	UserAgent    *string                `json:"user_agent"`
+	IP           *string                `json:"ip"`
 	Status       string                 `json:"status"`
 	StatusCode   int                    `json:"status_code"`
 	Message      string                 `json:"message"`
@@ -49,6 +51,8 @@ type CreateAuditLogRequest struct {
 	ResourceID   *string                `json:"resource_id"`
 	Method       string                 `json:"method" binding:"required"`
 	URL          string                 `json:"url" binding:"required"`
+	UserAgent    *string                `json:"user_agent"`
+	IP           *string                `json:"ip"`
 	Status       string                 `json:"status" binding:"required"`
 	StatusCode   int                    `json:"status_code" binding:"required"`
 	Message      string                 `json:"message"`
@@ -79,6 +83,8 @@ func (s *AuditService) GetAuditLogs(req *AuditLogListRequest) ([]*AuditLogRespon
 			ResourceID:   log.ResourceID,
 			Method:       log.Method,
 			URL:          log.URL,
+			UserAgent:    log.UserAgent,
+			IP:           log.IP,
 			Status:       log.Status,
 			StatusCode:   log.StatusCode,
 			Message:      log.Message,
@@ -107,6 +113,8 @@ func (s *AuditService) GetUserAuditLogs(userID int64, limit int) ([]*AuditLogRes
 			ResourceID:   log.ResourceID,
 			Method:       log.Method,
 			URL:          log.URL,
+			UserAgent:    log.UserAgent,
+			IP:           log.IP,
 			Status:       log.Status,
 			StatusCode:   log.StatusCode,
 			Message:      log.Message,
@@ -135,6 +143,8 @@ func (s *AuditService) GetUserAuditLogsByIdentity(userIdentity string, limit int
 			ResourceID:   log.ResourceID,
 			Method:       log.Method,
 			URL:          log.URL,
+			UserAgent:    log.UserAgent,
+			IP:           log.IP,
 			Status:       log.Status,
 			StatusCode:   log.StatusCode,
 			Message:      log.Message,
@@ -155,6 +165,8 @@ func (s *AuditService) CreateAuditLog(req *CreateAuditLogRequest) (*AuditLogResp
 		ResourceID:   req.ResourceID,
 		Method:       req.Method,
 		URL:          req.URL,
+		UserAgent:    req.UserAgent,
+		IP:           req.IP,
 		Status:       req.Status,
 		StatusCode:   req.StatusCode,
 		Message:      req.Message,
@@ -179,6 +191,8 @@ func (s *AuditService) CreateAuditLog(req *CreateAuditLogRequest) (*AuditLogResp
 		ResourceID:   log.ResourceID,
 		Method:       log.Method,
 		URL:          log.URL,
+		UserAgent:    log.UserAgent,
+		IP:           log.IP,
 		Status:       log.Status,
 		StatusCode:   log.StatusCode,
 		Message:      log.Message,

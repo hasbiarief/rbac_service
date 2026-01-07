@@ -39,7 +39,7 @@ func AuthMiddleware(jwtSecret string, redis *redis.Client) gin.HandlerFunc {
 		tokenString := tokenParts[1]
 
 		// Initialize token service
-		tokenService := token.NewTokenService(redis)
+		tokenService := token.NewSimpleTokenService(redis)
 
 		// Get token metadata from Redis
 		metadata, err := tokenService.GetAccessToken(tokenString)

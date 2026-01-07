@@ -18,6 +18,11 @@ type SubscriptionPlan struct {
 	IsActive     bool        `json:"is_active" db:"is_active"`
 }
 
+// TableName returns the table name for SubscriptionPlan model
+func (SubscriptionPlan) TableName() string {
+	return "subscription_plans"
+}
+
 type Subscription struct {
 	model.BaseModel
 	CompanyID       int64      `json:"company_id" db:"company_id"`
@@ -38,9 +43,19 @@ type Subscription struct {
 	PlanDisplayName string `json:"plan_display_name,omitempty" db:"-"`
 }
 
+// TableName returns the table name for Subscription model
+func (Subscription) TableName() string {
+	return "subscriptions"
+}
+
 type PlanModule struct {
 	ID         int64 `json:"id" db:"id"`
 	PlanID     int64 `json:"plan_id" db:"plan_id"`
 	ModuleID   int64 `json:"module_id" db:"module_id"`
 	IsIncluded bool  `json:"is_included" db:"is_included"`
+}
+
+// TableName returns the table name for PlanModule model
+func (PlanModule) TableName() string {
+	return "plan_modules"
 }

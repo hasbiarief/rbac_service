@@ -27,9 +27,23 @@ func (h *ModuleHandler) GetModules(c *gin.Context) {
 		return
 	}
 
-	result, err := h.moduleService.GetModules(&req)
+	// Get user ID from context (set by auth middleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
+		return
+	}
+
+	userIDInt64, ok := userID.(int64)
+	if !ok {
+		response.Error(c, http.StatusInternalServerError, "Internal error", "Invalid user ID type")
+		return
+	}
+
+	// Use filtered method to get modules based on user permissions
+	result, err := h.moduleService.GetModulesFiltered(userIDInt64, &req)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to get modules", err.Error())
 		return
 	}
 
@@ -88,7 +102,7 @@ func (h *ModuleHandler) CreateModule(c *gin.Context) {
 
 	result, err := h.moduleService.CreateModule(createReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Failed to create module", err.Error())
 		return
 	}
 
@@ -133,7 +147,7 @@ func (h *ModuleHandler) UpdateModule(c *gin.Context) {
 
 	result, err := h.moduleService.UpdateModule(id, updateReq)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -148,7 +162,7 @@ func (h *ModuleHandler) DeleteModule(c *gin.Context) {
 	}
 
 	if err := h.moduleService.DeleteModule(id); err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -157,9 +171,34 @@ func (h *ModuleHandler) DeleteModule(c *gin.Context) {
 
 func (h *ModuleHandler) GetModuleTree(c *gin.Context) {
 	category := c.Query("category")
-	result, err := h.moduleService.GetModuleTree(category)
+	parentName := c.Query("parent")
+
+	// Get user ID from context (set by auth middleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
+		return
+	}
+
+	userIDInt64, ok := userID.(int64)
+	if !ok {
+		response.Error(c, http.StatusInternalServerError, "Internal error", "Invalid user ID type")
+		return
+	}
+
+	var result []*service.ModuleTreeResponse
+	var err error
+
+	if parentName != "" {
+		// Get tree by parent name with filtering
+		result, err = h.moduleService.GetModuleTreeByParentFiltered(userIDInt64, parentName)
+	} else {
+		// Get tree by category with filtering
+		result, err = h.moduleService.GetModuleTreeFiltered(userIDInt64, category)
+	}
+
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -173,9 +212,22 @@ func (h *ModuleHandler) GetModuleChildren(c *gin.Context) {
 		return
 	}
 
-	result, err := h.moduleService.GetModuleChildren(id)
+	// Get user ID from context (set by auth middleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
+		return
+	}
+
+	userIDInt64, ok := userID.(int64)
+	if !ok {
+		response.Error(c, http.StatusInternalServerError, "Internal error", "Invalid user ID type")
+		return
+	}
+
+	result, err := h.moduleService.GetModuleChildrenFiltered(userIDInt64, id)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
@@ -189,9 +241,22 @@ func (h *ModuleHandler) GetModuleAncestors(c *gin.Context) {
 		return
 	}
 
-	result, err := h.moduleService.GetModuleAncestors(id)
+	// Get user ID from context (set by auth middleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
+		return
+	}
+
+	userIDInt64, ok := userID.(int64)
+	if !ok {
+		response.Error(c, http.StatusInternalServerError, "Internal error", "Invalid user ID type")
+		return
+	}
+
+	result, err := h.moduleService.GetModuleAncestorsFiltered(userIDInt64, id)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Internal server error", err.Error())
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
