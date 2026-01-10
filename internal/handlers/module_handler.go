@@ -1,7 +1,9 @@
 package handlers
 
 import (
-	"gin-scalable-api/internal/service"
+	"gin-scalable-api/internal/constants"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
 	"strconv"
 
 	"gin-scalable-api/pkg/response"
@@ -11,23 +13,23 @@ import (
 )
 
 type ModuleHandler struct {
-	moduleService *service.ModuleService
+	moduleService interfaces.ModuleServiceInterface
 }
 
-func NewModuleHandler(moduleService *service.ModuleService) *ModuleHandler {
+func NewModuleHandler(moduleService interfaces.ModuleServiceInterface) *ModuleHandler {
 	return &ModuleHandler{
 		moduleService: moduleService,
 	}
 }
 
 func (h *ModuleHandler) GetModules(c *gin.Context) {
-	var req service.ModuleListRequest
+	var req dto.ModuleListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
 		return
 	}
 
-	// Get user ID from context (set by auth middleware)
+	// Ambil ID pengguna dari context (diset oleh middleware auth)
 	userID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
@@ -40,14 +42,14 @@ func (h *ModuleHandler) GetModules(c *gin.Context) {
 		return
 	}
 
-	// Use filtered method to get modules based on user permissions
+	// Gunakan metode terfilter untuk mendapatkan modul berdasarkan izin pengguna
 	result, err := h.moduleService.GetModulesFiltered(userIDInt64, &req)
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Failed to get modules", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgModulesRetrieved, result)
 }
 
 func (h *ModuleHandler) GetModuleByID(c *gin.Context) {
@@ -59,45 +61,26 @@ func (h *ModuleHandler) GetModuleByID(c *gin.Context) {
 
 	result, err := h.moduleService.GetModuleByID(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Not found", err.Error())
+		response.Error(c, http.StatusNotFound, constants.MsgModuleNotFound, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgModuleRetrieved, result)
 }
 
 func (h *ModuleHandler) CreateModule(c *gin.Context) {
-	// Get validated body from context (set by validation middleware)
+	// Ambil body yang sudah divalidasi dari context (diset oleh middleware validasi)
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
 		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Category         string `json:"category" validate:"required,min=2,max=50"`
-		Name             string `json:"name" validate:"required,min=2,max=100"`
-		URL              string `json:"url" validate:"required,min=1,max=255"`
-		Icon             string `json:"icon" validate:"max=50"`
-		Description      string `json:"description" validate:"max=500"`
-		ParentID         *int64 `json:"parent_id"`
-		SubscriptionTier string `json:"subscription_tier" validate:"required,oneof=basic pro enterprise"`
-	})
+	// Type assertion ke DTO yang diharapkan
+	createReq, ok := validatedBody.(*dto.CreateModuleRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
-	}
-
-	// Convert to service request
-	createReq := &service.CreateModuleRequest{
-		Category:         req.Category,
-		Name:             req.Name,
-		URL:              req.URL,
-		Icon:             req.Icon,
-		Description:      req.Description,
-		ParentID:         req.ParentID,
-		SubscriptionTier: req.SubscriptionTier,
 	}
 
 	result, err := h.moduleService.CreateModule(createReq)
@@ -106,7 +89,7 @@ func (h *ModuleHandler) CreateModule(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Created successfully", result)
+	response.Success(c, http.StatusCreated, constants.MsgModuleCreated, result)
 }
 
 func (h *ModuleHandler) UpdateModule(c *gin.Context) {
@@ -116,33 +99,18 @@ func (h *ModuleHandler) UpdateModule(c *gin.Context) {
 		return
 	}
 
-	// Get validated body from context (set by validation middleware)
+	// Ambil body yang sudah divalidasi dari context (diset oleh middleware validasi)
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
 		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Category         string `json:"category"`
-		Name             string `json:"name"`
-		URL              string `json:"url"`
-		Icon             string `json:"icon"`
-		Description      string `json:"description"`
-		ParentID         *int64 `json:"parent_id"`
-		SubscriptionTier string `json:"subscription_tier"`
-	})
+	// Type assertion ke DTO yang diharapkan
+	updateReq, ok := validatedBody.(*dto.UpdateModuleRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
-	}
-
-	// Convert to service request
-	updateReq := &service.UpdateModuleRequest{
-		Name:        req.Name,
-		Description: req.Description,
-		IsActive:    nil, // This field is not provided in the request struct
 	}
 
 	result, err := h.moduleService.UpdateModule(id, updateReq)
@@ -151,7 +119,7 @@ func (h *ModuleHandler) UpdateModule(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgModuleUpdated, result)
 }
 
 func (h *ModuleHandler) DeleteModule(c *gin.Context) {
@@ -166,14 +134,14 @@ func (h *ModuleHandler) DeleteModule(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Module deleted successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgModuleDeleted, nil)
 }
 
 func (h *ModuleHandler) GetModuleTree(c *gin.Context) {
 	category := c.Query("category")
 	parentName := c.Query("parent")
 
-	// Get user ID from context (set by auth middleware)
+	// Ambil ID pengguna dari context (diset oleh middleware auth)
 	userID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
@@ -186,14 +154,14 @@ func (h *ModuleHandler) GetModuleTree(c *gin.Context) {
 		return
 	}
 
-	var result []*service.ModuleTreeResponse
+	var result []*dto.ModuleTreeResponse
 	var err error
 
 	if parentName != "" {
-		// Get tree by parent name with filtering
+		// Dapatkan tree berdasarkan nama parent dengan filtering
 		result, err = h.moduleService.GetModuleTreeByParentFiltered(userIDInt64, parentName)
 	} else {
-		// Get tree by category with filtering
+		// Dapatkan tree berdasarkan kategori dengan filtering
 		result, err = h.moduleService.GetModuleTreeFiltered(userIDInt64, category)
 	}
 
@@ -202,7 +170,7 @@ func (h *ModuleHandler) GetModuleTree(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgModulesRetrieved, result)
 }
 
 func (h *ModuleHandler) GetModuleChildren(c *gin.Context) {
@@ -212,7 +180,7 @@ func (h *ModuleHandler) GetModuleChildren(c *gin.Context) {
 		return
 	}
 
-	// Get user ID from context (set by auth middleware)
+	// Ambil ID pengguna dari context (diset oleh middleware auth)
 	userID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
@@ -231,7 +199,7 @@ func (h *ModuleHandler) GetModuleChildren(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgModulesRetrieved, result)
 }
 
 func (h *ModuleHandler) GetModuleAncestors(c *gin.Context) {
@@ -241,7 +209,7 @@ func (h *ModuleHandler) GetModuleAncestors(c *gin.Context) {
 		return
 	}
 
-	// Get user ID from context (set by auth middleware)
+	// Ambil ID pengguna dari context (diset oleh middleware auth)
 	userID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
@@ -260,5 +228,5 @@ func (h *ModuleHandler) GetModuleAncestors(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgModulesRetrieved, result)
 }

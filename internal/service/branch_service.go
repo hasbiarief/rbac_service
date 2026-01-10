@@ -1,200 +1,91 @@
 package service
 
 import (
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
+	"gin-scalable-api/internal/mapper"
 	"gin-scalable-api/internal/models"
-	"gin-scalable-api/internal/repository"
 	"strings"
-	"time"
 )
 
 type BranchService struct {
-	branchRepo *repository.BranchRepository
+	branchRepo   interfaces.BranchRepositoryInterface
+	branchMapper *mapper.BranchMapper
 }
 
-func NewBranchService(branchRepo *repository.BranchRepository) *BranchService {
+func NewBranchService(branchRepo interfaces.BranchRepositoryInterface) *BranchService {
 	return &BranchService{
-		branchRepo: branchRepo,
+		branchRepo:   branchRepo,
+		branchMapper: mapper.NewBranchMapper(),
 	}
 }
 
-type BranchResponse struct {
-	ID        int64  `json:"id"`
-	CompanyID int64  `json:"company_id"`
-	Name      string `json:"name"`
-	Code      string `json:"code"`
-	ParentID  *int64 `json:"parent_id"`
-	Level     int    `json:"level"`
-	Path      string `json:"path"`
-	IsActive  bool   `json:"is_active"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-}
-
-// NestedBranchResponse represents a branch with its children in nested structure
-type NestedBranchResponse struct {
-	ID        int64                   `json:"id"`
-	CompanyID int64                   `json:"company_id"`
-	Name      string                  `json:"name"`
-	Code      string                  `json:"code"`
-	ParentID  *int64                  `json:"parent_id"`
-	Level     int                     `json:"level"`
-	Path      string                  `json:"path"`
-	IsActive  bool                    `json:"is_active"`
-	CreatedAt string                  `json:"created_at"`
-	UpdatedAt string                  `json:"updated_at"`
-	Children  []*NestedBranchResponse `json:"children"`
-}
-
-type BranchListRequest struct {
-	Limit            int    `form:"limit"`
-	Offset           int    `form:"offset"`
-	Search           string `form:"search"`
-	CompanyID        *int64 `form:"company_id"`
-	IsActive         *bool  `form:"is_active"`
-	IncludeHierarchy bool   `form:"include_hierarchy"`
-}
-
-type CreateBranchRequest struct {
-	CompanyID int64  `json:"company_id" binding:"required"`
-	Name      string `json:"name" binding:"required"`
-	Code      string `json:"code" binding:"required"`
-	ParentID  *int64 `json:"parent_id"`
-}
-
-type UpdateBranchRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Code     string `json:"code" binding:"required"`
-	ParentID *int64 `json:"parent_id"`
-	IsActive *bool  `json:"is_active"`
-}
-
-func (s *BranchService) GetBranches(req *BranchListRequest) ([]*BranchResponse, error) {
+func (s *BranchService) GetBranches(req *dto.BranchListRequest) (*dto.BranchListResponse, error) {
 	branches, err := s.branchRepo.GetAll(req.Limit, req.Offset, req.Search, req.CompanyID, req.IsActive)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*BranchResponse
+	// Convert to DTO responses
+	var branchResponses []*dto.BranchResponse
 	for _, branch := range branches {
-		response = append(response, &BranchResponse{
-			ID:        branch.ID,
-			CompanyID: branch.CompanyID,
-			Name:      branch.Name,
-			Code:      branch.Code,
-			ParentID:  branch.ParentID,
-			Level:     branch.Level,
-			Path:      branch.Path,
-			IsActive:  branch.IsActive,
-			CreatedAt: branch.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: branch.UpdatedAt.Format(time.RFC3339),
-		})
+		branchResponses = append(branchResponses, s.branchMapper.ToResponse(branch))
 	}
 
-	return response, nil
+	// For now, return without total count (would need Count method in repository)
+	return &dto.BranchListResponse{
+		Data:    branchResponses,
+		Total:   int64(len(branchResponses)),
+		Limit:   req.Limit,
+		Offset:  req.Offset,
+		HasMore: false,
+	}, nil
 }
 
 // GetBranchesNested returns all branches in nested hierarchy structure
-func (s *BranchService) GetBranchesNested(req *BranchListRequest) ([]*NestedBranchResponse, error) {
+func (s *BranchService) GetBranchesNested(req *dto.BranchListRequest) ([]*dto.NestedBranchResponse, error) {
 	branches, err := s.branchRepo.GetAll(0, 0, req.Search, req.CompanyID, req.IsActive) // Get all for hierarchy
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert to map for easier lookup
-	branchMap := make(map[int64]*NestedBranchResponse)
-	var rootBranches []*NestedBranchResponse
-
-	// First pass: create all branch nodes
-	for _, branch := range branches {
-		nestedBranch := &NestedBranchResponse{
-			ID:        branch.ID,
-			CompanyID: branch.CompanyID,
-			Name:      branch.Name,
-			Code:      branch.Code,
-			ParentID:  branch.ParentID,
-			Level:     branch.Level,
-			Path:      branch.Path,
-			IsActive:  branch.IsActive,
-			CreatedAt: branch.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: branch.UpdatedAt.Format(time.RFC3339),
-			Children:  []*NestedBranchResponse{},
-		}
-		branchMap[branch.ID] = nestedBranch
-	}
-
-	// Second pass: build hierarchy
-	for _, branch := range branches {
-		nestedBranch := branchMap[branch.ID]
-		if branch.ParentID == nil {
-			// Root branch
-			rootBranches = append(rootBranches, nestedBranch)
-		} else {
-			// Child branch - add to parent's children
-			if parent, exists := branchMap[*branch.ParentID]; exists {
-				parent.Children = append(parent.Children, nestedBranch)
-			}
-		}
-	}
-
-	return rootBranches, nil
+	return s.branchMapper.ToNestedResponseList(branches), nil
 }
 
-func (s *BranchService) GetBranchByID(id int64) (*BranchResponse, error) {
+func (s *BranchService) GetBranchByID(id int64) (*dto.BranchResponse, error) {
 	branch, err := s.branchRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &BranchResponse{
-		ID:        branch.ID,
-		CompanyID: branch.CompanyID,
-		Name:      branch.Name,
-		Code:      branch.Code,
-		ParentID:  branch.ParentID,
-		Level:     branch.Level,
-		Path:      branch.Path,
-		IsActive:  branch.IsActive,
-		CreatedAt: branch.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: branch.UpdatedAt.Format(time.RFC3339),
-	}, nil
+	return s.branchMapper.ToResponse(branch), nil
 }
 
-func (s *BranchService) CreateBranch(req *CreateBranchRequest) (*BranchResponse, error) {
-	branch := &models.Branch{
-		CompanyID: req.CompanyID,
-		Name:      req.Name,
-		Code:      req.Code,
-		ParentID:  req.ParentID,
-		IsActive:  true,
-	}
+func (s *BranchService) CreateBranch(req *dto.CreateBranchRequest) (*dto.BranchResponse, error) {
+	branch := s.branchMapper.ToModel(req)
+	branch.IsActive = true
 
 	err := s.branchRepo.Create(branch)
 	if err != nil {
 		return nil, err
 	}
 
-	return &BranchResponse{
-		ID:        branch.ID,
-		CompanyID: branch.CompanyID,
-		Name:      branch.Name,
-		Code:      branch.Code,
-		ParentID:  branch.ParentID,
-		Level:     branch.Level,
-		Path:      branch.Path,
-		IsActive:  branch.IsActive,
-		CreatedAt: branch.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: branch.UpdatedAt.Format(time.RFC3339),
-	}, nil
+	return s.branchMapper.ToResponse(branch), nil
 }
 
-func (s *BranchService) UpdateBranch(id int64, req *UpdateBranchRequest) (*BranchResponse, error) {
+func (s *BranchService) UpdateBranch(id int64, req *dto.UpdateBranchRequest) (*dto.BranchResponse, error) {
 	branch, err := s.branchRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	branch.Name = req.Name
-	branch.Code = req.Code
+	// Update fields from request
+	if req.Name != "" {
+		branch.Name = req.Name
+	}
+	if req.Code != "" {
+		branch.Code = req.Code
+	}
 	branch.ParentID = req.ParentID
 	if req.IsActive != nil {
 		branch.IsActive = *req.IsActive
@@ -205,115 +96,46 @@ func (s *BranchService) UpdateBranch(id int64, req *UpdateBranchRequest) (*Branc
 		return nil, err
 	}
 
-	return &BranchResponse{
-		ID:        branch.ID,
-		CompanyID: branch.CompanyID,
-		Name:      branch.Name,
-		Code:      branch.Code,
-		ParentID:  branch.ParentID,
-		Level:     branch.Level,
-		Path:      branch.Path,
-		IsActive:  branch.IsActive,
-		CreatedAt: branch.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: branch.UpdatedAt.Format(time.RFC3339),
-	}, nil
+	return s.branchMapper.ToResponse(branch), nil
 }
 
 func (s *BranchService) DeleteBranch(id int64) error {
 	return s.branchRepo.Delete(id)
 }
 
-func (s *BranchService) GetCompanyBranches(companyID int64, includeHierarchy bool) ([]*BranchResponse, error) {
+func (s *BranchService) GetCompanyBranches(companyID int64, includeHierarchy bool) ([]*dto.BranchResponse, error) {
 	branches, err := s.branchRepo.GetByCompany(companyID, includeHierarchy)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*BranchResponse
+	var response []*dto.BranchResponse
 	for _, branch := range branches {
-		response = append(response, &BranchResponse{
-			ID:        branch.ID,
-			CompanyID: branch.CompanyID,
-			Name:      branch.Name,
-			Code:      branch.Code,
-			ParentID:  branch.ParentID,
-			Level:     branch.Level,
-			Path:      branch.Path,
-			IsActive:  branch.IsActive,
-			CreatedAt: branch.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: branch.UpdatedAt.Format(time.RFC3339),
-		})
+		response = append(response, s.branchMapper.ToResponse(branch))
 	}
 
 	return response, nil
 }
 
 // GetCompanyBranchesNested returns branches in nested hierarchy structure
-func (s *BranchService) GetCompanyBranchesNested(companyID int64) ([]*NestedBranchResponse, error) {
+func (s *BranchService) GetCompanyBranchesNested(companyID int64) ([]*dto.NestedBranchResponse, error) {
 	branches, err := s.branchRepo.GetByCompany(companyID, true)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert to map for easier lookup
-	branchMap := make(map[int64]*NestedBranchResponse)
-	var rootBranches []*NestedBranchResponse
-
-	// First pass: create all branch nodes
-	for _, branch := range branches {
-		nestedBranch := &NestedBranchResponse{
-			ID:        branch.ID,
-			CompanyID: branch.CompanyID,
-			Name:      branch.Name,
-			Code:      branch.Code,
-			ParentID:  branch.ParentID,
-			Level:     branch.Level,
-			Path:      branch.Path,
-			IsActive:  branch.IsActive,
-			CreatedAt: branch.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: branch.UpdatedAt.Format(time.RFC3339),
-			Children:  []*NestedBranchResponse{},
-		}
-		branchMap[branch.ID] = nestedBranch
-	}
-
-	// Second pass: build hierarchy
-	for _, branch := range branches {
-		nestedBranch := branchMap[branch.ID]
-		if branch.ParentID == nil {
-			// Root branch
-			rootBranches = append(rootBranches, nestedBranch)
-		} else {
-			// Child branch - add to parent's children
-			if parent, exists := branchMap[*branch.ParentID]; exists {
-				parent.Children = append(parent.Children, nestedBranch)
-			}
-		}
-	}
-
-	return rootBranches, nil
+	return s.branchMapper.ToNestedResponseList(branches), nil
 }
 
-func (s *BranchService) GetBranchChildren(parentID int64) ([]*BranchResponse, error) {
+func (s *BranchService) GetBranchChildren(parentID int64) ([]*dto.BranchResponse, error) {
 	branches, err := s.branchRepo.GetChildren(parentID)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*BranchResponse
+	var response []*dto.BranchResponse
 	for _, branch := range branches {
-		response = append(response, &BranchResponse{
-			ID:        branch.ID,
-			CompanyID: branch.CompanyID,
-			Name:      branch.Name,
-			Code:      branch.Code,
-			ParentID:  branch.ParentID,
-			Level:     branch.Level,
-			Path:      branch.Path,
-			IsActive:  branch.IsActive,
-			CreatedAt: branch.CreatedAt.Format(time.RFC3339),
-			UpdatedAt: branch.UpdatedAt.Format(time.RFC3339),
-		})
+		response = append(response, s.branchMapper.ToResponse(branch))
 	}
 
 	return response, nil
@@ -335,70 +157,37 @@ func (s *BranchService) GetBranchHierarchyByID(branchID int64, nested bool) (int
 
 	if !nested {
 		// Return flat structure - filter branches that are descendants of target branch
-		var descendants []*BranchResponse
+		var descendants []*dto.BranchResponse
 		targetPath := targetBranch.Path
 
 		for _, branch := range allBranches {
 			// Include the target branch itself and all its descendants
 			if branch.Path == targetPath || strings.HasPrefix(branch.Path, targetPath+".") {
-				descendants = append(descendants, &BranchResponse{
-					ID:        branch.ID,
-					CompanyID: branch.CompanyID,
-					Name:      branch.Name,
-					Code:      branch.Code,
-					ParentID:  branch.ParentID,
-					Level:     branch.Level,
-					Path:      branch.Path,
-					IsActive:  branch.IsActive,
-					CreatedAt: branch.CreatedAt.Format(time.RFC3339),
-					UpdatedAt: branch.UpdatedAt.Format(time.RFC3339),
-				})
+				descendants = append(descendants, s.branchMapper.ToResponse(branch))
 			}
 		}
 		return descendants, nil
 	}
 
 	// Return nested structure - build tree starting from target branch
-	branchMap := make(map[int64]*NestedBranchResponse)
+	// Filter branches that are descendants of target branch
+	var filteredBranches []*models.Branch
 	targetPath := targetBranch.Path
 
-	// First pass: create branch nodes for target and its descendants
 	for _, branch := range allBranches {
 		if branch.Path == targetPath || strings.HasPrefix(branch.Path, targetPath+".") {
-			nestedBranch := &NestedBranchResponse{
-				ID:        branch.ID,
-				CompanyID: branch.CompanyID,
-				Name:      branch.Name,
-				Code:      branch.Code,
-				ParentID:  branch.ParentID,
-				Level:     branch.Level,
-				Path:      branch.Path,
-				IsActive:  branch.IsActive,
-				CreatedAt: branch.CreatedAt.Format(time.RFC3339),
-				UpdatedAt: branch.UpdatedAt.Format(time.RFC3339),
-				Children:  []*NestedBranchResponse{},
-			}
-			branchMap[branch.ID] = nestedBranch
+			filteredBranches = append(filteredBranches, branch)
 		}
 	}
 
-	// Second pass: build hierarchy relationships
-	var rootBranch *NestedBranchResponse
-	for _, branch := range allBranches {
-		if branch.Path == targetPath || strings.HasPrefix(branch.Path, targetPath+".") {
-			nestedBranch := branchMap[branch.ID]
+	nestedBranches := s.branchMapper.ToNestedResponseList(filteredBranches)
 
-			if branch.ID == branchID {
-				// This is our root branch
-				rootBranch = nestedBranch
-			} else if branch.ParentID != nil {
-				// Add to parent's children if parent exists in our filtered set
-				if parent, exists := branchMap[*branch.ParentID]; exists {
-					parent.Children = append(parent.Children, nestedBranch)
-				}
-			}
+	// Find the root branch (target branch)
+	for _, nestedBranch := range nestedBranches {
+		if nestedBranch.ID == branchID {
+			return nestedBranch, nil
 		}
 	}
 
-	return rootBranch, nil
+	return nil, nil
 }

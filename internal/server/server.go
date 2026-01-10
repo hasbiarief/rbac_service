@@ -1,8 +1,10 @@
 package server
 
 import (
+	"fmt"
 	"gin-scalable-api/config"
 	"gin-scalable-api/internal/handlers"
+	"gin-scalable-api/internal/interfaces"
 	"gin-scalable-api/internal/repository"
 	"gin-scalable-api/internal/routes"
 	"gin-scalable-api/internal/service"
@@ -68,31 +70,45 @@ func (s *Server) Initialize() error {
 	routes.SetupRoutes(s.router, handlers, s.config.JWT.Secret, redis)
 
 	// Initialize and start cleanup job (runs every 30 minutes)
-	s.cleanupJob = jobs.NewCleanupJob(services.Auth, 30*time.Minute)
+	// Type assert to concrete type for cleanup job
+	authService, ok := services.Auth.(*service.AuthService)
+	if !ok {
+		return fmt.Errorf("failed to type assert auth service")
+	}
+	s.cleanupJob = jobs.NewCleanupJob(authService, 30*time.Minute)
 	go s.cleanupJob.Start()
 
 	return nil
 }
 
 func (s *Server) initializeRepositories(db *database.DB) *Repositories {
+	// Create concrete repositories
+	userRepo := repository.NewUserRepository(db.DB)
+	moduleRepo := repository.NewModuleRepository(db.DB)
+	companyRepo := repository.NewCompanyRepository(db.DB)
+	roleRepo := repository.NewRoleRepository(db.DB)
+	subscriptionRepo := repository.NewSubscriptionRepository(db.DB)
+	auditRepo := repository.NewAuditRepository(db.DB)
+	branchRepo := repository.NewBranchRepository(db.DB)
+
 	return &Repositories{
-		User:         repository.NewUserRepository(db.DB),
-		Module:       repository.NewModuleRepository(db.DB),
-		Company:      repository.NewCompanyRepository(db.DB),
-		Role:         repository.NewRoleRepository(db.DB),
-		Subscription: repository.NewSubscriptionRepository(db.DB),
-		Audit:        repository.NewAuditRepository(db.DB),
-		Branch:       repository.NewBranchRepository(db.DB),
+		User:         userRepo,
+		Module:       moduleRepo,
+		Company:      companyRepo,
+		Role:         roleRepo,
+		Subscription: subscriptionRepo,
+		Audit:        auditRepo,
+		Branch:       branchRepo,
 	}
 }
 
 func (s *Server) initializeServices(repos *Repositories, redis *redis.Client) *Services {
 	tokenService := token.NewSimpleTokenService(redis)
-	rbacService := rbac.NewRBACService(repos.User.GetDB()) // Get DB from user repository
+	rbacService := rbac.NewRBACService(repos.User.GetDB())
 
 	return &Services{
 		Auth:         service.NewAuthService(repos.User, tokenService, s.config.JWT.Secret),
-		Module:       service.NewModuleService(repos.Module, rbacService),
+		Module:       service.NewModuleService(repos.Module, repos.User, rbacService),
 		Company:      service.NewCompanyService(repos.Company),
 		Role:         service.NewRoleService(repos.Role, repos.User),
 		User:         service.NewUserService(repos.User, rbacService),
@@ -133,12 +149,12 @@ type Repositories struct {
 
 // Services struct to group all services
 type Services struct {
-	Auth         *service.AuthService
-	Module       *service.ModuleService
-	Company      *service.CompanyService
-	Role         *service.RoleService
-	User         *service.UserService
-	Subscription *service.SubscriptionService
-	Audit        *service.AuditService
-	Branch       *service.BranchService
+	Auth         interfaces.AuthServiceInterface
+	Module       interfaces.ModuleServiceInterface
+	Company      interfaces.CompanyServiceInterface
+	Role         interfaces.RoleServiceInterface
+	User         interfaces.UserServiceInterface
+	Subscription interfaces.SubscriptionServiceInterface
+	Audit        interfaces.AuditServiceInterface
+	Branch       interfaces.BranchServiceInterface
 }

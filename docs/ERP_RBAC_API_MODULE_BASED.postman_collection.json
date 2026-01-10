@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "87654321-4321-4321-4321-210987654321",
 		"name": "ERP RBAC API - Module-Based System",
-		"description": "Complete API Collection for ERP with Module-Based Role Access Control (RBAC) - Updated with user_identity authentication, module system, user management, password management with bcrypt hashing, subscription management system with tiered pricing, and payment tracking with mark-as-paid functionality",
+		"description": "Complete API Collection for ERP with Module-Based Role Access Control (RBAC) - Updated with user_identity authentication, module system, user management, password management with bcrypt hashing, subscription management system with tiered pricing, payment tracking with mark-as-paid functionality, subscription renewal API, and admin subscription plan management",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "87654321"
 	},
@@ -1798,7 +1798,7 @@
 					"response": []
 				},
 				{
-					"name": "Renew Subscription",
+					"name": "🆕 Renew Subscription",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -1982,6 +1982,116 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "subscription", "update-expired"]
 						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin - Subscription Plan Management",
+			"item": [
+				{
+					"name": "🆕 Create Subscription Plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('planId', response.data.id);",
+									"        console.log('Plan created:', response.data.id);",
+									"        console.log('Plan name:', response.data.display_name);",
+									"        console.log('Monthly price:', response.data.price_monthly);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}",
+								"description": "Admin JWT token required"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"premium\",\n    \"display_name\": \"Premium Plan\",\n    \"description\": \"Premium features for growing businesses\",\n    \"price_monthly\": 99000,\n    \"price_yearly\": 990000,\n    \"max_users\": 50,\n    \"max_branches\": 10,\n    \"features\": {\n        \"advanced_reporting\": true,\n        \"api_access\": true,\n        \"priority_support\": true,\n        \"custom_integrations\": false\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/subscription-plans",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "subscription-plans"]
+						},
+						"description": "Create a new subscription plan (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "🆕 Update Subscription Plan",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}",
+								"description": "Admin JWT token required"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"display_name\": \"Premium Plus Plan\",\n    \"description\": \"Enhanced premium features\",\n    \"price_monthly\": 129000,\n    \"price_yearly\": 1290000,\n    \"max_users\": 100,\n    \"features\": {\n        \"advanced_reporting\": true,\n        \"api_access\": true,\n        \"priority_support\": true,\n        \"custom_integrations\": true,\n        \"white_label\": true\n    },\n    \"is_active\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/subscription-plans/{{planId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "subscription-plans", "{{planId}}"]
+						},
+						"description": "Update an existing subscription plan (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "🆕 Delete Subscription Plan",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}",
+								"description": "Admin JWT token required"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/subscription-plans/{{planId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "subscription-plans", "{{planId}}"]
+						},
+						"description": "Delete a subscription plan (Admin only)"
 					},
 					"response": []
 				}
@@ -2291,6 +2401,16 @@
 		},
 		{
 			"key": "subscriptionId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "planId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminToken",
 			"value": "",
 			"type": "string"
 		}

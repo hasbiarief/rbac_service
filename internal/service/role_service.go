@@ -2,279 +2,116 @@ package service
 
 import (
 	"fmt"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
+	"gin-scalable-api/internal/mapper"
 	"gin-scalable-api/internal/models"
-	"gin-scalable-api/internal/repository"
 )
 
 type RoleService struct {
-	roleRepo *repository.RoleRepository
-	userRepo *repository.UserRepository
+	roleRepo   interfaces.RoleRepositoryInterface
+	userRepo   interfaces.UserRepositoryInterface
+	roleMapper *mapper.RoleMapper
 }
 
-func NewRoleService(roleRepo *repository.RoleRepository, userRepo *repository.UserRepository) *RoleService {
+func NewRoleService(roleRepo interfaces.RoleRepositoryInterface, userRepo interfaces.UserRepositoryInterface) *RoleService {
 	return &RoleService{
-		roleRepo: roleRepo,
-		userRepo: userRepo,
+		roleRepo:   roleRepo,
+		userRepo:   userRepo,
+		roleMapper: mapper.NewRoleMapper(),
 	}
 }
 
-type RoleListRequest struct {
-	Limit  int    `form:"limit"`
-	Offset int    `form:"offset"`
-	Search string `form:"search"`
-}
+func (s *RoleService) GetRoles(req *dto.RoleListRequest) (*dto.RoleListResponse, error) {
+	// Set default values jika tidak disediakan
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := req.Offset
+	if offset < 0 {
+		offset = 0
+	}
 
-type RoleResponse struct {
-	ID          int64  `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsActive    bool   `json:"is_active"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
-}
-
-type CreateRoleRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
-}
-
-type UpdateRoleRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type AssignUserRoleRequest struct {
-	UserID    int64  `json:"user_id" binding:"required"`
-	RoleID    int64  `json:"role_id" binding:"required"`
-	CompanyID int64  `json:"company_id" binding:"required"`
-	BranchID  *int64 `json:"branch_id"`
-}
-
-type BulkAssignRolesRequest struct {
-	Assignments []AssignUserRoleRequest `json:"assignments" binding:"required"`
-}
-
-type UpdateRoleModulesRequest struct {
-	Modules []RoleModulePermission `json:"modules" binding:"required"`
-}
-
-type RoleModulePermission struct {
-	ModuleID  int64 `json:"module_id" binding:"required"`
-	CanRead   bool  `json:"can_read"`
-	CanWrite  bool  `json:"can_write"`
-	CanDelete bool  `json:"can_delete"`
-}
-
-type RoleUserResponse struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	Email        string `json:"email"`
-	UserIdentity string `json:"user_identity"`
-	IsActive     bool   `json:"is_active"`
-}
-
-func (s *RoleService) GetRoles(req *RoleListRequest) ([]*RoleResponse, error) {
-	roles, err := s.roleRepo.GetAll(req.Limit, req.Offset, req.Search)
+	roles, err := s.roleRepo.GetAll(limit, offset, req.Search, req.IsActive)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*RoleResponse
-	for _, role := range roles {
-		response = append(response, &RoleResponse{
-			ID:          role.ID,
-			Name:        role.Name,
-			Description: role.Description,
-			IsActive:    role.IsActive,
-			CreatedAt:   role.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-			UpdatedAt:   role.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		})
+	// Dapatkan total count untuk pagination
+	total, err := s.roleRepo.Count(req.Search, req.IsActive)
+	if err != nil {
+		return nil, err
 	}
 
-	return response, nil
+	// Konversi ke DTO menggunakan mapper
+	var roleResponses []*dto.RoleResponse
+	for _, role := range roles {
+		roleResponses = append(roleResponses, s.roleMapper.ToResponse(role))
+	}
+
+	return &dto.RoleListResponse{
+		Data:    roleResponses,
+		Total:   total,
+		Limit:   limit,
+		Offset:  offset,
+		HasMore: int64(offset+len(roleResponses)) < total,
+	}, nil
 }
 
-func (s *RoleService) GetRoleByID(id int64) (*RoleResponse, error) {
+func (s *RoleService) GetRoleByID(id int64) (*dto.RoleResponse, error) {
 	role, err := s.roleRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &RoleResponse{
-		ID:          role.ID,
-		Name:        role.Name,
-		Description: role.Description,
-		IsActive:    role.IsActive,
-		CreatedAt:   role.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   role.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-	}, nil
+	return s.roleMapper.ToResponse(role), nil
 }
 
-func (s *RoleService) CreateRole(req *CreateRoleRequest) (*RoleResponse, error) {
-	role := &models.Role{
-		Name:        req.Name,
-		Description: req.Description,
-		IsActive:    true,
+func (s *RoleService) GetRoleWithPermissions(id int64) (*dto.RoleWithPermissionsResponse, error) {
+	roleWithPermissions, err := s.roleRepo.GetWithPermissions(id)
+	if err != nil {
+		return nil, err
 	}
+
+	return s.roleMapper.ToWithPermissionsResponse(roleWithPermissions), nil
+}
+
+func (s *RoleService) CreateRole(req *dto.CreateRoleRequest) (*dto.RoleResponse, error) {
+	// Konversi DTO ke model menggunakan mapper
+	role := s.roleMapper.ToModel(req)
 
 	if err := s.roleRepo.Create(role); err != nil {
 		return nil, err
 	}
 
-	return &RoleResponse{
-		ID:          role.ID,
-		Name:        role.Name,
-		Description: role.Description,
-		IsActive:    role.IsActive,
-		CreatedAt:   role.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   role.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-	}, nil
+	return s.roleMapper.ToResponse(role), nil
 }
 
-func (s *RoleService) UpdateRole(id int64, req *UpdateRoleRequest) (*RoleResponse, error) {
+func (s *RoleService) UpdateRole(id int64, req *dto.UpdateRoleRequest) (*dto.RoleResponse, error) {
 	role, err := s.roleRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	if req.Name != "" {
-		role.Name = req.Name
-	}
-	if req.Description != "" {
-		role.Description = req.Description
-	}
+	// Update fields menggunakan mapper
+	s.roleMapper.UpdateModel(role, req)
 
 	if err := s.roleRepo.Update(role); err != nil {
 		return nil, err
 	}
 
-	return &RoleResponse{
-		ID:          role.ID,
-		Name:        role.Name,
-		Description: role.Description,
-		IsActive:    role.IsActive,
-		CreatedAt:   role.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   role.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-	}, nil
+	return s.roleMapper.ToResponse(role), nil
 }
 
 func (s *RoleService) DeleteRole(id int64) error {
 	return s.roleRepo.Delete(id)
 }
 
-func (s *RoleService) AssignUserRole(req *AssignUserRoleRequest) error {
-	// First, check if user exists
-	_, err := s.userRepo.GetByID(req.UserID)
-	if err != nil {
-		return fmt.Errorf("user with ID %d does not exist", req.UserID)
-	}
-
-	// Check if role exists
-	_, err = s.roleRepo.GetByID(req.RoleID)
-	if err != nil {
-		return fmt.Errorf("role with ID %d does not exist", req.RoleID)
-	}
-
-	return s.roleRepo.AssignUserRole(req.UserID, req.RoleID, req.CompanyID, req.BranchID)
-}
-
-func (s *RoleService) RemoveUserRole(userID, roleID int64) error {
-	return s.roleRepo.RemoveUserRole(userID, roleID)
-}
-
-func (s *RoleService) GetUsersByRole(roleID int64, limit int) ([]*RoleUserResponse, error) {
-	users, err := s.roleRepo.GetUsersByRole(roleID, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []*RoleUserResponse
-	for _, user := range users {
-		userIdentity := ""
-		if user.UserIdentity != nil {
-			userIdentity = *user.UserIdentity
-		}
-
-		response = append(response, &RoleUserResponse{
-			ID:           user.ID,
-			Name:         user.Name,
-			Email:        user.Email,
-			UserIdentity: userIdentity,
-			IsActive:     user.IsActive,
-		})
-	}
-
-	return response, nil
-}
-
-func (s *RoleService) GetUserRoles(userID int64) ([]*RoleResponse, error) {
-	roles, err := s.roleRepo.GetUserRoles(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []*RoleResponse
-	for _, role := range roles {
-		response = append(response, &RoleResponse{
-			ID:          role.ID,
-			Name:        role.Name,
-			Description: role.Description,
-			IsActive:    role.IsActive,
-			CreatedAt:   role.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-			UpdatedAt:   role.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		})
-	}
-
-	return response, nil
-}
-
-func (s *RoleService) GetUserAccessSummary(userID int64) (map[string]interface{}, error) {
-	// Get user roles
-	roles, err := s.GetUserRoles(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get user modules (this would need to be implemented in user service)
-	// For now, return basic summary
-	summary := map[string]interface{}{
-		"user_id":     userID,
-		"roles":       roles,
-		"total_roles": len(roles),
-		"permissions": map[string]interface{}{
-			"can_read":   true,  // This would be calculated based on role modules
-			"can_write":  false, // This would be calculated based on role modules
-			"can_delete": false, // This would be calculated based on role modules
-		},
-	}
-
-	return summary, nil
-}
-func (s *RoleService) BulkAssignRoles(req *BulkAssignRolesRequest) error {
-	for _, assignment := range req.Assignments {
-		// Validate user exists before assignment
-		_, err := s.userRepo.GetByID(assignment.UserID)
-		if err != nil {
-			return fmt.Errorf("user with ID %d does not exist", assignment.UserID)
-		}
-
-		// Validate role exists
-		_, err = s.roleRepo.GetByID(assignment.RoleID)
-		if err != nil {
-			return fmt.Errorf("role with ID %d does not exist", assignment.RoleID)
-		}
-
-		if err := s.roleRepo.AssignUserRole(assignment.UserID, assignment.RoleID, assignment.CompanyID, assignment.BranchID); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *RoleService) UpdateRoleModules(roleID int64, req *UpdateRoleModulesRequest) error {
-	var modules []models.RoleModule
-	for _, perm := range req.Modules {
-		modules = append(modules, models.RoleModule{
+func (s *RoleService) UpdateRolePermissions(roleID int64, req *dto.UpdateRolePermissionsRequest) error {
+	var modules []*models.RoleModule
+	for _, perm := range req.Permissions {
+		modules = append(modules, &models.RoleModule{
 			RoleID:    roleID,
 			ModuleID:  perm.ModuleID,
 			CanRead:   perm.CanRead,
@@ -283,4 +120,126 @@ func (s *RoleService) UpdateRoleModules(roleID int64, req *UpdateRoleModulesRequ
 		})
 	}
 	return s.roleRepo.UpdateRoleModules(roleID, modules)
+}
+
+func (s *RoleService) AssignRoleToUser(req *dto.AssignRoleRequest) (*dto.UserRoleAssignmentResponse, error) {
+	// Pertama, periksa apakah user ada
+	user, err := s.userRepo.GetByID(req.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("pengguna dengan ID %d tidak ditemukan", req.UserID)
+	}
+
+	// Periksa apakah role ada
+	role, err := s.roleRepo.GetByID(req.RoleID)
+	if err != nil {
+		return nil, fmt.Errorf("peran dengan ID %d tidak ditemukan", req.RoleID)
+	}
+
+	userRole := &models.UserRole{
+		UserID:    req.UserID,
+		RoleID:    req.RoleID,
+		CompanyID: req.CompanyID,
+		BranchID:  req.BranchID,
+	}
+
+	if err := s.roleRepo.AssignUserRole(userRole); err != nil {
+		return nil, err
+	}
+
+	// Buat response
+	return &dto.UserRoleAssignmentResponse{
+		ID:          0, // Akan diisi oleh database
+		UserID:      user.ID,
+		RoleID:      role.ID,
+		CompanyID:   req.CompanyID,
+		BranchID:    req.BranchID,
+		RoleName:    role.Name,
+		CompanyName: "",    // Perlu diambil dari company service jika diperlukan
+		BranchName:  nil,   // Perlu diambil dari branch service jika diperlukan
+		CreatedAt:   "now", // Atau gunakan timestamp yang sesuai
+	}, nil
+}
+
+func (s *RoleService) RemoveRoleFromUser(userID, roleID, companyID int64) error {
+	return s.roleRepo.RemoveUserRole(userID, roleID, companyID)
+}
+
+func (s *RoleService) GetUsersByRole(roleID int64, limit int) (interface{}, error) {
+	users, err := s.roleRepo.GetUsersByRole(roleID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []map[string]interface{}
+	for _, user := range users {
+		userIdentity := ""
+		if user.UserIdentity != nil {
+			userIdentity = *user.UserIdentity
+		}
+
+		response = append(response, map[string]interface{}{
+			"id":            user.ID,
+			"name":          user.Name,
+			"email":         user.Email,
+			"user_identity": userIdentity,
+			"is_active":     user.IsActive,
+		})
+	}
+
+	return response, nil
+}
+
+func (s *RoleService) GetUserRoles(userID int64) (interface{}, error) {
+	userRoles, err := s.roleRepo.GetUserRoles(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []map[string]interface{}
+	for _, userRole := range userRoles {
+		// Dapatkan detail role dari role repository
+		role, err := s.roleRepo.GetByID(userRole.RoleID)
+		if err != nil {
+			continue // Skip jika role tidak ditemukan
+		}
+
+		response = append(response, map[string]interface{}{
+			"id":          role.ID,
+			"name":        role.Name,
+			"description": role.Description,
+			"is_active":   role.IsActive,
+			"created_at":  role.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			"updated_at":  role.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		})
+	}
+
+	return response, nil
+}
+
+func (s *RoleService) GetUserAccessSummary(userID int64) (interface{}, error) {
+	// Dapatkan user roles
+	userRolesInterface, err := s.GetUserRoles(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	userRoles, ok := userRolesInterface.([]map[string]interface{})
+	if !ok {
+		userRoles = []map[string]interface{}{}
+	}
+
+	// Dapatkan user modules (ini perlu diimplementasikan di user service)
+	// Untuk saat ini, kembalikan ringkasan dasar
+	summary := map[string]interface{}{
+		"user_id":     userID,
+		"roles":       userRoles,
+		"total_roles": len(userRoles),
+		"permissions": map[string]interface{}{
+			"can_read":   true,  // Ini akan dihitung berdasarkan role modules
+			"can_write":  false, // Ini akan dihitung berdasarkan role modules
+			"can_delete": false, // Ini akan dihitung berdasarkan role modules
+		},
+	}
+
+	return summary, nil
 }

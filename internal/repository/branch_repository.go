@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gin-scalable-api/internal/models"
 	"gin-scalable-api/pkg/model"
+	"gin-scalable-api/pkg/query"
 )
 
 type BranchRepository struct {
@@ -21,45 +22,30 @@ func NewBranchRepository(db *sql.DB) *BranchRepository {
 
 // GetAll retrieves all branches with pagination and filtering
 func (r *BranchRepository) GetAll(limit, offset int, search string, companyID *int64, isActive *bool) ([]*models.Branch, error) {
-	query := `
+	baseQuery := `
 		SELECT id, company_id, name, code, parent_id, level, path, is_active, created_at, updated_at
 		FROM branches
-		WHERE 1=1
 	`
-	args := []interface{}{}
-	argIndex := 1
+
+	qb := query.NewQueryBuilder(baseQuery)
 
 	if companyID != nil {
-		query += fmt.Sprintf(" AND company_id = $%d", argIndex)
-		args = append(args, *companyID)
-		argIndex++
+		qb.AddCondition("company_id = $%d", *companyID)
 	}
 
 	if search != "" {
-		query += fmt.Sprintf(" AND (name ILIKE $%d OR code ILIKE $%d)", argIndex, argIndex+1)
-		searchPattern := "%" + search + "%"
-		args = append(args, searchPattern, searchPattern)
-		argIndex += 2
+		qb.AddLikeCondition([]string{"name", "code"}, search)
 	}
 
 	if isActive != nil {
-		query += fmt.Sprintf(" AND is_active = $%d", argIndex)
-		args = append(args, *isActive)
-		argIndex++
+		qb.AddCondition("is_active = $%d", *isActive)
 	}
 
-	query += " ORDER BY company_id, level, name"
+	qb.AddOrderBy("company_id, level, name").
+		AddLimit(limit).
+		AddOffset(offset)
 
-	if limit > 0 {
-		query += fmt.Sprintf(" LIMIT $%d", argIndex)
-		args = append(args, limit)
-		argIndex++
-	}
-
-	if offset > 0 {
-		query += fmt.Sprintf(" OFFSET $%d", argIndex)
-		args = append(args, offset)
-	}
+	query, args := qb.Build()
 
 	rows, err := r.db.Query(query, args...)
 	if err != nil {

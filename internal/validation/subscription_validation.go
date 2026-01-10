@@ -1,30 +1,32 @@
 package validation
 
-import "gin-scalable-api/middleware"
+import (
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/middleware"
+)
 
 // Subscription validation rules
 var CreateSubscriptionValidation = middleware.ValidationRules{
-	Body: &struct {
-		CompanyID    int64  `json:"company_id" validate:"required,min=1"`
-		PlanID       int64  `json:"plan_id" validate:"required,min=1"`
-		BillingCycle string `json:"billing_cycle" validate:"required,oneof=monthly yearly"`
-	}{},
+	Body: &dto.CreateSubscriptionBasicRequest{},
 }
 
 var UpdateSubscriptionValidation = middleware.ValidationRules{
 	Params: IDValidation.Params,
-	Body: &struct {
-		PlanID    *int64 `json:"plan_id"`
-		AutoRenew *bool  `json:"auto_renew"`
-	}{},
+	Body:   &dto.UpdateSubscriptionRequest{},
+}
+
+var CreateSubscriptionPlanValidation = middleware.ValidationRules{
+	Body: &dto.CreateSubscriptionPlanRequest{},
+}
+
+var UpdateSubscriptionPlanValidation = middleware.ValidationRules{
+	Params: IDValidation.Params,
+	Body:   &dto.UpdateSubscriptionPlanRequest{},
 }
 
 var RenewSubscriptionValidation = middleware.ValidationRules{
 	Params: IDValidation.Params,
-	Body: &struct {
-		BillingCycle string `json:"billing_cycle" validate:"required,oneof=monthly yearly"`
-		PlanID       *int64 `json:"plan_id"`
-	}{},
+	Body:   &dto.RenewSubscriptionRequest{},
 }
 
 var CancelSubscriptionValidation = middleware.ValidationRules{

@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"gin-scalable-api/internal/repository"
-	"gin-scalable-api/internal/service"
+	"gin-scalable-api/internal/constants"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
 	"strconv"
 	"strings"
 
@@ -13,12 +14,12 @@ import (
 )
 
 type UserHandler struct {
-	userService   *service.UserService
-	moduleService *service.ModuleService
-	userRepo      *repository.UserRepository
+	userService   interfaces.UserServiceInterface
+	moduleService interfaces.ModuleServiceInterface
+	userRepo      interfaces.UserRepositoryInterface
 }
 
-func NewUserHandler(userService *service.UserService, moduleService *service.ModuleService, userRepo *repository.UserRepository) *UserHandler {
+func NewUserHandler(userService interfaces.UserServiceInterface, moduleService interfaces.ModuleServiceInterface, userRepo interfaces.UserRepositoryInterface) *UserHandler {
 	return &UserHandler{
 		userService:   userService,
 		moduleService: moduleService,
@@ -27,7 +28,7 @@ func NewUserHandler(userService *service.UserService, moduleService *service.Mod
 }
 
 func (h *UserHandler) GetUsers(c *gin.Context) {
-	var req service.UserListRequest
+	var req dto.UserListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
 		return
@@ -53,7 +54,7 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgUsersRetrieved, result)
 }
 
 func (h *UserHandler) GetUserByID(c *gin.Context) {
@@ -71,11 +72,11 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 
 	result, err := h.userService.GetUserByID(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Not found", err.Error())
+		response.Error(c, http.StatusNotFound, constants.MsgUserNotFound, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgUserRetrieved, result)
 }
 
 func (h *UserHandler) CreateUser(c *gin.Context) {
@@ -86,36 +87,20 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Name         string  `json:"name" validate:"required,min=2,max=100"`
-		Email        string  `json:"email" validate:"required,email,max=255"`
-		UserIdentity *string `json:"user_identity" validate:"omitempty,min=3,max=50"`
-		Password     string  `json:"password" validate:"omitempty,min=6,max=100"`
-	})
+	// Type assert to the expected DTO struct
+	req, ok := validatedBody.(*dto.CreateUserRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	createReq := &service.CreateUserRequest{
-		Name:     req.Name,
-		Email:    req.Email,
-		Password: req.Password,
-	}
-
-	if req.UserIdentity != nil {
-		createReq.UserIdentity = *req.UserIdentity
-	}
-
-	result, err := h.userService.CreateUser(createReq)
+	result, err := h.userService.CreateUser(req)
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Failed to create user", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Created successfully", result)
+	response.Success(c, http.StatusCreated, constants.MsgUserCreated, result)
 }
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
@@ -132,31 +117,20 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		IsActive *bool  `json:"is_active"`
-	})
+	// Type assert to the expected DTO struct
+	req, ok := validatedBody.(*dto.UpdateUserRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	updateReq := &service.UpdateUserRequest{
-		Name:     req.Name,
-		Email:    req.Email,
-		IsActive: req.IsActive,
-	}
-
-	result, err := h.userService.UpdateUser(id, updateReq)
+	result, err := h.userService.UpdateUser(id, req)
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgUserUpdated, result)
 }
 
 func (h *UserHandler) DeleteUser(c *gin.Context) {
@@ -171,7 +145,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "User deleted successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgUserDeleted, nil)
 }
 
 // User Module Access Methods
@@ -190,7 +164,7 @@ func (h *UserHandler) GetUserModules(c *gin.Context) {
 			response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 			return
 		}
-		response.Success(c, http.StatusOK, "Success", result)
+		response.Success(c, http.StatusOK, constants.MsgUserModulesRetrieved, result)
 		return
 	}
 
@@ -209,7 +183,7 @@ func (h *UserHandler) GetUserModules(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgUserModulesRetrieved, result)
 }
 
 func (h *UserHandler) GetUserModulesByIdentity(c *gin.Context) {
@@ -218,7 +192,7 @@ func (h *UserHandler) GetUserModulesByIdentity(c *gin.Context) {
 	// Get user by identity first
 	user, err := h.userRepo.GetByUserIdentity(identity)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Not found", "User not found")
+		response.Error(c, http.StatusNotFound, constants.MsgUserNotFound, "User not found")
 		return
 	}
 
@@ -230,7 +204,7 @@ func (h *UserHandler) GetUserModulesByIdentity(c *gin.Context) {
 			response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 			return
 		}
-		response.Success(c, http.StatusOK, "Success", result)
+		response.Success(c, http.StatusOK, constants.MsgUserModulesRetrieved, result)
 		return
 	}
 
@@ -249,7 +223,7 @@ func (h *UserHandler) GetUserModulesByIdentity(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgUserModulesRetrieved, result)
 }
 
 func (h *UserHandler) CheckAccess(c *gin.Context) {
@@ -273,11 +247,8 @@ func (h *UserHandler) CheckAccess(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		UserIdentity string `json:"user_identity" validate:"required"`
-		ModuleURL    string `json:"module_url" validate:"required"`
-	})
+	// Type assert to the expected DTO struct
+	req, ok := validatedBody.(*dto.AccessCheckRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
@@ -329,66 +300,17 @@ func (h *UserHandler) ChangeUserPassword(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		CurrentPassword string `json:"current_password" validate:"required,min=6"`
-		NewPassword     string `json:"new_password" validate:"required,min=6,max=100"`
-		ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
-	})
+	// Type assert to the expected DTO struct
+	req, ok := validatedBody.(*dto.ChangePasswordRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	changeReq := &service.ChangePasswordRequest{
-		CurrentPassword: req.CurrentPassword,
-		NewPassword:     req.NewPassword,
-		ConfirmPassword: req.ConfirmPassword,
-	}
-
-	if err := h.userService.ChangeUserPassword(id, changeReq); err != nil {
+	if err := h.userService.ChangeUserPassword(id, req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Password changed successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgPasswordChanged, nil)
 }
-
-// func (h *UserHandler) ChangeMyPassword(c *gin.Context) {
-// 	// For now, we'll use a placeholder user ID
-// 	// In a real implementation, you'd get this from the JWT token
-// 	userID := int64(1)
-
-// 	// Get validated body from context (set by validation middleware)
-// 	validatedBody, exists := c.Get("validated_body")
-// 	if !exists {
-// 		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
-// 		return
-// 	}
-
-// 	// Type assert to the expected struct
-// 	req, ok := validatedBody.(*struct {
-// 		CurrentPassword string `json:"current_password" validate:"required,min=6"`
-// 		NewPassword     string `json:"new_password" validate:"required,min=6,max=100"`
-// 		ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
-// 	})
-// 	if !ok {
-// 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
-// 		return
-// 	}
-
-// 	// Convert to service request
-// 	changeReq := &service.ChangePasswordRequest{
-// 		CurrentPassword: req.CurrentPassword,
-// 		NewPassword:     req.NewPassword,
-// 		ConfirmPassword: req.ConfirmPassword,
-// 	}
-
-// 	if err := h.userService.ChangePassword(userID, changeReq); err != nil {
-// 		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
-// 		return
-// 	}
-
-// 	response.Success(c, http.StatusOK, "Password changed successfully", nil)
-// }

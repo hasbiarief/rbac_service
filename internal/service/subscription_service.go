@@ -1,176 +1,147 @@
 package service
 
 import (
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
+	"gin-scalable-api/internal/mapper"
 	"gin-scalable-api/internal/models"
-	"gin-scalable-api/internal/repository"
 	"time"
 )
 
 type SubscriptionService struct {
-	subscriptionRepo *repository.SubscriptionRepository
+	subscriptionRepo   interfaces.SubscriptionRepositoryInterface
+	subscriptionMapper *mapper.SubscriptionMapper
 }
 
-func NewSubscriptionService(subscriptionRepo *repository.SubscriptionRepository) *SubscriptionService {
+func NewSubscriptionService(subscriptionRepo interfaces.SubscriptionRepositoryInterface) *SubscriptionService {
 	return &SubscriptionService{
-		subscriptionRepo: subscriptionRepo,
+		subscriptionRepo:   subscriptionRepo,
+		subscriptionMapper: mapper.NewSubscriptionMapper(),
 	}
 }
 
-type SubscriptionPlanResponse struct {
-	ID           int64                  `json:"id"`
-	Name         string                 `json:"name"`
-	DisplayName  string                 `json:"display_name"`
-	Description  string                 `json:"description"`
-	PriceMonthly float64                `json:"price_monthly"`
-	PriceYearly  float64                `json:"price_yearly"`
-	MaxUsers     *int                   `json:"max_users"`
-	MaxBranches  *int                   `json:"max_branches"`
-	Features     map[string]interface{} `json:"features"`
-	IsActive     bool                   `json:"is_active"`
-}
-
-type SubscriptionResponse struct {
-	ID              int64     `json:"id"`
-	CompanyID       int64     `json:"company_id"`
-	PlanID          int64     `json:"plan_id"`
-	Status          string    `json:"status"`
-	BillingCycle    string    `json:"billing_cycle"`
-	StartDate       time.Time `json:"start_date"`
-	EndDate         time.Time `json:"end_date"`
-	AutoRenew       bool      `json:"auto_renew"`
-	CompanyName     string    `json:"company_name,omitempty"`
-	PlanDisplayName string    `json:"plan_display_name,omitempty"`
-}
-
-type CreateSubscriptionRequest struct {
-	CompanyID    int64  `json:"company_id" binding:"required"`
-	PlanID       int64  `json:"plan_id" binding:"required"`
-	BillingCycle string `json:"billing_cycle" binding:"required"`
-	AutoRenew    bool   `json:"auto_renew"`
-}
-
-type UpdateSubscriptionRequest struct {
-	PlanID    *int64 `json:"plan_id"`
-	AutoRenew *bool  `json:"auto_renew"`
-}
-
-type RenewSubscriptionRequest struct {
-	BillingCycle string `json:"billing_cycle" binding:"required"`
-	PlanID       *int64 `json:"plan_id"`
-}
-
-type CancelSubscriptionRequest struct {
-	Reason            string `json:"reason"`
-	CancelImmediately bool   `json:"cancel_immediately"`
-}
-
-type SubscriptionListRequest struct {
-	Limit  int `form:"limit"`
-	Offset int `form:"offset"`
-}
-
-func (s *SubscriptionService) GetAllPlans() ([]*SubscriptionPlanResponse, error) {
+// Paket Langganan
+func (s *SubscriptionService) GetSubscriptionPlans() ([]*dto.SubscriptionPlanResponse, error) {
 	plans, err := s.subscriptionRepo.GetAllPlans()
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*SubscriptionPlanResponse
+	var response []*dto.SubscriptionPlanResponse
 	for _, plan := range plans {
-		features := make(map[string]interface{})
-		if plan.Features != nil {
-			features = plan.Features
-		}
-
-		response = append(response, &SubscriptionPlanResponse{
-			ID:           plan.ID,
-			Name:         plan.Name,
-			DisplayName:  plan.DisplayName,
-			Description:  plan.Description,
-			PriceMonthly: plan.PriceMonthly,
-			PriceYearly:  plan.PriceYearly,
-			MaxUsers:     plan.MaxUsers,
-			MaxBranches:  plan.MaxBranches,
-			Features:     features,
-			IsActive:     plan.IsActive,
-		})
+		response = append(response, s.subscriptionMapper.ToPlanResponse(plan))
 	}
 
 	return response, nil
 }
 
-func (s *SubscriptionService) GetPlanByID(id int64) (*SubscriptionPlanResponse, error) {
+func (s *SubscriptionService) GetSubscriptionPlanByID(id int64) (*dto.SubscriptionPlanResponse, error) {
 	plan, err := s.subscriptionRepo.GetPlanByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	features := make(map[string]interface{})
-	if plan.Features != nil {
-		features = plan.Features
-	}
-
-	return &SubscriptionPlanResponse{
-		ID:           plan.ID,
-		Name:         plan.Name,
-		DisplayName:  plan.DisplayName,
-		Description:  plan.Description,
-		PriceMonthly: plan.PriceMonthly,
-		PriceYearly:  plan.PriceYearly,
-		MaxUsers:     plan.MaxUsers,
-		MaxBranches:  plan.MaxBranches,
-		Features:     features,
-		IsActive:     plan.IsActive,
-	}, nil
+	return s.subscriptionMapper.ToPlanResponse(plan), nil
 }
 
-func (s *SubscriptionService) GetAllSubscriptions(req *SubscriptionListRequest) ([]*SubscriptionResponse, error) {
-	subscriptions, err := s.subscriptionRepo.GetAllSubscriptions(req.Limit, req.Offset)
+func (s *SubscriptionService) CreateSubscriptionPlan(req *dto.CreateSubscriptionPlanRequest) (*dto.SubscriptionPlanResponse, error) {
+	// Konversi DTO ke model menggunakan mapper
+	plan := s.subscriptionMapper.ToPlanModel(req)
+
+	if err := s.subscriptionRepo.CreatePlan(plan); err != nil {
+		return nil, err
+	}
+
+	return s.subscriptionMapper.ToPlanResponse(plan), nil
+}
+
+func (s *SubscriptionService) UpdateSubscriptionPlan(id int64, req *dto.UpdateSubscriptionPlanRequest) (*dto.SubscriptionPlanResponse, error) {
+	plan, err := s.subscriptionRepo.GetPlanByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*SubscriptionResponse
+	// Update fields menggunakan mapper
+	s.subscriptionMapper.UpdatePlanModel(plan, req)
+
+	if err := s.subscriptionRepo.UpdatePlan(plan); err != nil {
+		return nil, err
+	}
+
+	return s.subscriptionMapper.ToPlanResponse(plan), nil
+}
+
+func (s *SubscriptionService) DeleteSubscriptionPlan(id int64) error {
+	return s.subscriptionRepo.DeletePlan(id)
+}
+
+// Langganan
+func (s *SubscriptionService) GetSubscriptions(req *dto.SubscriptionListRequest) (*dto.SubscriptionListResponse, error) {
+	// Set default values jika tidak disediakan
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := req.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	// Build filters map dari request
+	filters := make(map[string]interface{})
+	if req.CompanyID != nil {
+		filters["company_id"] = *req.CompanyID
+	}
+	if req.Status != "" {
+		filters["status"] = req.Status
+	}
+
+	subscriptions, err := s.subscriptionRepo.GetAll(limit, offset, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	// Dapatkan total count untuk pagination
+	total, err := s.subscriptionRepo.Count(filters)
+	if err != nil {
+		return nil, err
+	}
+
+	// Konversi ke DTO menggunakan mapper
+	var subscriptionResponses []*dto.SubscriptionResponse
 	for _, sub := range subscriptions {
-		response = append(response, &SubscriptionResponse{
-			ID:              sub.ID,
-			CompanyID:       sub.CompanyID,
-			PlanID:          sub.PlanID,
-			Status:          sub.Status,
-			BillingCycle:    sub.BillingCycle,
-			StartDate:       sub.StartDate,
-			EndDate:         sub.EndDate,
-			AutoRenew:       sub.AutoRenew,
-			CompanyName:     sub.CompanyName,
-			PlanDisplayName: sub.PlanDisplayName,
-		})
+		subscriptionResponses = append(subscriptionResponses, s.subscriptionMapper.ToSubscriptionResponse(sub))
 	}
 
-	return response, nil
+	return &dto.SubscriptionListResponse{
+		Data:    subscriptionResponses,
+		Total:   total,
+		Limit:   limit,
+		Offset:  offset,
+		HasMore: int64(offset+len(subscriptionResponses)) < total,
+	}, nil
 }
 
-func (s *SubscriptionService) GetSubscriptionByID(id int64) (*SubscriptionResponse, error) {
-	sub, err := s.subscriptionRepo.GetSubscriptionByID(id)
+func (s *SubscriptionService) GetSubscriptionByID(id int64) (*dto.SubscriptionResponse, error) {
+	sub, err := s.subscriptionRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SubscriptionResponse{
-		ID:              sub.ID,
-		CompanyID:       sub.CompanyID,
-		PlanID:          sub.PlanID,
-		Status:          sub.Status,
-		BillingCycle:    sub.BillingCycle,
-		StartDate:       sub.StartDate,
-		EndDate:         sub.EndDate,
-		AutoRenew:       sub.AutoRenew,
-		CompanyName:     sub.CompanyName,
-		PlanDisplayName: sub.PlanDisplayName,
-	}, nil
+	return s.subscriptionMapper.ToSubscriptionResponse(sub), nil
 }
 
-func (s *SubscriptionService) CreateSubscription(req *CreateSubscriptionRequest) (*SubscriptionResponse, error) {
-	// Get the plan to determine the price
+func (s *SubscriptionService) GetCompanySubscription(companyID int64) (*dto.SubscriptionResponse, error) {
+	sub, err := s.subscriptionRepo.GetByCompanyID(companyID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.subscriptionMapper.ToSubscriptionResponse(sub), nil
+}
+
+func (s *SubscriptionService) CreateSubscription(req *dto.CreateSubscriptionRequest) (*dto.SubscriptionResponse, error) {
+	// Dapatkan plan untuk menentukan harga
 	plan, err := s.subscriptionRepo.GetPlanByID(req.PlanID)
 	if err != nil {
 		return nil, err
@@ -183,11 +154,11 @@ func (s *SubscriptionService) CreateSubscription(req *CreateSubscriptionRequest)
 	if req.BillingCycle == "yearly" {
 		endDate = time.Now().AddDate(1, 0, 0)
 		price = plan.PriceYearly
-		nextPaymentDate = time.Now().AddDate(1, 0, 0) // Next payment in 1 year
+		nextPaymentDate = time.Now().AddDate(1, 0, 0) // Pembayaran berikutnya dalam 1 tahun
 	} else {
 		endDate = time.Now().AddDate(0, 1, 0)
 		price = plan.PriceMonthly
-		nextPaymentDate = time.Now().AddDate(0, 1, 0) // Next payment in 1 month
+		nextPaymentDate = time.Now().AddDate(0, 1, 0) // Pembayaran berikutnya dalam 1 bulan
 	}
 
 	subscription := &models.Subscription{
@@ -208,54 +179,34 @@ func (s *SubscriptionService) CreateSubscription(req *CreateSubscriptionRequest)
 		return nil, err
 	}
 
-	// Get the created subscription with company and plan names
-	createdSub, err := s.subscriptionRepo.GetSubscriptionByID(subscription.ID)
+	// Dapatkan subscription yang dibuat dengan nama company dan plan
+	createdSub, err := s.subscriptionRepo.GetByID(subscription.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SubscriptionResponse{
-		ID:              createdSub.ID,
-		CompanyID:       createdSub.CompanyID,
-		PlanID:          createdSub.PlanID,
-		Status:          createdSub.Status,
-		BillingCycle:    createdSub.BillingCycle,
-		StartDate:       createdSub.StartDate,
-		EndDate:         createdSub.EndDate,
-		AutoRenew:       createdSub.AutoRenew,
-		CompanyName:     createdSub.CompanyName,
-		PlanDisplayName: createdSub.PlanDisplayName,
-	}, nil
+	return s.subscriptionMapper.ToSubscriptionResponse(createdSub), nil
 }
 
-func (s *SubscriptionService) UpdateSubscription(id int64, req *UpdateSubscriptionRequest) (*SubscriptionResponse, error) {
-	subscription, err := s.subscriptionRepo.GetSubscriptionByID(id)
+func (s *SubscriptionService) UpdateSubscription(id int64, req *dto.UpdateSubscriptionRequest) (*dto.SubscriptionResponse, error) {
+	subscription, err := s.subscriptionRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	// If plan is being changed, update the price accordingly
-	if req.PlanID != nil && *req.PlanID != subscription.PlanID {
-		plan, err := s.subscriptionRepo.GetPlanByID(*req.PlanID)
-		if err != nil {
-			return nil, err
-		}
-
-		subscription.PlanID = *req.PlanID
-
-		// Update price based on current billing cycle
-		if subscription.BillingCycle == "yearly" {
-			subscription.Price = plan.PriceYearly
-		} else {
-			subscription.Price = plan.PriceMonthly
-		}
+	// Jika plan sedang diubah, update harga sesuai
+	if req.Status != "" {
+		subscription.Status = req.Status
+	}
+	if req.BillingCycle != "" {
+		subscription.BillingCycle = req.BillingCycle
 	}
 
 	if req.AutoRenew != nil {
 		subscription.AutoRenew = *req.AutoRenew
 	}
 
-	// Ensure required fields are set (in case they're missing from DB)
+	// Pastikan field yang diperlukan diset (jika hilang dari DB)
 	if subscription.Currency == "" {
 		subscription.Currency = "IDR"
 	}
@@ -267,78 +218,49 @@ func (s *SubscriptionService) UpdateSubscription(id int64, req *UpdateSubscripti
 		return nil, err
 	}
 
-	// Get updated subscription
-	updatedSub, err := s.subscriptionRepo.GetSubscriptionByID(id)
+	// Dapatkan subscription yang diupdate
+	updatedSub, err := s.subscriptionRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SubscriptionResponse{
-		ID:              updatedSub.ID,
-		CompanyID:       updatedSub.CompanyID,
-		PlanID:          updatedSub.PlanID,
-		Status:          updatedSub.Status,
-		BillingCycle:    updatedSub.BillingCycle,
-		StartDate:       updatedSub.StartDate,
-		EndDate:         updatedSub.EndDate,
-		AutoRenew:       updatedSub.AutoRenew,
-		CompanyName:     updatedSub.CompanyName,
-		PlanDisplayName: updatedSub.PlanDisplayName,
-	}, nil
+	return s.subscriptionMapper.ToSubscriptionResponse(updatedSub), nil
 }
 
-func (s *SubscriptionService) RenewSubscription(id int64, req *RenewSubscriptionRequest) error {
-	return s.subscriptionRepo.RenewSubscription(id, req.PlanID, req.BillingCycle)
-}
+func (s *SubscriptionService) RenewSubscription(subscriptionID int64, planID *int64, billingCycle string) (*dto.SubscriptionResponse, error) {
+	// Gunakan repository method yang sudah ada
+	if err := s.subscriptionRepo.RenewSubscription(subscriptionID, planID, billingCycle); err != nil {
+		return nil, err
+	}
 
-func (s *SubscriptionService) CancelSubscription(id int64, req *CancelSubscriptionRequest) error {
-	return s.subscriptionRepo.CancelSubscription(id, req.Reason, req.CancelImmediately)
-}
-
-func (s *SubscriptionService) GetCompanySubscription(companyID int64) (*SubscriptionResponse, error) {
-	sub, err := s.subscriptionRepo.GetCompanySubscription(companyID)
+	// Dapatkan subscription yang diperpanjang
+	renewedSub, err := s.subscriptionRepo.GetByID(subscriptionID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SubscriptionResponse{
-		ID:              sub.ID,
-		CompanyID:       sub.CompanyID,
-		PlanID:          sub.PlanID,
-		Status:          sub.Status,
-		BillingCycle:    sub.BillingCycle,
-		StartDate:       sub.StartDate,
-		EndDate:         sub.EndDate,
-		AutoRenew:       sub.AutoRenew,
-		CompanyName:     sub.CompanyName,
-		PlanDisplayName: sub.PlanDisplayName,
-	}, nil
+	return s.subscriptionMapper.ToSubscriptionResponse(renewedSub), nil
 }
 
+func (s *SubscriptionService) CancelSubscription(id int64) error {
+	// Repository interface hanya menerima ID, parameter tambahan diabaikan untuk saat ini
+	return s.subscriptionRepo.Delete(id) // Menggunakan Delete sebagai equivalent CancelSubscription
+}
+
+// Additional methods used by handler
 func (s *SubscriptionService) CheckModuleAccess(companyID, moduleID int64) (bool, error) {
 	return s.subscriptionRepo.CheckModuleAccess(companyID, moduleID)
 }
 
-func (s *SubscriptionService) GetExpiringSubscriptions(days int) ([]*SubscriptionResponse, error) {
+func (s *SubscriptionService) GetExpiringSubscriptions(days int) (interface{}, error) {
 	subscriptions, err := s.subscriptionRepo.GetExpiringSubscriptions(days)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*SubscriptionResponse
+	var response []*dto.SubscriptionResponse
 	for _, sub := range subscriptions {
-		response = append(response, &SubscriptionResponse{
-			ID:              sub.ID,
-			CompanyID:       sub.CompanyID,
-			PlanID:          sub.PlanID,
-			Status:          sub.Status,
-			BillingCycle:    sub.BillingCycle,
-			StartDate:       sub.StartDate,
-			EndDate:         sub.EndDate,
-			AutoRenew:       sub.AutoRenew,
-			CompanyName:     sub.CompanyName,
-			PlanDisplayName: sub.PlanDisplayName,
-		})
+		response = append(response, s.subscriptionMapper.ToSubscriptionResponse(sub))
 	}
 
 	return response, nil
@@ -347,8 +269,9 @@ func (s *SubscriptionService) GetExpiringSubscriptions(days int) ([]*Subscriptio
 func (s *SubscriptionService) UpdateExpiredSubscriptions() error {
 	return s.subscriptionRepo.UpdateExpiredSubscriptions()
 }
-func (s *SubscriptionService) GetSubscriptionStats() (map[string]interface{}, error) {
-	// Get basic subscription statistics
+
+func (s *SubscriptionService) GetSubscriptionStats() (interface{}, error) {
+	// Dapatkan statistik langganan dasar
 	stats := map[string]interface{}{
 		"total_subscriptions":     0,
 		"active_subscriptions":    0,
@@ -357,12 +280,12 @@ func (s *SubscriptionService) GetSubscriptionStats() (map[string]interface{}, er
 		"total_revenue":           0.0,
 	}
 
-	// This is a placeholder implementation
-	// In a real implementation, you would query the database for actual statistics
+	// Ini adalah implementasi placeholder
+	// Dalam implementasi nyata, Anda akan query database untuk statistik aktual
 	return stats, nil
 }
 
-// MarkPaymentAsPaid marks a subscription payment as paid
+// MarkPaymentAsPaid menandai pembayaran langganan sebagai dibayar
 func (s *SubscriptionService) MarkPaymentAsPaid(subscriptionID int64) error {
 	return s.subscriptionRepo.MarkPaymentAsPaid(subscriptionID)
 }

@@ -1,133 +1,103 @@
 package service
 
 import (
-	"gin-scalable-api/internal/models"
-	"gin-scalable-api/internal/repository"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
+	"gin-scalable-api/internal/mapper"
 )
 
 type CompanyService struct {
-	companyRepo *repository.CompanyRepository
+	companyRepo   interfaces.CompanyRepositoryInterface
+	companyMapper *mapper.CompanyMapper
 }
 
-func NewCompanyService(companyRepo *repository.CompanyRepository) *CompanyService {
+func NewCompanyService(companyRepo interfaces.CompanyRepositoryInterface) *CompanyService {
 	return &CompanyService{
-		companyRepo: companyRepo,
+		companyRepo:   companyRepo,
+		companyMapper: mapper.NewCompanyMapper(),
 	}
 }
 
-type CompanyListRequest struct {
-	Limit    int    `form:"limit"`
-	Offset   int    `form:"offset"`
-	Search   string `form:"search"`
-	IsActive *bool  `form:"is_active"`
-}
+func (s *CompanyService) GetCompanies(req *dto.CompanyListRequest) (*dto.CompanyListResponse, error) {
+	// Set default values jika tidak disediakan
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := req.Offset
+	if offset < 0 {
+		offset = 0
+	}
 
-type CompanyResponse struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	Code      string `json:"code"`
-	IsActive  bool   `json:"is_active"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-}
-
-type CreateCompanyRequest struct {
-	Name string `json:"name" binding:"required"`
-	Code string `json:"code" binding:"required"`
-}
-
-type UpdateCompanyRequest struct {
-	Name     string `json:"name"`
-	Code     string `json:"code"`
-	IsActive *bool  `json:"is_active"`
-}
-
-func (s *CompanyService) GetCompanies(req *CompanyListRequest) ([]*CompanyResponse, error) {
-	companies, err := s.companyRepo.GetAll(req.Limit, req.Offset, req.Search, req.IsActive)
+	companies, err := s.companyRepo.GetAll(limit, offset, req.Search, req.IsActive)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*CompanyResponse
-	for _, company := range companies {
-		response = append(response, &CompanyResponse{
-			ID:        company.ID,
-			Name:      company.Name,
-			Code:      company.Code,
-			IsActive:  company.IsActive,
-			CreatedAt: company.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-			UpdatedAt: company.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		})
+	// Dapatkan total count untuk pagination
+	total, err := s.companyRepo.Count(req.Search, req.IsActive)
+	if err != nil {
+		return nil, err
 	}
 
-	return response, nil
+	// Konversi ke DTO menggunakan mapper
+	var companyResponses []*dto.CompanyResponse
+	for _, company := range companies {
+		companyResponses = append(companyResponses, s.companyMapper.ToResponse(company))
+	}
+
+	return &dto.CompanyListResponse{
+		Data:    companyResponses,
+		Total:   total,
+		Limit:   limit,
+		Offset:  offset,
+		HasMore: int64(offset+len(companyResponses)) < total,
+	}, nil
 }
 
-func (s *CompanyService) GetCompanyByID(id int64) (*CompanyResponse, error) {
+func (s *CompanyService) GetCompanyByID(id int64) (*dto.CompanyResponse, error) {
 	company, err := s.companyRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &CompanyResponse{
-		ID:        company.ID,
-		Name:      company.Name,
-		Code:      company.Code,
-		IsActive:  company.IsActive,
-		CreatedAt: company.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: company.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-	}, nil
+	return s.companyMapper.ToResponse(company), nil
 }
 
-func (s *CompanyService) CreateCompany(req *CreateCompanyRequest) (*CompanyResponse, error) {
-	company := &models.Company{
-		Name:     req.Name,
-		Code:     req.Code,
-		IsActive: true,
+func (s *CompanyService) GetCompanyWithStats(id int64) (*dto.CompanyWithStatsResponse, error) {
+	companyWithStats, err := s.companyRepo.GetWithStats(id)
+	if err != nil {
+		return nil, err
 	}
+
+	return s.companyMapper.ToStatsResponse(companyWithStats), nil
+}
+
+func (s *CompanyService) CreateCompany(req *dto.CreateCompanyRequest) (*dto.CompanyResponse, error) {
+	// Konversi DTO ke model menggunakan mapper
+	company := s.companyMapper.ToModel(req)
 
 	if err := s.companyRepo.Create(company); err != nil {
 		return nil, err
 	}
 
-	return &CompanyResponse{
-		ID:        company.ID,
-		Name:      company.Name,
-		Code:      company.Code,
-		IsActive:  company.IsActive,
-		CreatedAt: company.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: company.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-	}, nil
+	return s.companyMapper.ToResponse(company), nil
 }
 
-func (s *CompanyService) UpdateCompany(id int64, req *UpdateCompanyRequest) (*CompanyResponse, error) {
+func (s *CompanyService) UpdateCompany(id int64, req *dto.UpdateCompanyRequest) (*dto.CompanyResponse, error) {
 	company, err := s.companyRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	if req.Name != "" {
-		company.Name = req.Name
-	}
-	if req.Code != "" {
-		company.Code = req.Code
-	}
-	if req.IsActive != nil {
-		company.IsActive = *req.IsActive
-	}
+	// Update fields menggunakan mapper
+	s.companyMapper.UpdateModel(company, req)
 
 	if err := s.companyRepo.Update(company); err != nil {
 		return nil, err
 	}
 
-	return &CompanyResponse{
-		ID:        company.ID,
-		Name:      company.Name,
-		Code:      company.Code,
-		IsActive:  company.IsActive,
-		CreatedAt: company.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: company.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-	}, nil
+	return s.companyMapper.ToResponse(company), nil
 }
 
 func (s *CompanyService) DeleteCompany(id int64) error {

@@ -2,118 +2,87 @@ package service
 
 import (
 	"fmt"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
+	"gin-scalable-api/internal/mapper"
 	"gin-scalable-api/internal/models"
-	"gin-scalable-api/internal/repository"
 	"gin-scalable-api/pkg/rbac"
 )
 
 type ModuleService struct {
-	moduleRepo  *repository.ModuleRepository
-	rbacService *rbac.RBACService
+	moduleRepo   interfaces.ModuleRepositoryInterface
+	userRepo     interfaces.UserRepositoryInterface
+	rbacService  *rbac.RBACService
+	moduleMapper *mapper.ModuleMapper
 }
 
-func NewModuleService(moduleRepo *repository.ModuleRepository, rbacService *rbac.RBACService) *ModuleService {
+func NewModuleService(moduleRepo interfaces.ModuleRepositoryInterface, userRepo interfaces.UserRepositoryInterface, rbacService *rbac.RBACService) *ModuleService {
 	return &ModuleService{
-		moduleRepo:  moduleRepo,
-		rbacService: rbacService,
+		moduleRepo:   moduleRepo,
+		userRepo:     userRepo,
+		rbacService:  rbacService,
+		moduleMapper: mapper.NewModuleMapper(),
 	}
 }
 
-type ModuleListRequest struct {
-	Limit    int    `form:"limit"`
-	Offset   int    `form:"offset"`
-	Category string `form:"category"`
-	Search   string `form:"search"`
-	IsActive *bool  `form:"is_active"`
-}
+func (s *ModuleService) GetModules(req *dto.ModuleListRequest) (*dto.ModuleListResponse, error) {
+	// Set default values jika tidak disediakan
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := req.Offset
+	if offset < 0 {
+		offset = 0
+	}
 
-type ModuleResponse struct {
-	ID               int64  `json:"id"`
-	Category         string `json:"category"`
-	Name             string `json:"name"`
-	URL              string `json:"url"`
-	Icon             string `json:"icon"`
-	Description      string `json:"description"`
-	ParentID         *int64 `json:"parent_id"`
-	SubscriptionTier string `json:"subscription_tier"`
-	IsActive         bool   `json:"is_active"`
-}
-
-type CreateModuleRequest struct {
-	Category         string `json:"category" binding:"required"`
-	Name             string `json:"name" binding:"required"`
-	URL              string `json:"url" binding:"required"`
-	Icon             string `json:"icon"`
-	Description      string `json:"description"`
-	ParentID         *int64 `json:"parent_id"`
-	SubscriptionTier string `json:"subscription_tier"`
-	IsActive         bool   `json:"is_active"`
-}
-
-type UpdateModuleRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsActive    *bool  `json:"is_active"`
-}
-
-type ModuleTreeResponse struct {
-	ID               int64                 `json:"id"`
-	Category         string                `json:"category"`
-	Name             string                `json:"name"`
-	URL              string                `json:"url"`
-	Icon             string                `json:"icon"`
-	Description      string                `json:"description"`
-	ParentID         *int64                `json:"parent_id"`
-	SubscriptionTier string                `json:"subscription_tier"`
-	IsActive         bool                  `json:"is_active"`
-	Children         []*ModuleTreeResponse `json:"children"`
-}
-
-func (s *ModuleService) GetModules(req *ModuleListRequest) ([]*ModuleResponse, error) {
-	modules, err := s.moduleRepo.GetAll(req.Limit, req.Offset, req.Category, req.Search, req.IsActive)
+	modules, err := s.moduleRepo.GetAll(limit, offset, req.Search, req.Category, req.SubscriptionTier, req.ParentID, req.IsActive)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*ModuleResponse
-	for _, module := range modules {
-		response = append(response, &ModuleResponse{
-			ID:               module.ID,
-			Category:         module.Category,
-			Name:             module.Name,
-			URL:              module.URL,
-			Icon:             module.Icon,
-			Description:      module.Description,
-			ParentID:         module.ParentID,
-			SubscriptionTier: module.SubscriptionTier,
-			IsActive:         module.IsActive,
-		})
+	// Dapatkan total count untuk pagination
+	total, err := s.moduleRepo.Count(req.Search, req.Category, req.SubscriptionTier, req.ParentID, req.IsActive)
+	if err != nil {
+		return nil, err
 	}
 
-	return response, nil
+	// Konversi ke DTO menggunakan mapper
+	var moduleResponses []*dto.ModuleResponse
+	for _, module := range modules {
+		moduleResponses = append(moduleResponses, s.moduleMapper.ToResponse(module))
+	}
+
+	return &dto.ModuleListResponse{
+		Data:    moduleResponses,
+		Total:   total,
+		Limit:   limit,
+		Offset:  offset,
+		HasMore: int64(offset+len(moduleResponses)) < total,
+	}, nil
 }
 
-// GetModulesFiltered returns modules filtered by user permissions
-func (s *ModuleService) GetModulesFiltered(userID int64, req *ModuleListRequest) ([]*ModuleResponse, error) {
-	// Check if user is super admin - if so, return all modules
-	isSuperAdmin, err := s.rbacService.IsSuperAdmin(userID)
+// GetModulesFiltered mengembalikan modul yang difilter berdasarkan izin pengguna
+func (s *ModuleService) GetModulesFiltered(requestingUserID int64, req *dto.ModuleListRequest) (*dto.ModuleListResponse, error) {
+	// Periksa apakah user adalah super admin - jika ya, kembalikan semua modul
+	isSuperAdmin, err := s.rbacService.IsSuperAdmin(requestingUserID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check super admin status: %w", err)
+		return nil, fmt.Errorf("gagal memeriksa status super admin: %w", err)
 	}
 
 	if isSuperAdmin {
 		return s.GetModules(req)
 	}
 
-	// Get filtered modules based on user permissions
-	moduleInfos, err := s.rbacService.GetFilteredModules(userID, "read", req.Limit, req.Offset, req.Category, req.Search, req.IsActive)
+	// Dapatkan modul yang difilter berdasarkan izin pengguna
+	moduleInfos, err := s.rbacService.GetFilteredModules(requestingUserID, "read", req.Limit, req.Offset, req.Category, req.Search, req.IsActive)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get filtered modules: %w", err)
+		return nil, fmt.Errorf("gagal mendapatkan modul yang difilter: %w", err)
 	}
 
-	var response []*ModuleResponse
+	var moduleResponses []*dto.ModuleResponse
 	for _, moduleInfo := range moduleInfos {
-		response = append(response, &ModuleResponse{
+		moduleResponses = append(moduleResponses, &dto.ModuleResponse{
 			ID:               moduleInfo.ID,
 			Category:         moduleInfo.Category,
 			Name:             moduleInfo.Name,
@@ -126,214 +95,130 @@ func (s *ModuleService) GetModulesFiltered(userID int64, req *ModuleListRequest)
 		})
 	}
 
-	return response, nil
+	// Hitung total untuk pagination (perkiraan berdasarkan hasil yang difilter)
+	total := int64(len(moduleResponses))
+
+	return &dto.ModuleListResponse{
+		Data:    moduleResponses,
+		Total:   total,
+		Limit:   req.Limit,
+		Offset:  req.Offset,
+		HasMore: int64(req.Offset+len(moduleResponses)) < total,
+	}, nil
 }
 
-func (s *ModuleService) GetModuleByID(id int64) (*ModuleResponse, error) {
+func (s *ModuleService) GetModulesNested(req *dto.ModuleListRequest) ([]*dto.NestedModuleResponse, error) {
+	// Set default values jika tidak disediakan
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	offset := req.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	modules, err := s.moduleRepo.GetAll(limit, offset, req.Search, req.Category, req.SubscriptionTier, req.ParentID, req.IsActive)
+	if err != nil {
+		return nil, err
+	}
+
+	// Konversi ke nested response menggunakan mapper
+	var nestedResponses []*dto.NestedModuleResponse
+	for _, module := range modules {
+		nestedResponses = append(nestedResponses, s.moduleMapper.ToNestedResponse(module))
+	}
+
+	return nestedResponses, nil
+}
+
+func (s *ModuleService) GetModuleByID(id int64) (*dto.ModuleResponse, error) {
 	module, err := s.moduleRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ModuleResponse{
-		ID:               module.ID,
-		Category:         module.Category,
-		Name:             module.Name,
-		URL:              module.URL,
-		Icon:             module.Icon,
-		Description:      module.Description,
-		ParentID:         module.ParentID,
-		SubscriptionTier: module.SubscriptionTier,
-		IsActive:         module.IsActive,
-	}, nil
+	return s.moduleMapper.ToResponse(module), nil
 }
 
-func (s *ModuleService) CreateModule(req *CreateModuleRequest) (*ModuleResponse, error) {
-	module := &models.Module{
-		Category:         req.Category,
-		Name:             req.Name,
-		URL:              req.URL,
-		Icon:             req.Icon,
-		Description:      req.Description,
-		ParentID:         req.ParentID,
-		SubscriptionTier: req.SubscriptionTier,
-		IsActive:         req.IsActive,
+func (s *ModuleService) GetUserModules(userID int64, category string, limit int) ([]*dto.ModuleResponse, error) {
+	// Untuk saat ini, gunakan companyID = 0 sebagai default, ini harus diteruskan dari handler
+	userModules, err := s.moduleRepo.GetUserModules(userID, 0)
+	if err != nil {
+		return nil, err
 	}
+
+	var response []*dto.ModuleResponse
+	for _, userModule := range userModules {
+		// Konversi UserModule ke Module untuk mapper
+		module := &models.Module{
+			ID:               userModule.ID,
+			Category:         userModule.Category,
+			Name:             userModule.Name,
+			URL:              userModule.URL,
+			Icon:             userModule.Icon,
+			Description:      userModule.Description,
+			ParentID:         userModule.ParentID,
+			SubscriptionTier: userModule.SubscriptionTier,
+			IsActive:         userModule.IsActive,
+		}
+		response = append(response, s.moduleMapper.ToResponse(module))
+	}
+
+	return response, nil
+}
+
+func (s *ModuleService) CreateModule(req *dto.CreateModuleRequest) (*dto.ModuleResponse, error) {
+	// Konversi DTO ke model menggunakan mapper
+	module := s.moduleMapper.ToModel(req)
 
 	if err := s.moduleRepo.Create(module); err != nil {
 		return nil, err
 	}
 
-	return &ModuleResponse{
-		ID:               module.ID,
-		Category:         module.Category,
-		Name:             module.Name,
-		URL:              module.URL,
-		Icon:             module.Icon,
-		Description:      module.Description,
-		ParentID:         module.ParentID,
-		SubscriptionTier: module.SubscriptionTier,
-		IsActive:         module.IsActive,
-	}, nil
+	return s.moduleMapper.ToResponse(module), nil
 }
 
-func (s *ModuleService) UpdateModule(id int64, req *UpdateModuleRequest) (*ModuleResponse, error) {
+func (s *ModuleService) UpdateModule(id int64, req *dto.UpdateModuleRequest) (*dto.ModuleResponse, error) {
 	module, err := s.moduleRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	if req.Name != "" {
-		module.Name = req.Name
-	}
-	if req.Description != "" {
-		module.Description = req.Description
-	}
-	if req.IsActive != nil {
-		module.IsActive = *req.IsActive
-	}
+	// Update fields menggunakan mapper
+	s.moduleMapper.UpdateModel(module, req)
 
 	if err := s.moduleRepo.Update(module); err != nil {
 		return nil, err
 	}
 
-	return &ModuleResponse{
-		ID:               module.ID,
-		Category:         module.Category,
-		Name:             module.Name,
-		URL:              module.URL,
-		Icon:             module.Icon,
-		Description:      module.Description,
-		ParentID:         module.ParentID,
-		SubscriptionTier: module.SubscriptionTier,
-		IsActive:         module.IsActive,
-	}, nil
+	return s.moduleMapper.ToResponse(module), nil
 }
 
 func (s *ModuleService) DeleteModule(id int64) error {
 	return s.moduleRepo.Delete(id)
 }
 
-type CheckAccessRequest struct {
-	UserIdentity string `json:"user_identity" binding:"required"`
-	ModuleURL    string `json:"module_url" binding:"required"`
-}
-
-func (s *ModuleService) GetModuleTree(category string) ([]*ModuleTreeResponse, error) {
-	modules, err := s.moduleRepo.GetTreeStructure(category)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.convertToTreeResponse(modules), nil
-}
-
-// GetModuleTreeFiltered returns module tree filtered by user permissions
-func (s *ModuleService) GetModuleTreeFiltered(userID int64, category string) ([]*ModuleTreeResponse, error) {
-	// Check if user is super admin - if so, return all modules
-	isSuperAdmin, err := s.rbacService.IsSuperAdmin(userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check super admin status: %w", err)
-	}
-
-	if isSuperAdmin {
-		return s.GetModuleTree(category)
-	}
-
-	// Get user permissions to filter tree
-	permissions, err := s.rbacService.GetUserPermissions(userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user permissions: %w", err)
-	}
-
-	// Get all modules first
-	modules, err := s.moduleRepo.GetTreeStructure(category)
-	if err != nil {
-		return nil, err
-	}
-
-	// Filter modules based on permissions
-	filteredModules := s.filterModuleTree(modules, permissions.Modules)
-	return s.convertToTreeResponse(filteredModules), nil
-}
-
-// filterModuleTree recursively filters module tree based on permissions
-func (s *ModuleService) filterModuleTree(modules []*models.ModuleWithChildren, permissions map[int64]rbac.ModulePermission) []*models.ModuleWithChildren {
-	var filtered []*models.ModuleWithChildren
+// filterModulesByPermissions memfilter modul berdasarkan izin secara rekursif
+func (s *ModuleService) filterModulesByPermissions(modules []*models.Module, permissions map[int64]rbac.ModulePermission) []*models.Module {
+	var filtered []*models.Module
 
 	for _, module := range modules {
-		// Check if user has read permission for this module
+		// Periksa apakah user memiliki izin baca untuk modul ini
 		if perm, exists := permissions[module.ID]; exists && perm.CanRead {
-			// Create a copy of the module
-			filteredModule := &models.ModuleWithChildren{
-				ID:               module.ID,
-				Category:         module.Category,
-				Name:             module.Name,
-				URL:              module.URL,
-				Icon:             module.Icon,
-				Description:      module.Description,
-				ParentID:         module.ParentID,
-				SubscriptionTier: module.SubscriptionTier,
-				IsActive:         module.IsActive,
-				CreatedAt:        module.CreatedAt,
-				UpdatedAt:        module.UpdatedAt,
-			}
-
-			// Recursively filter children
-			if len(module.Children) > 0 {
-				filteredModule.Children = s.filterModuleTree(module.Children, permissions)
-			}
-
-			filtered = append(filtered, filteredModule)
+			filtered = append(filtered, module)
 		}
 	}
 
 	return filtered
 }
 
-func (s *ModuleService) GetModuleTreeByParent(parentName string) ([]*ModuleTreeResponse, error) {
-	modules, err := s.moduleRepo.GetTreeByParentName(parentName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tree by parent name '%s': %w", parentName, err)
-	}
-
-	return s.convertToTreeResponse(modules), nil
-}
-
-// GetModuleTreeByParentFiltered returns module tree by parent filtered by user permissions
-func (s *ModuleService) GetModuleTreeByParentFiltered(userID int64, parentName string) ([]*ModuleTreeResponse, error) {
-	// Check if user is super admin - if so, return all modules
-	isSuperAdmin, err := s.rbacService.IsSuperAdmin(userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check super admin status: %w", err)
-	}
-
-	if isSuperAdmin {
-		return s.GetModuleTreeByParent(parentName)
-	}
-
-	// Get user permissions to filter tree
-	permissions, err := s.rbacService.GetUserPermissions(userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user permissions: %w", err)
-	}
-
-	// Get all modules first
-	modules, err := s.moduleRepo.GetTreeByParentName(parentName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tree by parent name '%s': %w", parentName, err)
-	}
-
-	// Filter modules based on permissions
-	filteredModules := s.filterModuleTree(modules, permissions.Modules)
-	return s.convertToTreeResponse(filteredModules), nil
-}
-
-func (s *ModuleService) convertToTreeResponse(modules []*models.ModuleWithChildren) []*ModuleTreeResponse {
-	var response []*ModuleTreeResponse
+// convertModulesToTreeResponse mengkonversi slice modul ke tree response
+func (s *ModuleService) convertModulesToTreeResponse(modules []*models.Module) []*dto.ModuleTreeResponse {
+	var response []*dto.ModuleTreeResponse
 
 	for _, module := range modules {
-		treeResponse := &ModuleTreeResponse{
+		treeResponse := &dto.ModuleTreeResponse{
 			ID:               module.ID,
 			Category:         module.Category,
 			Name:             module.Name,
@@ -343,7 +228,11 @@ func (s *ModuleService) convertToTreeResponse(modules []*models.ModuleWithChildr
 			ParentID:         module.ParentID,
 			SubscriptionTier: module.SubscriptionTier,
 			IsActive:         module.IsActive,
-			Children:         s.convertToTreeResponse(module.Children),
+			CreatedAt:        module.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:        module.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			Children:         []*dto.ModuleTreeResponse{}, // Empty children for now
+			Level:            0,                           // Calculate level if needed
+			Path:             module.Name,                 // Simple path for now
 		}
 		response = append(response, treeResponse)
 	}
@@ -351,176 +240,154 @@ func (s *ModuleService) convertToTreeResponse(modules []*models.ModuleWithChildr
 	return response
 }
 
-func (s *ModuleService) GetModuleChildren(parentID int64) ([]*ModuleResponse, error) {
-	modules, err := s.moduleRepo.GetChildren(parentID)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []*ModuleResponse
-	for _, module := range modules {
-		response = append(response, &ModuleResponse{
-			ID:               module.ID,
-			Category:         module.Category,
-			Name:             module.Name,
-			URL:              module.URL,
-			Icon:             module.Icon,
-			Description:      module.Description,
-			ParentID:         module.ParentID,
-			SubscriptionTier: module.SubscriptionTier,
-			IsActive:         module.IsActive,
-		})
-	}
-
-	return response, nil
-}
-
-// GetModuleChildrenFiltered returns module children filtered by user permissions
-func (s *ModuleService) GetModuleChildrenFiltered(userID int64, parentID int64) ([]*ModuleResponse, error) {
-	// Check if user is super admin - if so, return all modules
+func (s *ModuleService) GetModuleTreeByParentFiltered(userID int64, parentName string) ([]*dto.ModuleTreeResponse, error) {
+	// Periksa apakah user adalah super admin - jika ya, kembalikan semua modul
 	isSuperAdmin, err := s.rbacService.IsSuperAdmin(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check super admin status: %w", err)
+		return nil, fmt.Errorf("gagal memeriksa status super admin: %w", err)
 	}
 
 	if isSuperAdmin {
-		return s.GetModuleChildren(parentID)
+		modules, err := s.moduleRepo.GetTreeByParentName(parentName, 0) // userID 0 untuk akses admin
+		if err != nil {
+			return nil, fmt.Errorf("gagal mendapatkan tree berdasarkan nama parent '%s': %w", parentName, err)
+		}
+		return s.convertModulesToTreeResponse(modules), nil
 	}
 
-	// Get user permissions
+	// Dapatkan izin pengguna untuk memfilter tree
 	permissions, err := s.rbacService.GetUserPermissions(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user permissions: %w", err)
+		return nil, fmt.Errorf("gagal mendapatkan izin pengguna: %w", err)
 	}
 
-	// Get all children first
-	modules, err := s.moduleRepo.GetChildren(parentID)
+	// Dapatkan semua modul terlebih dahulu
+	modules, err := s.moduleRepo.GetTreeByParentName(parentName, userID)
+	if err != nil {
+		return nil, fmt.Errorf("gagal mendapatkan tree berdasarkan nama parent '%s': %w", parentName, err)
+	}
+
+	// Filter modul berdasarkan izin
+	filteredModules := s.filterModulesByPermissions(modules, permissions.Modules)
+	return s.convertModulesToTreeResponse(filteredModules), nil
+}
+
+func (s *ModuleService) GetModuleTreeFiltered(userID int64, category string) ([]*dto.ModuleTreeResponse, error) {
+	// Periksa apakah user adalah super admin - jika ya, kembalikan semua modul
+	isSuperAdmin, err := s.rbacService.IsSuperAdmin(userID)
+	if err != nil {
+		return nil, fmt.Errorf("gagal memeriksa status super admin: %w", err)
+	}
+
+	if isSuperAdmin {
+		modules, err := s.moduleRepo.GetTreeStructure(category, 0) // userID 0 untuk akses admin
+		if err != nil {
+			return nil, err
+		}
+		return s.convertModulesToTreeResponse(modules), nil
+	}
+
+	// Dapatkan izin pengguna untuk memfilter tree
+	permissions, err := s.rbacService.GetUserPermissions(userID)
+	if err != nil {
+		return nil, fmt.Errorf("gagal mendapatkan izin pengguna: %w", err)
+	}
+
+	// Dapatkan semua modul terlebih dahulu
+	modules, err := s.moduleRepo.GetTreeStructure(category, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Filter based on permissions
-	var response []*ModuleResponse
+	// Filter modul berdasarkan izin
+	filteredModules := s.filterModulesByPermissions(modules, permissions.Modules)
+	return s.convertModulesToTreeResponse(filteredModules), nil
+}
+
+func (s *ModuleService) GetModuleChildrenFiltered(userID int64, id int64) ([]*dto.ModuleResponse, error) {
+	// Periksa apakah user adalah super admin - jika ya, kembalikan semua modul
+	isSuperAdmin, err := s.rbacService.IsSuperAdmin(userID)
+	if err != nil {
+		return nil, fmt.Errorf("gagal memeriksa status super admin: %w", err)
+	}
+
+	if isSuperAdmin {
+		modules, err := s.moduleRepo.GetChildren(id)
+		if err != nil {
+			return nil, err
+		}
+
+		var response []*dto.ModuleResponse
+		for _, module := range modules {
+			response = append(response, s.moduleMapper.ToResponse(module))
+		}
+		return response, nil
+	}
+
+	// Dapatkan izin pengguna
+	permissions, err := s.rbacService.GetUserPermissions(userID)
+	if err != nil {
+		return nil, fmt.Errorf("gagal mendapatkan izin pengguna: %w", err)
+	}
+
+	// Dapatkan semua children terlebih dahulu
+	modules, err := s.moduleRepo.GetChildren(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter berdasarkan izin
+	var response []*dto.ModuleResponse
 	for _, module := range modules {
-		// Check if user has read permission for this module
+		// Periksa apakah user memiliki izin baca untuk modul ini
 		if perm, exists := permissions.Modules[module.ID]; exists && perm.CanRead {
-			response = append(response, &ModuleResponse{
-				ID:               module.ID,
-				Category:         module.Category,
-				Name:             module.Name,
-				URL:              module.URL,
-				Icon:             module.Icon,
-				Description:      module.Description,
-				ParentID:         module.ParentID,
-				SubscriptionTier: module.SubscriptionTier,
-				IsActive:         module.IsActive,
-			})
+			response = append(response, s.moduleMapper.ToResponse(module))
 		}
 	}
 
 	return response, nil
 }
 
-func (s *ModuleService) GetModuleAncestors(moduleID int64) ([]*ModuleResponse, error) {
-	modules, err := s.moduleRepo.GetAncestors(moduleID)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []*ModuleResponse
-	for _, module := range modules {
-		response = append(response, &ModuleResponse{
-			ID:               module.ID,
-			Category:         module.Category,
-			Name:             module.Name,
-			URL:              module.URL,
-			Icon:             module.Icon,
-			Description:      module.Description,
-			ParentID:         module.ParentID,
-			SubscriptionTier: module.SubscriptionTier,
-			IsActive:         module.IsActive,
-		})
-	}
-
-	return response, nil
-}
-
-// GetModuleAncestorsFiltered returns module ancestors filtered by user permissions
-func (s *ModuleService) GetModuleAncestorsFiltered(userID int64, moduleID int64) ([]*ModuleResponse, error) {
-	// Check if user is super admin - if so, return all modules
+func (s *ModuleService) GetModuleAncestorsFiltered(userID int64, id int64) ([]*dto.ModuleResponse, error) {
+	// Periksa apakah user adalah super admin - jika ya, kembalikan semua modul
 	isSuperAdmin, err := s.rbacService.IsSuperAdmin(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check super admin status: %w", err)
+		return nil, fmt.Errorf("gagal memeriksa status super admin: %w", err)
 	}
 
 	if isSuperAdmin {
-		return s.GetModuleAncestors(moduleID)
+		modules, err := s.moduleRepo.GetAncestors(id, 0) // userID 0 untuk akses admin
+		if err != nil {
+			return nil, err
+		}
+
+		var response []*dto.ModuleResponse
+		for _, module := range modules {
+			response = append(response, s.moduleMapper.ToResponse(module))
+		}
+		return response, nil
 	}
 
-	// Get user permissions
+	// Dapatkan izin pengguna
 	permissions, err := s.rbacService.GetUserPermissions(userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user permissions: %w", err)
+		return nil, fmt.Errorf("gagal mendapatkan izin pengguna: %w", err)
 	}
 
-	// Get all ancestors first
-	modules, err := s.moduleRepo.GetAncestors(moduleID)
+	// Dapatkan semua ancestors terlebih dahulu
+	modules, err := s.moduleRepo.GetAncestors(id, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Filter based on permissions
-	var response []*ModuleResponse
+	// Filter berdasarkan izin
+	var response []*dto.ModuleResponse
 	for _, module := range modules {
-		// Check if user has read permission for this module
+		// Periksa apakah user memiliki izin baca untuk modul ini
 		if perm, exists := permissions.Modules[module.ID]; exists && perm.CanRead {
-			response = append(response, &ModuleResponse{
-				ID:               module.ID,
-				Category:         module.Category,
-				Name:             module.Name,
-				URL:              module.URL,
-				Icon:             module.Icon,
-				Description:      module.Description,
-				ParentID:         module.ParentID,
-				SubscriptionTier: module.SubscriptionTier,
-				IsActive:         module.IsActive,
-			})
+			response = append(response, s.moduleMapper.ToResponse(module))
 		}
 	}
 
 	return response, nil
-}
-
-func (s *ModuleService) GetUserModules(userID int64, category string, limit int) ([]*ModuleResponse, error) {
-	modules, err := s.moduleRepo.GetUserModules(userID, category, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []*ModuleResponse
-	for _, module := range modules {
-		response = append(response, &ModuleResponse{
-			ID:               module.ID,
-			Category:         module.Category,
-			Name:             module.Name,
-			URL:              module.URL,
-			Icon:             module.Icon,
-			Description:      module.Description,
-			ParentID:         module.ParentID,
-			SubscriptionTier: module.SubscriptionTier,
-			IsActive:         module.IsActive,
-		})
-	}
-
-	return response, nil
-}
-
-func (s *ModuleService) GetUserModulesGrouped(userID int64) (map[string][][]string, error) {
-	// Use the user repository method directly since it already handles subscription filtering
-	userRepo := &repository.UserRepository{} // This is not ideal, but for now...
-	return userRepo.GetUserModulesGroupedWithSubscription(userID)
-}
-
-func (s *ModuleService) CheckUserAccess(req *CheckAccessRequest) (bool, error) {
-	return s.moduleRepo.CheckUserAccess(req.UserIdentity, req.ModuleURL)
 }

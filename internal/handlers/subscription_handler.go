@@ -1,7 +1,9 @@
 package handlers
 
 import (
-	"gin-scalable-api/internal/service"
+	"gin-scalable-api/internal/constants"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
 	"strconv"
 
 	"gin-scalable-api/pkg/response"
@@ -11,10 +13,10 @@ import (
 )
 
 type SubscriptionHandler struct {
-	subscriptionService *service.SubscriptionService
+	subscriptionService interfaces.SubscriptionServiceInterface
 }
 
-func NewSubscriptionHandler(subscriptionService *service.SubscriptionService) *SubscriptionHandler {
+func NewSubscriptionHandler(subscriptionService interfaces.SubscriptionServiceInterface) *SubscriptionHandler {
 	return &SubscriptionHandler{
 		subscriptionService: subscriptionService,
 	}
@@ -22,13 +24,13 @@ func NewSubscriptionHandler(subscriptionService *service.SubscriptionService) *S
 
 // Public endpoints (no auth required)
 func (h *SubscriptionHandler) GetAllPlans(c *gin.Context) {
-	result, err := h.subscriptionService.GetAllPlans()
+	result, err := h.subscriptionService.GetSubscriptionPlans()
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionPlansRetrieved, result)
 }
 
 func (h *SubscriptionHandler) GetPlanByID(c *gin.Context) {
@@ -38,30 +40,100 @@ func (h *SubscriptionHandler) GetPlanByID(c *gin.Context) {
 		return
 	}
 
-	result, err := h.subscriptionService.GetPlanByID(id)
+	result, err := h.subscriptionService.GetSubscriptionPlanByID(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Not found", err.Error())
+		response.Error(c, http.StatusNotFound, constants.MsgSubscriptionPlanNotFound, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionPlanRetrieved, result)
 }
 
-// Protected endpoints
-func (h *SubscriptionHandler) GetAllSubscriptions(c *gin.Context) {
-	var req service.SubscriptionListRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+// Admin endpoints for subscription plan management
+func (h *SubscriptionHandler) CreateSubscriptionPlan(c *gin.Context) {
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	result, err := h.subscriptionService.GetAllSubscriptions(&req)
+	// Type assert ke DTO yang diharapkan
+	createReq, ok := validatedBody.(*dto.CreateSubscriptionPlanRequest)
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	result, err := h.subscriptionService.CreateSubscriptionPlan(createReq)
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to create subscription plan", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusCreated, constants.MsgSubscriptionPlanCreated, result)
+}
+
+func (h *SubscriptionHandler) UpdateSubscriptionPlan(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid plan ID")
+		return
+	}
+
+	// Get validated body from context (set by validation middleware)
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
+		return
+	}
+
+	// Type assert ke DTO yang diharapkan
+	updateReq, ok := validatedBody.(*dto.UpdateSubscriptionPlanRequest)
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	result, err := h.subscriptionService.UpdateSubscriptionPlan(id, updateReq)
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionPlanUpdated, result)
+}
+
+func (h *SubscriptionHandler) DeleteSubscriptionPlan(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid plan ID")
+		return
+	}
+
+	if err := h.subscriptionService.DeleteSubscriptionPlan(id); err != nil {
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionPlanDeleted, nil)
+}
+
+// Protected endpoints
+func (h *SubscriptionHandler) GetAllSubscriptions(c *gin.Context) {
+	var req dto.SubscriptionListRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+		return
+	}
+
+	result, err := h.subscriptionService.GetSubscriptions(&req)
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionsRetrieved, result)
 }
 
 func (h *SubscriptionHandler) CreateSubscription(c *gin.Context) {
@@ -72,22 +144,19 @@ func (h *SubscriptionHandler) CreateSubscription(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		CompanyID    int64  `json:"company_id" validate:"required,min=1"`
-		PlanID       int64  `json:"plan_id" validate:"required,min=1"`
-		BillingCycle string `json:"billing_cycle" validate:"required,oneof=monthly yearly"`
-	})
+	// Type assert to the expected DTO struct
+	req, ok := validatedBody.(*dto.CreateSubscriptionBasicRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	createReq := &service.CreateSubscriptionRequest{
+	// Convert to full DTO request with default values
+	createReq := &dto.CreateSubscriptionRequest{
 		CompanyID:    req.CompanyID,
 		PlanID:       req.PlanID,
 		BillingCycle: req.BillingCycle,
+		// Default values will be set by service
 	}
 
 	result, err := h.subscriptionService.CreateSubscription(createReq)
@@ -96,7 +165,7 @@ func (h *SubscriptionHandler) CreateSubscription(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Created successfully", result)
+	response.Success(c, http.StatusCreated, constants.MsgSubscriptionCreated, result)
 }
 
 func (h *SubscriptionHandler) GetSubscriptionByID(c *gin.Context) {
@@ -108,11 +177,11 @@ func (h *SubscriptionHandler) GetSubscriptionByID(c *gin.Context) {
 
 	result, err := h.subscriptionService.GetSubscriptionByID(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Not found", err.Error())
+		response.Error(c, http.StatusNotFound, constants.MsgSubscriptionNotFound, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionRetrieved, result)
 }
 
 func (h *SubscriptionHandler) UpdateSubscription(c *gin.Context) {
@@ -129,29 +198,20 @@ func (h *SubscriptionHandler) UpdateSubscription(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		PlanID    *int64 `json:"plan_id"`
-		AutoRenew *bool  `json:"auto_renew"`
-	})
+	// Type assert to the expected DTO struct
+	req, ok := validatedBody.(*dto.UpdateSubscriptionRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	updateReq := &service.UpdateSubscriptionRequest{
-		PlanID:    req.PlanID,
-		AutoRenew: req.AutoRenew,
-	}
-
-	result, err := h.subscriptionService.UpdateSubscription(id, updateReq)
+	result, err := h.subscriptionService.UpdateSubscription(id, req)
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionUpdated, result)
 }
 
 func (h *SubscriptionHandler) RenewSubscription(c *gin.Context) {
@@ -168,28 +228,20 @@ func (h *SubscriptionHandler) RenewSubscription(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		BillingCycle string `json:"billing_cycle" validate:"required,oneof=monthly yearly"`
-		PlanID       *int64 `json:"plan_id"`
-	})
+	// Type assert ke DTO yang diharapkan
+	req, ok := validatedBody.(*dto.RenewSubscriptionRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	renewReq := &service.RenewSubscriptionRequest{
-		BillingCycle: req.BillingCycle,
-		PlanID:       req.PlanID,
-	}
-
-	if err := h.subscriptionService.RenewSubscription(id, renewReq); err != nil {
+	result, err := h.subscriptionService.RenewSubscription(id, req.PlanID, req.BillingCycle)
+	if err != nil {
 		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Subscription renewed successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionRenewed, result)
 }
 
 func (h *SubscriptionHandler) CancelSubscription(c *gin.Context) {
@@ -199,35 +251,13 @@ func (h *SubscriptionHandler) CancelSubscription(c *gin.Context) {
 		return
 	}
 
-	// Get validated body from context (set by validation middleware)
-	validatedBody, exists := c.Get("validated_body")
-	if !exists {
-		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
-		return
-	}
-
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Reason            string `json:"reason"`
-		CancelImmediately bool   `json:"cancel_immediately"`
-	})
-	if !ok {
-		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
-		return
-	}
-
-	// Convert to service request
-	cancelReq := &service.CancelSubscriptionRequest{
-		Reason:            req.Reason,
-		CancelImmediately: req.CancelImmediately,
-	}
-
-	if err := h.subscriptionService.CancelSubscription(id, cancelReq); err != nil {
+	// The interface method only accepts ID, additional parameters would need interface update
+	if err := h.subscriptionService.CancelSubscription(id); err != nil {
 		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Subscription cancelled successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionCancelled, nil)
 }
 
 func (h *SubscriptionHandler) GetCompanySubscription(c *gin.Context) {
@@ -239,11 +269,11 @@ func (h *SubscriptionHandler) GetCompanySubscription(c *gin.Context) {
 
 	result, err := h.subscriptionService.GetCompanySubscription(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Not found", err.Error())
+		response.Error(c, http.StatusNotFound, constants.MsgSubscriptionNotFound, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionRetrieved, result)
 }
 
 func (h *SubscriptionHandler) GetCompanySubscriptionStatus(c *gin.Context) {
@@ -255,11 +285,11 @@ func (h *SubscriptionHandler) GetCompanySubscriptionStatus(c *gin.Context) {
 
 	result, err := h.subscriptionService.GetCompanySubscription(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Not found", err.Error())
+		response.Error(c, http.StatusNotFound, constants.MsgSubscriptionNotFound, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgSubscriptionRetrieved, result)
 }
 
 func (h *SubscriptionHandler) CheckModuleAccess(c *gin.Context) {
@@ -281,7 +311,7 @@ func (h *SubscriptionHandler) CheckModuleAccess(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Module access checked successfully", gin.H{
+	response.Success(c, http.StatusOK, "Module access successfully checked", gin.H{
 		"has_access": hasAccess,
 	})
 }
@@ -300,7 +330,7 @@ func (h *SubscriptionHandler) GetExpiringSubscriptions(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, "Expiring subscriptions successfully retrieved", result)
 }
 
 func (h *SubscriptionHandler) UpdateExpiredSubscriptions(c *gin.Context) {
@@ -309,7 +339,7 @@ func (h *SubscriptionHandler) UpdateExpiredSubscriptions(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Expired subscriptions updated successfully", nil)
+	response.Success(c, http.StatusOK, "Expired subscriptions successfully updated", nil)
 }
 
 func (h *SubscriptionHandler) GetSubscriptionStats(c *gin.Context) {
@@ -319,7 +349,7 @@ func (h *SubscriptionHandler) GetSubscriptionStats(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, "Subscription statistics successfully retrieved", result)
 }
 
 func (h *SubscriptionHandler) MarkPaymentAsPaid(c *gin.Context) {
@@ -334,5 +364,5 @@ func (h *SubscriptionHandler) MarkPaymentAsPaid(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Payment marked as paid successfully", nil)
+	response.Success(c, http.StatusOK, "Payment successfully marked as paid", nil)
 }

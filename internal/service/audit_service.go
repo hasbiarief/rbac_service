@@ -1,177 +1,88 @@
 package service
 
 import (
-	"gin-scalable-api/internal/models"
-	"gin-scalable-api/internal/repository"
-	"time"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
+	"gin-scalable-api/internal/mapper"
 )
 
 type AuditService struct {
-	auditRepo *repository.AuditRepository
+	auditRepo   interfaces.AuditRepositoryInterface
+	auditMapper *mapper.AuditMapper
 }
 
-func NewAuditService(auditRepo *repository.AuditRepository) *AuditService {
+func NewAuditService(auditRepo interfaces.AuditRepositoryInterface) *AuditService {
 	return &AuditService{
-		auditRepo: auditRepo,
+		auditRepo:   auditRepo,
+		auditMapper: mapper.NewAuditMapper(),
 	}
 }
 
-type AuditLogResponse struct {
-	ID           int64                  `json:"id"`
-	UserID       *int64                 `json:"user_id"`
-	UserIdentity *string                `json:"user_identity"`
-	Action       string                 `json:"action"`
-	Resource     string                 `json:"resource"`
-	ResourceID   *string                `json:"resource_id"`
-	Method       string                 `json:"method"`
-	URL          string                 `json:"url"`
-	UserAgent    *string                `json:"user_agent"`
-	IP           *string                `json:"ip"`
-	Status       string                 `json:"status"`
-	StatusCode   int                    `json:"status_code"`
-	Message      string                 `json:"message"`
-	Metadata     map[string]interface{} `json:"metadata"`
-	CreatedAt    string                 `json:"created_at"`
-}
+func (s *AuditService) GetAuditLogs(req *dto.AuditListRequest) (*dto.AuditListResponse, error) {
+	// Build filters map from request
+	filters := make(map[string]interface{})
+	if req.UserID != nil {
+		filters["user_id"] = *req.UserID
+	}
+	if req.Action != "" {
+		filters["action"] = req.Action
+	}
+	if req.Resource != "" {
+		filters["resource"] = req.Resource
+	}
+	if req.Status != "" {
+		filters["status"] = req.Status
+	}
+	if req.Method != "" {
+		filters["method"] = req.Method
+	}
+	if req.DateFrom != "" {
+		filters["date_from"] = req.DateFrom
+	}
+	if req.DateTo != "" {
+		filters["date_to"] = req.DateTo
+	}
+	if req.StatusCode != nil {
+		filters["status_code"] = *req.StatusCode
+	}
+	if req.Search != "" {
+		filters["search"] = req.Search
+	}
 
-type AuditLogListRequest struct {
-	Limit    int    `form:"limit"`
-	Offset   int    `form:"offset"`
-	UserID   *int64 `form:"user_id"`
-	Action   string `form:"action"`
-	Resource string `form:"resource"`
-	Status   string `form:"status"`
-}
-
-type CreateAuditLogRequest struct {
-	UserID       *int64                 `json:"user_id"`
-	UserIdentity *string                `json:"user_identity"`
-	Action       string                 `json:"action" binding:"required"`
-	Resource     string                 `json:"resource" binding:"required"`
-	ResourceID   *string                `json:"resource_id"`
-	Method       string                 `json:"method" binding:"required"`
-	URL          string                 `json:"url" binding:"required"`
-	UserAgent    *string                `json:"user_agent"`
-	IP           *string                `json:"ip"`
-	Status       string                 `json:"status" binding:"required"`
-	StatusCode   int                    `json:"status_code" binding:"required"`
-	Message      string                 `json:"message"`
-	Metadata     map[string]interface{} `json:"metadata"`
-}
-
-type AuditStatsResponse struct {
-	TotalLogs   int64 `json:"total_logs"`
-	TodayLogs   int64 `json:"today_logs"`
-	SuccessLogs int64 `json:"success_logs"`
-	ErrorLogs   int64 `json:"error_logs"`
-}
-
-func (s *AuditService) GetAuditLogs(req *AuditLogListRequest) ([]*AuditLogResponse, error) {
-	logs, err := s.auditRepo.GetAll(req.Limit, req.Offset, req.UserID, req.Action, req.Resource, req.Status)
+	logs, err := s.auditRepo.GetAll(req.Limit, req.Offset, filters)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*AuditLogResponse
-	for _, log := range logs {
-		response = append(response, &AuditLogResponse{
-			ID:           log.ID,
-			UserID:       log.UserID,
-			UserIdentity: log.UserIdentity,
-			Action:       log.Action,
-			Resource:     log.Resource,
-			ResourceID:   log.ResourceID,
-			Method:       log.Method,
-			URL:          log.URL,
-			UserAgent:    log.UserAgent,
-			IP:           log.IP,
-			Status:       log.Status,
-			StatusCode:   log.StatusCode,
-			Message:      log.Message,
-			Metadata:     log.Metadata,
-			CreatedAt:    log.CreatedAt.Format(time.RFC3339),
-		})
+	// Get total count
+	total, err := s.auditRepo.Count(filters)
+	if err != nil {
+		return nil, err
 	}
 
-	return response, nil
+	return s.auditMapper.ToListResponse(logs, total, req.Limit, req.Offset), nil
 }
 
-func (s *AuditService) GetUserAuditLogs(userID int64, limit int) ([]*AuditLogResponse, error) {
+func (s *AuditService) GetUserAuditLogs(userID int64, limit int) (*dto.AuditListResponse, error) {
 	logs, err := s.auditRepo.GetUserLogs(userID, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*AuditLogResponse
-	for _, log := range logs {
-		response = append(response, &AuditLogResponse{
-			ID:           log.ID,
-			UserID:       log.UserID,
-			UserIdentity: log.UserIdentity,
-			Action:       log.Action,
-			Resource:     log.Resource,
-			ResourceID:   log.ResourceID,
-			Method:       log.Method,
-			URL:          log.URL,
-			UserAgent:    log.UserAgent,
-			IP:           log.IP,
-			Status:       log.Status,
-			StatusCode:   log.StatusCode,
-			Message:      log.Message,
-			Metadata:     log.Metadata,
-			CreatedAt:    log.CreatedAt.Format(time.RFC3339),
-		})
-	}
-
-	return response, nil
+	return s.auditMapper.ToListResponse(logs, int64(len(logs)), limit, 0), nil
 }
 
-func (s *AuditService) GetUserAuditLogsByIdentity(userIdentity string, limit int) ([]*AuditLogResponse, error) {
+func (s *AuditService) GetUserAuditLogsByIdentity(userIdentity string, limit int) (*dto.AuditListResponse, error) {
 	logs, err := s.auditRepo.GetUserLogsByIdentity(userIdentity, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	var response []*AuditLogResponse
-	for _, log := range logs {
-		response = append(response, &AuditLogResponse{
-			ID:           log.ID,
-			UserID:       log.UserID,
-			UserIdentity: log.UserIdentity,
-			Action:       log.Action,
-			Resource:     log.Resource,
-			ResourceID:   log.ResourceID,
-			Method:       log.Method,
-			URL:          log.URL,
-			UserAgent:    log.UserAgent,
-			IP:           log.IP,
-			Status:       log.Status,
-			StatusCode:   log.StatusCode,
-			Message:      log.Message,
-			Metadata:     log.Metadata,
-			CreatedAt:    log.CreatedAt.Format(time.RFC3339),
-		})
-	}
-
-	return response, nil
+	return s.auditMapper.ToListResponse(logs, int64(len(logs)), limit, 0), nil
 }
 
-func (s *AuditService) CreateAuditLog(req *CreateAuditLogRequest) (*AuditLogResponse, error) {
-	log := &models.AuditLog{
-		UserID:       req.UserID,
-		UserIdentity: req.UserIdentity,
-		Action:       req.Action,
-		Resource:     req.Resource,
-		ResourceID:   req.ResourceID,
-		Method:       req.Method,
-		URL:          req.URL,
-		UserAgent:    req.UserAgent,
-		IP:           req.IP,
-		Status:       req.Status,
-		StatusCode:   req.StatusCode,
-		Message:      req.Message,
-		Metadata:     req.Metadata,
-	}
+func (s *AuditService) CreateAuditLog(req *dto.CreateAuditLogRequest) (*dto.AuditLogResponse, error) {
+	log := s.auditMapper.ToModel(req)
 
 	if log.Metadata == nil {
 		log.Metadata = make(map[string]interface{})
@@ -182,35 +93,27 @@ func (s *AuditService) CreateAuditLog(req *CreateAuditLogRequest) (*AuditLogResp
 		return nil, err
 	}
 
-	return &AuditLogResponse{
-		ID:           log.ID,
-		UserID:       log.UserID,
-		UserIdentity: log.UserIdentity,
-		Action:       log.Action,
-		Resource:     log.Resource,
-		ResourceID:   log.ResourceID,
-		Method:       log.Method,
-		URL:          log.URL,
-		UserAgent:    log.UserAgent,
-		IP:           log.IP,
-		Status:       log.Status,
-		StatusCode:   log.StatusCode,
-		Message:      log.Message,
-		Metadata:     log.Metadata,
-		CreatedAt:    log.CreatedAt.Format(time.RFC3339),
-	}, nil
+	return s.auditMapper.ToResponse(log), nil
 }
 
-func (s *AuditService) GetAuditStats() (*AuditStatsResponse, error) {
+func (s *AuditService) GetAuditLogByID(id int64) (*dto.AuditLogWithUserResponse, error) {
+	log, err := s.auditRepo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.auditMapper.ToWithUserResponse(log), nil
+}
+
+func (s *AuditService) GetAuditStats() (*dto.AuditStatsResponse, error) {
 	stats, err := s.auditRepo.GetStats()
 	if err != nil {
 		return nil, err
 	}
 
-	return &AuditStatsResponse{
-		TotalLogs:   stats.TotalLogs,
-		TodayLogs:   stats.TodayLogs,
-		SuccessLogs: stats.SuccessLogs,
-		ErrorLogs:   stats.ErrorLogs,
-	}, nil
+	return s.auditMapper.ToStatsResponse(stats), nil
+}
+
+func (s *AuditService) CleanupOldLogs(daysToKeep int) error {
+	return s.auditRepo.CleanupOldLogs(daysToKeep)
 }

@@ -1,31 +1,35 @@
 package validation
 
-import "gin-scalable-api/middleware"
+import (
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/middleware"
+)
 
-// Auth validation rules
+// Aturan validasi autentikasi
 var LoginValidation = middleware.ValidationRules{
-	Body: &struct {
-		UserIdentity string `json:"user_identity" validate:"required"`
-		Password     string `json:"password" validate:"required,min=6"`
-	}{},
+	Body: &dto.LoginRequest{},
 }
 
 var LoginEmailValidation = middleware.ValidationRules{
-	Body: &struct {
-		Email    string `json:"email" validate:"required,email"`
-		Password string `json:"password" validate:"required,min=6"`
-	}{},
+	Body: &dto.LoginRequest{}, // Sama dengan LoginValidation karena DTO menangani keduanya
+}
+
+var RegisterValidation = middleware.ValidationRules{
+	Body: &dto.RegisterRequest{},
 }
 
 var RefreshValidation = middleware.ValidationRules{
-	Body: &struct {
-		RefreshToken string `json:"refresh_token" validate:"required"`
-	}{},
+	Body: &dto.RefreshTokenRequest{},
 }
 
 var LogoutValidation = middleware.ValidationRules{
-	Body: &struct {
-		Token  string `json:"token"`
-		UserID int64  `json:"user_id"`
-	}{},
+	Body: &dto.LogoutRequest{},
+}
+
+var ForgotPasswordValidation = middleware.ValidationRules{
+	Body: &dto.ForgotPasswordRequest{},
+}
+
+var ResetPasswordValidation = middleware.ValidationRules{
+	Body: &dto.ResetPasswordRequest{},
 }

@@ -1,7 +1,9 @@
 package handlers
 
 import (
-	"gin-scalable-api/internal/service"
+	"gin-scalable-api/internal/constants"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
 	"strconv"
 
 	"gin-scalable-api/pkg/response"
@@ -11,10 +13,10 @@ import (
 )
 
 type RoleHandler struct {
-	roleService *service.RoleService
+	roleService interfaces.RoleServiceInterface
 }
 
-func NewRoleHandler(roleService *service.RoleService) *RoleHandler {
+func NewRoleHandler(roleService interfaces.RoleServiceInterface) *RoleHandler {
 	return &RoleHandler{
 		roleService: roleService,
 	}
@@ -22,7 +24,7 @@ func NewRoleHandler(roleService *service.RoleService) *RoleHandler {
 
 // Basic Role Management
 func (h *RoleHandler) GetRoles(c *gin.Context) {
-	var req service.RoleListRequest
+	var req dto.RoleListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
 		return
@@ -34,7 +36,7 @@ func (h *RoleHandler) GetRoles(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgRolesRetrieved, result)
 }
 
 func (h *RoleHandler) GetRoleByID(c *gin.Context) {
@@ -46,11 +48,11 @@ func (h *RoleHandler) GetRoleByID(c *gin.Context) {
 
 	result, err := h.roleService.GetRoleByID(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Not found", err.Error())
+		response.Error(c, http.StatusNotFound, constants.MsgRoleNotFound, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgRoleRetrieved, result)
 }
 
 func (h *RoleHandler) CreateRole(c *gin.Context) {
@@ -61,20 +63,11 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Name        string `json:"name" validate:"required,min=2,max=100"`
-		Description string `json:"description"`
-	})
+	// Type assert ke DTO yang diharapkan
+	createReq, ok := validatedBody.(*dto.CreateRoleRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
-	}
-
-	// Convert to service request
-	createReq := &service.CreateRoleRequest{
-		Name:        req.Name,
-		Description: req.Description,
 	}
 
 	result, err := h.roleService.CreateRole(createReq)
@@ -83,7 +76,7 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Created successfully", result)
+	response.Success(c, http.StatusCreated, constants.MsgRoleCreated, result)
 }
 
 func (h *RoleHandler) UpdateRole(c *gin.Context) {
@@ -100,20 +93,11 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-	})
+	// Type assert ke DTO yang diharapkan
+	updateReq, ok := validatedBody.(*dto.UpdateRoleRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
-	}
-
-	// Convert to service request
-	updateReq := &service.UpdateRoleRequest{
-		Name:        req.Name,
-		Description: req.Description,
 	}
 
 	result, err := h.roleService.UpdateRole(id, updateReq)
@@ -122,7 +106,7 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgRoleUpdated, result)
 }
 
 func (h *RoleHandler) DeleteRole(c *gin.Context) {
@@ -137,7 +121,7 @@ func (h *RoleHandler) DeleteRole(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Role deleted successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgRoleDeleted, nil)
 }
 
 // Advanced Role Management System
@@ -149,75 +133,20 @@ func (h *RoleHandler) AssignUserRole(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		UserID    int64  `json:"user_id" validate:"required,min=1"`
-		RoleID    int64  `json:"role_id" validate:"required,min=1"`
-		CompanyID int64  `json:"company_id" validate:"required,min=1"`
-		BranchID  *int64 `json:"branch_id"`
-	})
+	// Type assert ke DTO yang diharapkan
+	assignReq, ok := validatedBody.(*dto.AssignRoleRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	assignReq := &service.AssignUserRoleRequest{
-		UserID:    req.UserID,
-		RoleID:    req.RoleID,
-		CompanyID: req.CompanyID,
-		BranchID:  req.BranchID,
-	}
-
-	if err := h.roleService.AssignUserRole(assignReq); err != nil {
+	result, err := h.roleService.AssignRoleToUser(assignReq)
+	if err != nil {
 		response.ErrorWithAutoStatus(c, "Failed to assign user role", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "User role assigned successfully", nil)
-}
-
-func (h *RoleHandler) BulkAssignRoles(c *gin.Context) {
-	// Get validated body from context (set by validation middleware)
-	validatedBody, exists := c.Get("validated_body")
-	if !exists {
-		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
-		return
-	}
-
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		UserIDs   []int64 `json:"user_ids" validate:"required,min=1"`
-		RoleID    int64   `json:"role_id" validate:"required,min=1"`
-		CompanyID int64   `json:"company_id" validate:"required,min=1"`
-		BranchID  *int64  `json:"branch_id"`
-	})
-	if !ok {
-		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
-		return
-	}
-
-	// Convert to service request
-	var assignments []service.AssignUserRoleRequest
-	for _, userID := range req.UserIDs {
-		assignments = append(assignments, service.AssignUserRoleRequest{
-			UserID:    userID,
-			RoleID:    req.RoleID,
-			CompanyID: req.CompanyID,
-			BranchID:  req.BranchID,
-		})
-	}
-
-	bulkReq := &service.BulkAssignRolesRequest{
-		Assignments: assignments,
-	}
-
-	if err := h.roleService.BulkAssignRoles(bulkReq); err != nil {
-		response.ErrorWithAutoStatus(c, "Failed to assign roles", err.Error())
-		return
-	}
-
-	response.Success(c, http.StatusOK, "Roles assigned successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgRoleAssigned, result)
 }
 
 func (h *RoleHandler) UpdateRoleModules(c *gin.Context) {
@@ -234,41 +163,19 @@ func (h *RoleHandler) UpdateRoleModules(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Modules []struct {
-			ModuleID  int64 `json:"module_id" validate:"required,min=1"`
-			CanRead   bool  `json:"can_read"`
-			CanWrite  bool  `json:"can_write"`
-			CanDelete bool  `json:"can_delete"`
-		} `json:"modules" validate:"required,min=1"`
-	})
+	// Type assert ke DTO yang diharapkan
+	updateReq, ok := validatedBody.(*dto.UpdateRolePermissionsRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	var modules []service.RoleModulePermission
-	for _, m := range req.Modules {
-		modules = append(modules, service.RoleModulePermission{
-			ModuleID:  m.ModuleID,
-			CanRead:   m.CanRead,
-			CanWrite:  m.CanWrite,
-			CanDelete: m.CanDelete,
-		})
-	}
-
-	updateReq := &service.UpdateRoleModulesRequest{
-		Modules: modules,
-	}
-
-	if err := h.roleService.UpdateRoleModules(roleID, updateReq); err != nil {
+	if err := h.roleService.UpdateRolePermissions(roleID, updateReq); err != nil {
 		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Role modules updated successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgPermissionsUpdated, nil)
 }
 
 func (h *RoleHandler) RemoveUserRole(c *gin.Context) {
@@ -284,12 +191,25 @@ func (h *RoleHandler) RemoveUserRole(c *gin.Context) {
 		return
 	}
 
-	if err := h.roleService.RemoveUserRole(userID, roleID); err != nil {
+	// Get company ID from query parameter or request body
+	companyIDStr := c.Query("company_id")
+	if companyIDStr == "" {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Company ID is required")
+		return
+	}
+
+	companyID, err := strconv.ParseInt(companyIDStr, 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid company ID")
+		return
+	}
+
+	if err := h.roleService.RemoveRoleFromUser(userID, roleID, companyID); err != nil {
 		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "User role removed successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgRoleUnassigned, nil)
 }
 
 func (h *RoleHandler) GetUsersByRole(c *gin.Context) {
@@ -312,7 +232,7 @@ func (h *RoleHandler) GetUsersByRole(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgUsersRetrieved, result)
 }
 
 func (h *RoleHandler) GetUserRoles(c *gin.Context) {
@@ -328,7 +248,7 @@ func (h *RoleHandler) GetUserRoles(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgRolesRetrieved, result)
 }
 
 func (h *RoleHandler) GetUserAccessSummary(c *gin.Context) {
@@ -344,5 +264,5 @@ func (h *RoleHandler) GetUserAccessSummary(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, "User access summary successfully retrieved", result)
 }

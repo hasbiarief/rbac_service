@@ -21,46 +21,46 @@ type Handlers struct {
 }
 
 func SetupRoutes(r *gin.Engine, h *Handlers, jwtSecret string, redis *redis.Client) {
-	// Apply smart rate limiting globally (different limits for different endpoints)
+	// Terapkan pembatasan rate secara global (batas berbeda untuk endpoint berbeda)
 	r.Use(middleware.SmartRateLimit())
 
-	// Health check
+	// Pemeriksaan kesehatan sistem
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	// API routes
+	// Rute API
 	api := r.Group("/api/v1")
 	{
-		// Auth routes (public)
+		// Rute autentikasi (publik)
 		setupAuthRoutes(api, h.Auth)
 
-		// Public subscription routes
+		// Rute langganan publik
 		setupPublicSubscriptionRoutes(api, h.Subscription)
 
-		// Protected routes - require authentication
+		// Rute yang dilindungi - memerlukan autentikasi
 		protected := api.Group("")
 		protected.Use(middleware.AuthMiddleware(jwtSecret, redis))
 		{
-			// Module routes
+			// Rute modul
 			setupModuleRoutes(protected, h.Module)
 
-			// User routes (including user module access and password management)
+			// Rute pengguna (termasuk akses modul pengguna dan manajemen kata sandi)
 			setupUserRoutes(protected, h.User)
 
-			// Company routes
+			// Rute perusahaan
 			setupCompanyRoutes(protected, h.Company)
 
-			// Role routes (basic and advanced)
+			// Rute peran (dasar dan lanjutan)
 			setupRoleRoutes(protected, h.Role)
 
-			// Protected subscription routes
+			// Rute langganan yang dilindungi
 			setupProtectedSubscriptionRoutes(protected, h.Subscription)
 
-			// Audit routes
+			// Rute audit
 			setupAuditRoutes(protected, h.Audit)
 
-			// Branch routes
+			// Rute cabang
 			setupBranchRoutes(protected, h.Branch)
 		}
 	}
@@ -69,22 +69,22 @@ func SetupRoutes(r *gin.Engine, h *Handlers, jwtSecret string, redis *redis.Clie
 func setupAuthRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler) {
 	auth := api.Group("/auth")
 	{
-		// Login with validation - support both user_identity and email
+		// Login dengan validasi - mendukung user_identity dan email
 		auth.POST("/login", middleware.ValidateRequest(validation.LoginValidation), authHandler.Login)
 
-		// Login with email (alternative endpoint)
+		// Login dengan email (endpoint alternatif)
 		auth.POST("/login-email", middleware.ValidateRequest(validation.LoginEmailValidation), authHandler.LoginWithEmail)
 
-		// Refresh token with validation
+		// Refresh token dengan validasi
 		auth.POST("/refresh", middleware.ValidateRequest(validation.RefreshValidation), authHandler.RefreshToken)
 
-		// Logout with validation
+		// Logout dengan validasi
 		auth.POST("/logout", middleware.ValidateRequest(validation.LogoutValidation), authHandler.Logout)
 
-		// Check user tokens (for frontend token validation)
+		// Periksa token pengguna (untuk validasi token frontend)
 		auth.GET("/check-tokens", authHandler.CheckUserTokens)
 
-		// Admin endpoints for session management
+		// Endpoint admin untuk manajemen sesi
 		auth.GET("/session-count", authHandler.GetUserSessionCount)
 		auth.POST("/cleanup-expired", authHandler.CleanupExpiredTokens)
 	}
@@ -93,16 +93,16 @@ func setupAuthRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler) {
 func setupModuleRoutes(protected *gin.RouterGroup, moduleHandler *handlers.ModuleHandler) {
 	modules := protected.Group("/modules")
 	{
-		// List modules with pagination validation
+		// Daftar modul dengan validasi paginasi
 		modules.GET("", middleware.ValidateRequest(validation.ModuleListValidation), moduleHandler.GetModules)
 
-		// Get module by ID with ID validation
+		// Dapatkan modul berdasarkan ID dengan validasi ID
 		modules.GET("/:id", middleware.ValidateRequest(validation.IDValidation), moduleHandler.GetModuleByID)
 
-		// Create module with body validation
+		// Buat modul dengan validasi body
 		modules.POST("", middleware.ValidateRequest(validation.CreateModuleValidation), moduleHandler.CreateModule)
 
-		// Update module with validation
+		// Update modul dengan validasi
 		modules.PUT("/:id", middleware.ValidateRequest(validation.UpdateModuleValidation), moduleHandler.UpdateModule)
 		modules.DELETE("/:id", middleware.ValidateRequest(validation.IDValidation), moduleHandler.DeleteModule)
 		modules.GET("/tree", moduleHandler.GetModuleTree)
@@ -111,7 +111,7 @@ func setupModuleRoutes(protected *gin.RouterGroup, moduleHandler *handlers.Modul
 	}
 }
 
-// Helper function to create int pointer
+// Fungsi helper untuk membuat pointer integer
 func intPtr(i int) *int {
 	return &i
 }
@@ -119,33 +119,33 @@ func intPtr(i int) *int {
 func setupUserRoutes(api *gin.RouterGroup, userHandler *handlers.UserHandler) {
 	users := api.Group("/users")
 	{
-		// List users with pagination validation
+		// Daftar pengguna dengan validasi paginasi
 		users.GET("", middleware.ValidateRequest(validation.UserListValidation), userHandler.GetUsers)
 
-		// ID validation for single user operations
+		// Validasi ID untuk operasi pengguna tunggal
 		users.GET("/:id", middleware.ValidateRequest(validation.IDValidation), userHandler.GetUserByID)
 
-		// Create user with validation
+		// Buat pengguna dengan validasi
 		users.POST("", middleware.ValidateRequest(validation.CreateUserValidation), userHandler.CreateUser)
 
-		// Update user with validation
+		// Update pengguna dengan validasi
 		users.PUT("/:id", middleware.ValidateRequest(middleware.ValidationRules{
 			Params: validation.IDValidation.Params,
 			Body:   validation.UpdateUserValidation.Body,
 		}), userHandler.UpdateUser)
 		users.DELETE("/:id", middleware.ValidateRequest(validation.IDValidation), userHandler.DeleteUser)
 
-		// User module access
+		// Akses modul pengguna
 		users.GET("/:id/modules", middleware.ValidateRequest(validation.IDValidation), userHandler.GetUserModules)
 
-		// Identity validation
+		// Validasi identitas
 		users.GET("/identity/:identity/modules", middleware.ValidateRequest(validation.IdentityValidation), userHandler.GetUserModulesByIdentity)
 
-		// Access check validation
+		// Validasi pemeriksaan akses
 		users.POST("/check-access", middleware.ValidateRequest(validation.AccessCheckValidation), userHandler.CheckAccess)
 
-		// Password change validation
-		users.PUT("/:id/password", middleware.ValidateRequest(validation.PasswordChangeValidation), userHandler.ChangeUserPassword)
+		// Validasi perubahan kata sandi
+		users.PUT("/:id/password", middleware.ValidateRequest(validation.ChangePasswordValidation), userHandler.ChangeUserPassword)
 		// users.PUT("/me/password", middleware.ValidateRequest(validation.MyPasswordChangeValidation), userHandler.ChangeMyPassword)
 	}
 }
@@ -155,48 +155,48 @@ func setupCompanyRoutes(protected *gin.RouterGroup, companyHandler *handlers.Com
 	{
 		companies.GET("", companyHandler.GetCompanies)
 
-		// ID validation for single company operations
+		// Validasi ID untuk operasi perusahaan tunggal
 		companies.GET("/:id", middleware.ValidateRequest(validation.IDValidation), companyHandler.GetCompanyByID)
 
-		// Create company with validation
+		// Buat perusahaan dengan validasi
 		companies.POST("", middleware.ValidateRequest(validation.CreateCompanyValidation), companyHandler.CreateCompany)
 
-		// Update company with validation
+		// Update perusahaan dengan validasi
 		companies.PUT("/:id", middleware.ValidateRequest(validation.UpdateCompanyValidation), companyHandler.UpdateCompany)
 		companies.DELETE("/:id", middleware.ValidateRequest(validation.IDValidation), companyHandler.DeleteCompany)
 	}
 }
 
 func setupRoleRoutes(protected *gin.RouterGroup, roleHandler *handlers.RoleHandler) {
-	// Basic role management
+	// Manajemen peran dasar
 	roles := protected.Group("/roles")
 	{
 		roles.GET("", roleHandler.GetRoles)
 
-		// ID validation for single role operations
+		// Validasi ID untuk operasi peran tunggal
 		roles.GET("/:id", middleware.ValidateRequest(validation.IDValidation), roleHandler.GetRoleByID)
 
-		// Create role with validation
+		// Buat peran dengan validasi
 		roles.POST("", middleware.ValidateRequest(validation.CreateRoleValidation), roleHandler.CreateRole)
 
-		// Update role with validation
+		// Update peran dengan validasi
 		roles.PUT("/:id", middleware.ValidateRequest(validation.UpdateRoleValidation), roleHandler.UpdateRole)
 		roles.DELETE("/:id", middleware.ValidateRequest(validation.IDValidation), roleHandler.DeleteRole)
 	}
 
-	// Advanced role management system
+	// Sistem manajemen peran lanjutan
 	roleManagement := protected.Group("/role-management")
 	{
-		// Assign user role validation
+		// Validasi penugasan peran pengguna
 		roleManagement.POST("/assign-user-role", middleware.ValidateRequest(validation.AssignUserRoleValidation), roleHandler.AssignUserRole)
 
-		// Bulk assign roles validation
-		roleManagement.POST("/bulk-assign-roles", middleware.ValidateRequest(validation.BulkAssignRolesValidation), roleHandler.BulkAssignRoles)
+		// Validasi penugasan peran massal - method ini dikomentari karena tidak ada di handler
+		// roleManagement.POST("/bulk-assign-roles", middleware.ValidateRequest(validation.BulkAssignRolesValidation), roleHandler.BulkAssignRoles)
 
-		// Update role modules validation
+		// Validasi update modul peran
 		roleManagement.PUT("/role/:roleId/modules", middleware.ValidateRequest(validation.UpdateRoleModulesValidation), roleHandler.UpdateRoleModules)
 
-		// User/Role operations
+		// Operasi Pengguna/Peran
 		roleManagement.DELETE("/user/:userId/role/:roleId", middleware.ValidateRequest(validation.RoleUserValidation), roleHandler.RemoveUserRole)
 		roleManagement.GET("/role/:roleId/users", middleware.ValidateRequest(validation.RoleIDValidation), roleHandler.GetUsersByRole)
 		roleManagement.GET("/user/:userId/roles", middleware.ValidateRequest(validation.UserIDValidation), roleHandler.GetUserRoles)
@@ -205,7 +205,7 @@ func setupRoleRoutes(protected *gin.RouterGroup, roleHandler *handlers.RoleHandl
 }
 
 func setupPublicSubscriptionRoutes(api *gin.RouterGroup, subscriptionHandler *handlers.SubscriptionHandler) {
-	// Public endpoints (no auth required) - use different path to avoid conflicts
+	// Endpoint publik (tidak memerlukan autentikasi) - gunakan path berbeda untuk menghindari konflik
 	plans := api.Group("/plans")
 	{
 		plans.GET("", subscriptionHandler.GetAllPlans)
@@ -216,30 +216,39 @@ func setupPublicSubscriptionRoutes(api *gin.RouterGroup, subscriptionHandler *ha
 func setupProtectedSubscriptionRoutes(protected *gin.RouterGroup, subscriptionHandler *handlers.SubscriptionHandler) {
 	subscription := protected.Group("/subscription")
 	{
-		// Subscription management
+		// Manajemen langganan
 		subscription.GET("/subscriptions", subscriptionHandler.GetAllSubscriptions)
 
-		// Create subscription with validation
+		// Buat langganan dengan validasi
 		subscription.POST("/subscriptions", middleware.ValidateRequest(validation.CreateSubscriptionValidation), subscriptionHandler.CreateSubscription)
 
-		// ID validation for subscription operations
+		// Validasi ID untuk operasi langganan
 		subscription.GET("/subscriptions/:id", middleware.ValidateRequest(validation.IDValidation), subscriptionHandler.GetSubscriptionByID)
 		subscription.PUT("/subscriptions/:id", middleware.ValidateRequest(validation.UpdateSubscriptionValidation), subscriptionHandler.UpdateSubscription)
 		subscription.POST("/subscriptions/:id/renew", middleware.ValidateRequest(validation.RenewSubscriptionValidation), subscriptionHandler.RenewSubscription)
 		subscription.POST("/subscriptions/:id/cancel", middleware.ValidateRequest(validation.CancelSubscriptionValidation), subscriptionHandler.CancelSubscription)
 		subscription.POST("/subscriptions/:id/mark-paid", middleware.ValidateRequest(validation.IDValidation), subscriptionHandler.MarkPaymentAsPaid)
 
-		// Company subscription management
+		// Manajemen langganan perusahaan
 		subscription.GET("/companies/:id/subscription", middleware.ValidateRequest(validation.IDValidation), subscriptionHandler.GetCompanySubscription)
 		subscription.GET("/companies/:id/status", middleware.ValidateRequest(validation.IDValidation), subscriptionHandler.GetCompanySubscriptionStatus)
 
-		// Module access check - use different path to avoid conflict
+		// Pemeriksaan akses modul - gunakan path berbeda untuk menghindari konflik
 		subscription.GET("/module-access/:companyId/:moduleId", subscriptionHandler.CheckModuleAccess)
 
-		// Subscription utilities
+		// Utilitas langganan
 		subscription.GET("/stats", subscriptionHandler.GetSubscriptionStats)
 		subscription.GET("/expiring", subscriptionHandler.GetExpiringSubscriptions)
 		subscription.POST("/update-expired", subscriptionHandler.UpdateExpiredSubscriptions)
+	}
+
+	// Admin routes untuk manajemen subscription plan
+	admin := protected.Group("/admin")
+	{
+		// Manajemen subscription plan (admin only)
+		admin.POST("/subscription-plans", middleware.ValidateRequest(validation.CreateSubscriptionPlanValidation), subscriptionHandler.CreateSubscriptionPlan)
+		admin.PUT("/subscription-plans/:id", middleware.ValidateRequest(validation.UpdateSubscriptionPlanValidation), subscriptionHandler.UpdateSubscriptionPlan)
+		admin.DELETE("/subscription-plans/:id", middleware.ValidateRequest(validation.IDValidation), subscriptionHandler.DeleteSubscriptionPlan)
 	}
 }
 
@@ -248,13 +257,13 @@ func setupAuditRoutes(protected *gin.RouterGroup, auditHandler *handlers.AuditHa
 	{
 		audit.GET("/logs", auditHandler.GetAuditLogs)
 
-		// Create audit log
+		// Buat log audit
 		audit.POST("/logs", auditHandler.CreateAuditLog)
 
-		// User ID validation
+		// Validasi ID pengguna
 		audit.GET("/users/:userId/logs", middleware.ValidateRequest(validation.UserIDValidation), auditHandler.GetUserAuditLogs)
 
-		// Identity validation
+		// Validasi identitas
 		audit.GET("/users/identity/:identity/logs", middleware.ValidateRequest(validation.IdentityValidation), auditHandler.GetUserAuditLogsByIdentity)
 		audit.GET("/stats", auditHandler.GetAuditStats)
 	}
@@ -265,19 +274,19 @@ func setupBranchRoutes(protected *gin.RouterGroup, branchHandler *handlers.Branc
 	{
 		branches.GET("", branchHandler.GetBranches)
 
-		// ID validation for single branch operations
+		// Validasi ID untuk operasi cabang tunggal
 		branches.GET("/:id", middleware.ValidateRequest(validation.IDValidation), branchHandler.GetBranchByID)
 		branches.GET("/:id/hierarchy", middleware.ValidateRequest(validation.IDValidation), branchHandler.GetBranchHierarchy)
 		branches.GET("/:id/children", middleware.ValidateRequest(validation.IDValidation), branchHandler.GetBranchChildren)
 
-		// Create branch with validation
+		// Buat cabang dengan validasi
 		branches.POST("", middleware.ValidateRequest(validation.CreateBranchValidation), branchHandler.CreateBranch)
 
-		// Update branch with validation
+		// Update cabang dengan validasi
 		branches.PUT("/:id", middleware.ValidateRequest(validation.UpdateBranchValidation), branchHandler.UpdateBranch)
 		branches.DELETE("/:id", middleware.ValidateRequest(validation.IDValidation), branchHandler.DeleteBranch)
 
-		// Company ID validation
+		// Validasi ID perusahaan
 		branches.GET("/company/:companyId", middleware.ValidateRequest(validation.CompanyIDValidation), branchHandler.GetCompanyBranches)
 	}
 }

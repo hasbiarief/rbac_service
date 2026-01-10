@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"fmt"
-	"gin-scalable-api/internal/service"
+	"gin-scalable-api/internal/constants"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
 	"gin-scalable-api/pkg/response"
 	"net/http"
 
@@ -10,10 +12,10 @@ import (
 )
 
 type AuthHandler struct {
-	authService *service.AuthService
+	authService interfaces.AuthServiceInterface
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
+func NewAuthHandler(authService interfaces.AuthServiceInterface) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 	}
@@ -27,32 +29,37 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		UserIdentity string `json:"user_identity" validate:"required"`
-		Password     string `json:"password" validate:"required,min=6"`
-	})
+	// Type assert to the expected DTO struct
+	req, ok := validatedBody.(*dto.LoginRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	loginReq := &service.LoginRequest{
-		UserIdentity: req.UserIdentity,
-		Password:     req.Password,
+	// Validate that either email or user_identity is provided
+	if req.Email == "" && req.UserIdentity == "" {
+		response.Error(c, http.StatusBadRequest, "Invalid request", "either email or user_identity must be provided")
+		return
 	}
 
 	userAgent := c.GetHeader("User-Agent")
 	ip := c.ClientIP()
 
-	authResponse, err := h.authService.Login(loginReq, userAgent, ip)
+	// Set user agent and IP if not provided
+	if req.UserAgent == nil {
+		req.UserAgent = &userAgent
+	}
+	if req.IP == nil {
+		req.IP = &ip
+	}
+
+	authResponse, err := h.authService.Login(req)
 	if err != nil {
 		response.Error(c, http.StatusUnauthorized, "Login failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Login successful", authResponse)
+	response.Success(c, http.StatusOK, constants.MsgLoginSuccess, authResponse)
 }
 
 func (h *AuthHandler) LoginWithEmail(c *gin.Context) {
@@ -63,32 +70,37 @@ func (h *AuthHandler) LoginWithEmail(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Email    string `json:"email" validate:"required,email"`
-		Password string `json:"password" validate:"required,min=6"`
-	})
+	// Type assert to the expected DTO struct
+	req, ok := validatedBody.(*dto.LoginRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
 		return
 	}
 
-	// Convert to service request - use email as user_identity
-	loginReq := &service.LoginRequest{
-		UserIdentity: req.Email,
-		Password:     req.Password,
+	// Validate that email is provided for this endpoint
+	if req.Email == "" {
+		response.Error(c, http.StatusBadRequest, "Invalid request", "email must be provided")
+		return
 	}
 
 	userAgent := c.GetHeader("User-Agent")
 	ip := c.ClientIP()
 
-	authResponse, err := h.authService.Login(loginReq, userAgent, ip)
+	// Set user agent and IP if not provided
+	if req.UserAgent == nil {
+		req.UserAgent = &userAgent
+	}
+	if req.IP == nil {
+		req.IP = &ip
+	}
+
+	authResponse, err := h.authService.Login(req)
 	if err != nil {
 		response.Error(c, http.StatusUnauthorized, "Login failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Login successful", authResponse)
+	response.Success(c, http.StatusOK, constants.MsgLoginSuccess, authResponse)
 }
 
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
@@ -99,22 +111,20 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		RefreshToken string `json:"refresh_token" validate:"required"`
-	})
+	// Type assert to the expected DTO struct
+	req, ok := validatedBody.(*dto.RefreshTokenRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
 		return
 	}
 
-	authResponse, err := h.authService.RefreshToken(req.RefreshToken)
+	authResponse, err := h.authService.RefreshToken(req)
 	if err != nil {
 		response.Error(c, http.StatusUnauthorized, "Token refresh failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Token refreshed successfully", authResponse)
+	response.Success(c, http.StatusOK, constants.MsgTokenRefreshed, authResponse)
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {
@@ -125,11 +135,8 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		return
 	}
 
-	// Type assert to the expected struct - support both token and user_id
-	req, ok := validatedBody.(*struct {
-		Token  string `json:"token"`
-		UserID int64  `json:"user_id"`
-	})
+	// Type assert to the expected DTO struct
+	req, ok := validatedBody.(*dto.LogoutRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
 		return
@@ -155,7 +162,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Logged out successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgLogoutSuccess, nil)
 }
 
 func (h *AuthHandler) CheckUserTokens(c *gin.Context) {

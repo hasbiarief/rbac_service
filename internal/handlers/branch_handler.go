@@ -4,26 +4,28 @@ import (
 	"net/http"
 	"strconv"
 
-	"gin-scalable-api/internal/service"
+	"gin-scalable-api/internal/constants"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
 	"gin-scalable-api/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
 type BranchHandler struct {
-	branchService *service.BranchService
+	branchService interfaces.BranchServiceInterface
 }
 
-func NewBranchHandler(branchService *service.BranchService) *BranchHandler {
+func NewBranchHandler(branchService interfaces.BranchServiceInterface) *BranchHandler {
 	return &BranchHandler{
 		branchService: branchService,
 	}
 }
 
 func (h *BranchHandler) GetBranches(c *gin.Context) {
-	var req service.BranchListRequest
+	var req dto.BranchListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
+		response.Error(c, http.StatusBadRequest, "Invalid request parameter", err.Error())
 		return
 	}
 
@@ -36,7 +38,7 @@ func (h *BranchHandler) GetBranches(c *gin.Context) {
 			response.ErrorWithAutoStatus(c, "Failed to get branches", err.Error())
 			return
 		}
-		response.Success(c, http.StatusOK, "Branches retrieved successfully (nested)", result)
+		response.Success(c, http.StatusOK, constants.MsgBranchesRetrieved+" (nested)", result)
 		return
 	}
 
@@ -46,109 +48,83 @@ func (h *BranchHandler) GetBranches(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Branches retrieved successfully", result)
+	response.Success(c, http.StatusOK, constants.MsgBranchesRetrieved, result)
 }
 
 func (h *BranchHandler) GetBranchByID(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid branch ID", "Branch ID must be a valid number")
+		response.Error(c, http.StatusBadRequest, "Branch ID is invalid", "Branch ID must be a valid number")
 		return
 	}
 
 	result, err := h.branchService.GetBranchByID(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Branch not found", err.Error())
+		response.Error(c, http.StatusNotFound, constants.MsgBranchNotFound, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Branch retrieved successfully", result)
+	response.Success(c, http.StatusOK, constants.MsgBranchRetrieved, result)
 }
 
 func (h *BranchHandler) CreateBranch(c *gin.Context) {
-	// Get validated body from context (set by validation middleware)
+	// Ambil body yang sudah divalidasi dari context (diset oleh middleware validasi)
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
 		response.Error(c, http.StatusBadRequest, "Invalid request format", "validation failed")
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		CompanyID int64  `json:"company_id" validate:"required,min=1"`
-		Name      string `json:"name" validate:"required,min=2,max=100"`
-		Code      string `json:"code" validate:"required,min=2,max=20"`
-		ParentID  *int64 `json:"parent_id"`
-	})
+	// Type assertion ke DTO yang diharapkan
+	req, ok := validatedBody.(*dto.CreateBranchRequest)
 	if !ok {
-		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "body structure is invalid")
 		return
 	}
 
-	// Convert to service request
-	createReq := &service.CreateBranchRequest{
-		CompanyID: req.CompanyID,
-		Name:      req.Name,
-		Code:      req.Code,
-		ParentID:  req.ParentID,
-	}
-
-	result, err := h.branchService.CreateBranch(createReq)
+	result, err := h.branchService.CreateBranch(req)
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Failed to create branch", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Branch created successfully", result)
+	response.Success(c, http.StatusCreated, constants.MsgBranchCreated, result)
 }
 
 func (h *BranchHandler) UpdateBranch(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid branch ID", "Branch ID must be a valid number")
+		response.Error(c, http.StatusBadRequest, "Branch ID is invalid", "Branch ID must be a valid number")
 		return
 	}
 
-	// Get validated body from context (set by validation middleware)
+	// Ambil body yang sudah divalidasi dari context (diset oleh middleware validasi)
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
 		response.Error(c, http.StatusBadRequest, "Invalid request format", "validation failed")
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Name     string `json:"name"`
-		Code     string `json:"code"`
-		ParentID *int64 `json:"parent_id"`
-		IsActive *bool  `json:"is_active"`
-	})
+	// Type assertion ke DTO yang diharapkan
+	req, ok := validatedBody.(*dto.UpdateBranchRequest)
 	if !ok {
-		response.Error(c, http.StatusBadRequest, "Invalid request format", "invalid body structure")
+		response.Error(c, http.StatusBadRequest, "Invalid request format", "body structure is invalid")
 		return
 	}
 
-	// Convert to service request
-	updateReq := &service.UpdateBranchRequest{
-		Name:     req.Name,
-		Code:     req.Code,
-		ParentID: req.ParentID,
-		IsActive: req.IsActive,
-	}
-
-	result, err := h.branchService.UpdateBranch(id, updateReq)
+	result, err := h.branchService.UpdateBranch(id, req)
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Failed to update branch", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Branch updated successfully", result)
+	response.Success(c, http.StatusOK, constants.MsgBranchUpdated, result)
 }
 
 func (h *BranchHandler) DeleteBranch(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid branch ID", "Branch ID must be a valid number")
+		response.Error(c, http.StatusBadRequest, "Branch ID is invalid", "Branch ID must be a valid number")
 		return
 	}
 
@@ -157,20 +133,20 @@ func (h *BranchHandler) DeleteBranch(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Branch deleted successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgBranchDeleted, nil)
 }
 
 func (h *BranchHandler) GetCompanyBranches(c *gin.Context) {
 	companyID, err := strconv.ParseInt(c.Param("companyId"), 10, 64)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid company ID", "Company ID must be a valid number")
+		response.Error(c, http.StatusBadRequest, "Company ID is invalid", "Company ID must be a valid number")
 		return
 	}
 
-	// Get includeHierarchy from query parameter, default to true
+	// Ambil includeHierarchy dari parameter query, default ke true
 	includeHierarchy := c.DefaultQuery("include_hierarchy", "true") == "true"
 
-	// Check if nested structure is requested
+	// Periksa apakah struktur bersarang diminta
 	nested := c.DefaultQuery("nested", "false") == "true"
 
 	if nested {
@@ -179,7 +155,7 @@ func (h *BranchHandler) GetCompanyBranches(c *gin.Context) {
 			response.ErrorWithAutoStatus(c, "Failed to get company branches", err.Error())
 			return
 		}
-		response.Success(c, http.StatusOK, "Company branches retrieved successfully (nested)", result)
+		response.Success(c, http.StatusOK, constants.MsgCompanyBranchesRetrieved+" (nested)", result)
 		return
 	}
 
@@ -189,13 +165,13 @@ func (h *BranchHandler) GetCompanyBranches(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Company branches retrieved successfully", result)
+	response.Success(c, http.StatusOK, constants.MsgCompanyBranchesRetrieved, result)
 }
 
 func (h *BranchHandler) GetBranchChildren(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid branch ID", "Branch ID must be a valid number")
+		response.Error(c, http.StatusBadRequest, "Branch ID is invalid", "Branch ID must be a valid number")
 		return
 	}
 
@@ -205,16 +181,17 @@ func (h *BranchHandler) GetBranchChildren(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Branch children retrieved successfully", result)
+	response.Success(c, http.StatusOK, constants.MsgBranchChildrenRetrieved, result)
 }
+
 func (h *BranchHandler) GetBranchHierarchy(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid branch ID", "Branch ID must be a valid number")
+		response.Error(c, http.StatusBadRequest, "Branch ID is invalid", "Branch ID must be a valid number")
 		return
 	}
 
-	// Check if nested structure is requested
+	// Periksa apakah struktur bersarang diminta
 	nested := c.DefaultQuery("nested", "false") == "true"
 
 	result, err := h.branchService.GetBranchHierarchyByID(id, nested)
@@ -223,7 +200,7 @@ func (h *BranchHandler) GetBranchHierarchy(c *gin.Context) {
 		return
 	}
 
-	message := "Branch hierarchy retrieved successfully"
+	message := constants.MsgBranchHierarchyRetrieved
 	if nested {
 		message += " (nested)"
 	}

@@ -146,3 +146,84 @@ func (r *CompanyRepository) Delete(id int64) error {
 
 	return nil
 }
+
+// GetByCode retrieves a company by code
+func (r *CompanyRepository) GetByCode(code string) (*models.Company, error) {
+	query := `
+		SELECT id, name, code, is_active, created_at, updated_at
+		FROM companies
+		WHERE code = $1
+	`
+
+	company := &models.Company{}
+	err := r.db.QueryRow(query, code).Scan(
+		&company.ID, &company.Name, &company.Code,
+		&company.IsActive, &company.CreatedAt, &company.UpdatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("company not found")
+		}
+		return nil, fmt.Errorf("failed to get company: %w", err)
+	}
+
+	return company, nil
+}
+
+// GetWithStats retrieves a company with statistics
+func (r *CompanyRepository) GetWithStats(id int64) (*models.CompanyWithStats, error) {
+	// First get the company
+	company, err := r.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get user count
+	var userCount int
+	userQuery := `SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id = ur.user_id WHERE ur.company_id = $1 AND u.deleted_at IS NULL`
+	err = r.db.QueryRow(userQuery, id).Scan(&userCount)
+	if err != nil {
+		userCount = 0 // Default to 0 if error
+	}
+
+	// Get branch count
+	var branchCount int
+	branchQuery := `SELECT COUNT(*) FROM branches WHERE company_id = $1 AND is_active = true`
+	err = r.db.QueryRow(branchQuery, id).Scan(&branchCount)
+	if err != nil {
+		branchCount = 0 // Default to 0 if error
+	}
+
+	return &models.CompanyWithStats{
+		Company:       *company,
+		TotalUsers:    userCount,
+		TotalBranches: branchCount,
+	}, nil
+}
+
+// Count returns total count of companies with filtering
+func (r *CompanyRepository) Count(search string, isActive *bool) (int64, error) {
+	query := "SELECT COUNT(*) FROM companies WHERE 1=1"
+	args := []interface{}{}
+	argIndex := 1
+
+	if search != "" {
+		query += fmt.Sprintf(" AND (name ILIKE $%d OR code ILIKE $%d)", argIndex, argIndex+1)
+		searchPattern := "%" + search + "%"
+		args = append(args, searchPattern, searchPattern)
+		argIndex += 2
+	}
+
+	if isActive != nil {
+		query += fmt.Sprintf(" AND is_active = $%d", argIndex)
+		args = append(args, *isActive)
+	}
+
+	var count int64
+	err := r.db.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get company count: %w", err)
+	}
+
+	return count, nil
+}

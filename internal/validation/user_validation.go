@@ -1,6 +1,9 @@
 package validation
 
-import "gin-scalable-api/middleware"
+import (
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/middleware"
+)
 
 // User validation rules
 var UserListValidation = middleware.ValidationRules{
@@ -13,44 +16,20 @@ var UserListValidation = middleware.ValidationRules{
 }
 
 var CreateUserValidation = middleware.ValidationRules{
-	Body: &struct {
-		Name         string  `json:"name" validate:"required,min=2,max=100"`
-		Email        string  `json:"email" validate:"required,email,max=255"`
-		UserIdentity *string `json:"user_identity" validate:"omitempty,min=3,max=50"`
-		Password     string  `json:"password" validate:"omitempty,min=6,max=100"`
-	}{},
+	Body: &dto.CreateUserRequest{},
 }
 
 var UpdateUserValidation = middleware.ValidationRules{
-	Body: &struct {
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		IsActive *bool  `json:"is_active"`
-	}{},
+	Params: IDValidation.Params,
+	Body:   &dto.UpdateUserRequest{},
 }
 
+var ChangePasswordValidation = middleware.ValidationRules{
+	Params: IDValidation.Params,
+	Body:   &dto.ChangePasswordRequest{},
+}
+
+// Access check validation
 var AccessCheckValidation = middleware.ValidationRules{
-	Body: &struct {
-		UserIdentity string `json:"user_identity" validate:"required"`
-		ModuleURL    string `json:"module_url" validate:"required"`
-	}{},
-}
-
-var PasswordChangeValidation = middleware.ValidationRules{
-	Params: []middleware.ParamValidation{
-		{Name: "id", Type: "int", Required: true, Min: IntPtr(1)},
-	},
-	Body: &struct {
-		CurrentPassword string `json:"current_password" validate:"required,min=6"`
-		NewPassword     string `json:"new_password" validate:"required,min=6,max=100"`
-		ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
-	}{},
-}
-
-var MyPasswordChangeValidation = middleware.ValidationRules{
-	Body: &struct {
-		CurrentPassword string `json:"current_password" validate:"required,min=6"`
-		NewPassword     string `json:"new_password" validate:"required,min=6,max=100"`
-		ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
-	}{},
+	Body: &dto.AccessCheckRequest{},
 }

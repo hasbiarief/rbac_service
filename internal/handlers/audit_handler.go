@@ -4,24 +4,26 @@ import (
 	"net/http"
 	"strconv"
 
-	"gin-scalable-api/internal/service"
+	"gin-scalable-api/internal/constants"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
 	"gin-scalable-api/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
 type AuditHandler struct {
-	auditService *service.AuditService
+	auditService interfaces.AuditServiceInterface
 }
 
-func NewAuditHandler(auditService *service.AuditService) *AuditHandler {
+func NewAuditHandler(auditService interfaces.AuditServiceInterface) *AuditHandler {
 	return &AuditHandler{
 		auditService: auditService,
 	}
 }
 
 func (h *AuditHandler) GetAuditLogs(c *gin.Context) {
-	var req service.AuditLogListRequest
+	var req dto.AuditListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Invalid request parameters", err.Error())
 		return
@@ -33,11 +35,11 @@ func (h *AuditHandler) GetAuditLogs(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Audit logs retrieved successfully", auditResponse)
+	response.Success(c, http.StatusOK, constants.MsgAuditLogsRetrieved, auditResponse)
 }
 
 func (h *AuditHandler) CreateAuditLog(c *gin.Context) {
-	var req service.CreateAuditLogRequest
+	var req dto.CreateAuditLogRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
 		return
@@ -49,7 +51,7 @@ func (h *AuditHandler) CreateAuditLog(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Audit log created successfully", auditResponse)
+	response.Success(c, http.StatusCreated, constants.MsgAuditLogCreated, auditResponse)
 }
 
 func (h *AuditHandler) GetUserAuditLogs(c *gin.Context) {
@@ -71,7 +73,7 @@ func (h *AuditHandler) GetUserAuditLogs(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "User audit logs retrieved successfully", auditResponse)
+	response.Success(c, http.StatusOK, constants.MsgAuditLogsRetrieved, auditResponse)
 }
 
 func (h *AuditHandler) GetUserAuditLogsByIdentity(c *gin.Context) {
@@ -93,7 +95,7 @@ func (h *AuditHandler) GetUserAuditLogsByIdentity(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "User audit logs retrieved successfully", auditResponse)
+	response.Success(c, http.StatusOK, constants.MsgAuditLogsRetrieved, auditResponse)
 }
 
 func (h *AuditHandler) GetAuditStats(c *gin.Context) {
@@ -103,5 +105,5 @@ func (h *AuditHandler) GetAuditStats(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Audit statistics retrieved successfully", statsResponse)
+	response.Success(c, http.StatusOK, constants.MsgAuditStatsRetrieved, statsResponse)
 }

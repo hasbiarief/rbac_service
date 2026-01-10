@@ -415,7 +415,7 @@ func (r *SubscriptionRepository) UpdateExpiredSubscriptions() error {
 // MarkPaymentAsPaid marks a subscription payment as paid and updates payment dates
 func (r *SubscriptionRepository) MarkPaymentAsPaid(subscriptionID int64) error {
 	// Get current subscription to determine next payment date
-	subscription, err := r.GetSubscriptionByID(subscriptionID)
+	subscription, err := r.GetByID(subscriptionID)
 	if err != nil {
 		return fmt.Errorf("failed to get subscription: %w", err)
 	}
@@ -448,6 +448,185 @@ func (r *SubscriptionRepository) MarkPaymentAsPaid(subscriptionID int64) error {
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("subscription not found")
+	}
+
+	return nil
+}
+
+// Interface-compatible methods
+func (r *SubscriptionRepository) GetAll(limit, offset int, filters map[string]interface{}) ([]*models.Subscription, error) {
+	query := `
+		SELECT s.id, s.company_id, s.plan_id, s.status, s.billing_cycle, s.start_date, 
+			   s.end_date, s.price, s.currency, s.payment_status, s.last_payment_date,
+			   s.next_payment_date, s.auto_renew, s.created_at, s.updated_at,
+			   c.name as company_name, sp.display_name as plan_display_name
+		FROM subscriptions s
+		JOIN companies c ON s.company_id = c.id
+		JOIN subscription_plans sp ON s.plan_id = sp.id
+		WHERE 1=1
+	`
+	args := []interface{}{}
+	argIndex := 1
+
+	// Apply filters
+	if companyID, ok := filters["company_id"]; ok {
+		query += fmt.Sprintf(" AND s.company_id = $%d", argIndex)
+		args = append(args, companyID)
+		argIndex++
+	}
+
+	if status, ok := filters["status"]; ok {
+		query += fmt.Sprintf(" AND s.status = $%d", argIndex)
+		args = append(args, status)
+		argIndex++
+	}
+
+	query += " ORDER BY s.created_at DESC"
+
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT $%d", argIndex)
+		args = append(args, limit)
+		argIndex++
+	}
+
+	if offset > 0 {
+		query += fmt.Sprintf(" OFFSET $%d", argIndex)
+		args = append(args, offset)
+	}
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get subscriptions: %w", err)
+	}
+	defer rows.Close()
+
+	var subscriptions []*models.Subscription
+	for rows.Next() {
+		subscription := &models.Subscription{}
+		var companyName, planDisplayName string
+		err := rows.Scan(
+			&subscription.ID, &subscription.CompanyID, &subscription.PlanID,
+			&subscription.Status, &subscription.BillingCycle, &subscription.StartDate,
+			&subscription.EndDate, &subscription.Price, &subscription.Currency,
+			&subscription.PaymentStatus, &subscription.LastPaymentDate,
+			&subscription.NextPaymentDate, &subscription.AutoRenew,
+			&subscription.CreatedAt, &subscription.UpdatedAt,
+			&companyName, &planDisplayName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan subscription: %w", err)
+		}
+
+		subscription.CompanyName = companyName
+		subscription.PlanDisplayName = planDisplayName
+		subscriptions = append(subscriptions, subscription)
+	}
+
+	return subscriptions, nil
+}
+
+func (r *SubscriptionRepository) GetByID(id int64) (*models.Subscription, error) {
+	return r.GetSubscriptionByID(id)
+}
+
+func (r *SubscriptionRepository) GetByCompanyID(companyID int64) (*models.Subscription, error) {
+	return r.GetCompanySubscription(companyID)
+}
+
+func (r *SubscriptionRepository) Delete(id int64) error {
+	return r.CancelSubscription(id, "Deleted via API", true)
+}
+
+func (r *SubscriptionRepository) Count(filters map[string]interface{}) (int64, error) {
+	query := "SELECT COUNT(*) FROM subscriptions s WHERE 1=1"
+	args := []interface{}{}
+	argIndex := 1
+
+	// Apply filters
+	if companyID, ok := filters["company_id"]; ok {
+		query += fmt.Sprintf(" AND s.company_id = $%d", argIndex)
+		args = append(args, companyID)
+		argIndex++
+	}
+
+	if status, ok := filters["status"]; ok {
+		query += fmt.Sprintf(" AND s.status = $%d", argIndex)
+		args = append(args, status)
+	}
+
+	var count int64
+	err := r.db.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get subscription count: %w", err)
+	}
+
+	return count, nil
+}
+
+// Plan methods
+func (r *SubscriptionRepository) GetPlanByName(name string) (*models.SubscriptionPlan, error) {
+	query := `
+		SELECT id, name, display_name, description, price_monthly, price_yearly, 
+			   max_users, max_branches, features, is_active, created_at, updated_at
+		FROM subscription_plans
+		WHERE name = $1
+	`
+
+	plan := &models.SubscriptionPlan{}
+	err := r.db.QueryRow(query, name).Scan(
+		&plan.ID, &plan.Name, &plan.DisplayName, &plan.Description,
+		&plan.PriceMonthly, &plan.PriceYearly, &plan.MaxUsers, &plan.MaxBranches,
+		&plan.Features, &plan.IsActive, &plan.CreatedAt, &plan.UpdatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("subscription plan not found")
+		}
+		return nil, fmt.Errorf("failed to get subscription plan: %w", err)
+	}
+
+	return plan, nil
+}
+
+func (r *SubscriptionRepository) CreatePlan(plan *models.SubscriptionPlan) error {
+	query, values := r.BuildInsertQuery(plan)
+
+	err := r.db.QueryRow(query, values...).Scan(
+		&plan.ID, &plan.CreatedAt, &plan.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create subscription plan: %w", err)
+	}
+
+	return nil
+}
+
+func (r *SubscriptionRepository) UpdatePlan(plan *models.SubscriptionPlan) error {
+	query, values := r.BuildUpdateQuery(plan, plan.ID)
+
+	err := r.db.QueryRow(query, values...).Scan(&plan.UpdatedAt)
+	if err != nil {
+		return fmt.Errorf("failed to update subscription plan: %w", err)
+	}
+
+	return nil
+}
+
+func (r *SubscriptionRepository) DeletePlan(id int64) error {
+	query := `UPDATE subscription_plans SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+
+	result, err := r.db.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete subscription plan: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("subscription plan not found")
 	}
 
 	return nil

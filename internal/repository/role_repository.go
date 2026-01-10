@@ -20,7 +20,7 @@ func NewRoleRepository(db *sql.DB) *RoleRepository {
 }
 
 // GetAll retrieves all roles with pagination and filtering
-func (r *RoleRepository) GetAll(limit, offset int, search string) ([]*models.Role, error) {
+func (r *RoleRepository) GetAll(limit, offset int, search string, isActive *bool) ([]*models.Role, error) {
 	query := `
 		SELECT id, name, description, is_active, created_at, updated_at
 		FROM roles
@@ -34,6 +34,12 @@ func (r *RoleRepository) GetAll(limit, offset int, search string) ([]*models.Rol
 		searchPattern := "%" + search + "%"
 		args = append(args, searchPattern, searchPattern)
 		argIndex += 2
+	}
+
+	if isActive != nil {
+		query += fmt.Sprintf(" AND is_active = $%d", argIndex)
+		args = append(args, *isActive)
+		argIndex++
 	}
 
 	query += " ORDER BY name"
@@ -142,15 +148,18 @@ func (r *RoleRepository) Delete(id int64) error {
 }
 
 // AssignUserRole assigns a role to a user
-func (r *RoleRepository) AssignUserRole(userID, roleID, companyID int64, branchID *int64) error {
+func (r *RoleRepository) AssignUserRole(userRole *models.UserRole) error {
 	query := `
-		INSERT INTO user_roles (user_id, role_id, company_id, branch_id)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO user_roles (user_id, role_id, company_id, branch_id, created_at)
+		VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
 		ON CONFLICT (user_id, role_id, company_id, branch_id) DO NOTHING
+		RETURNING id, created_at
 	`
 
-	_, err := r.db.Exec(query, userID, roleID, companyID, branchID)
-	if err != nil {
+	err := r.db.QueryRow(query, userRole.UserID, userRole.RoleID, userRole.CompanyID, userRole.BranchID).Scan(
+		&userRole.ID, &userRole.CreatedAt,
+	)
+	if err != nil && err != sql.ErrNoRows {
 		return fmt.Errorf("failed to assign user role: %w", err)
 	}
 
@@ -158,10 +167,10 @@ func (r *RoleRepository) AssignUserRole(userID, roleID, companyID int64, branchI
 }
 
 // RemoveUserRole removes a role from a user
-func (r *RoleRepository) RemoveUserRole(userID, roleID int64) error {
-	query := `DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2`
+func (r *RoleRepository) RemoveUserRole(userID, roleID, companyID int64) error {
+	query := `DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2 AND company_id = $3`
 
-	result, err := r.db.Exec(query, userID, roleID)
+	result, err := r.db.Exec(query, userID, roleID, companyID)
 	if err != nil {
 		return fmt.Errorf("failed to remove user role: %w", err)
 	}
@@ -176,6 +185,37 @@ func (r *RoleRepository) RemoveUserRole(userID, roleID int64) error {
 	}
 
 	return nil
+}
+
+// GetUserRoles retrieves user role assignments for a specific user
+func (r *RoleRepository) GetUserRoles(userID int64) ([]*models.UserRole, error) {
+	query := `
+		SELECT ur.id, ur.user_id, ur.role_id, ur.company_id, ur.branch_id, ur.created_at
+		FROM user_roles ur
+		WHERE ur.user_id = $1
+		ORDER BY ur.created_at
+	`
+
+	rows, err := r.db.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user roles: %w", err)
+	}
+	defer rows.Close()
+
+	var userRoles []*models.UserRole
+	for rows.Next() {
+		userRole := &models.UserRole{}
+		err := rows.Scan(
+			&userRole.ID, &userRole.UserID, &userRole.RoleID,
+			&userRole.CompanyID, &userRole.BranchID, &userRole.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user role: %w", err)
+		}
+		userRoles = append(userRoles, userRole)
+	}
+
+	return userRoles, nil
 }
 
 // GetUsersByRole retrieves users assigned to a specific role
@@ -216,40 +256,8 @@ func (r *RoleRepository) GetUsersByRole(roleID int64, limit int) ([]*models.User
 	return users, nil
 }
 
-// GetUserRoles retrieves roles assigned to a specific user
-func (r *RoleRepository) GetUserRoles(userID int64) ([]*models.Role, error) {
-	query := `
-		SELECT r.id, r.name, r.description, r.created_at, r.updated_at
-		FROM roles r
-		JOIN user_roles ur ON r.id = ur.role_id
-		WHERE ur.user_id = $1
-		ORDER BY r.name
-	`
-
-	rows, err := r.db.Query(query, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user roles: %w", err)
-	}
-	defer rows.Close()
-
-	var roles []*models.Role
-	for rows.Next() {
-		role := &models.Role{}
-		err := rows.Scan(
-			&role.ID, &role.Name, &role.Description,
-			&role.CreatedAt, &role.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan role: %w", err)
-		}
-		roles = append(roles, role)
-	}
-
-	return roles, nil
-}
-
 // UpdateRoleModules updates module permissions for a role
-func (r *RoleRepository) UpdateRoleModules(roleID int64, modules []models.RoleModule) error {
+func (r *RoleRepository) UpdateRoleModules(roleID int64, modules []*models.RoleModule) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -278,4 +286,129 @@ func (r *RoleRepository) UpdateRoleModules(roleID int64, modules []models.RoleMo
 	}
 
 	return nil
+}
+
+// GetByName retrieves a role by name
+func (r *RoleRepository) GetByName(name string) (*models.Role, error) {
+	query := `
+		SELECT id, name, description, is_active, created_at, updated_at
+		FROM roles
+		WHERE name = $1
+	`
+
+	role := &models.Role{}
+	err := r.db.QueryRow(query, name).Scan(
+		&role.ID, &role.Name, &role.Description, &role.IsActive,
+		&role.CreatedAt, &role.UpdatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("role not found")
+		}
+		return nil, fmt.Errorf("failed to get role: %w", err)
+	}
+
+	return role, nil
+}
+
+// GetWithPermissions retrieves a role with its module permissions
+func (r *RoleRepository) GetWithPermissions(id int64) (*models.RoleWithPermissions, error) {
+	// First get the role
+	role, err := r.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get role module permissions with module details
+	query := `
+		SELECT rm.module_id, m.name as module_name, m.url as module_url,
+		       rm.can_read, rm.can_write, rm.can_delete
+		FROM role_modules rm
+		JOIN modules m ON rm.module_id = m.id
+		WHERE rm.role_id = $1
+		ORDER BY m.name
+	`
+
+	rows, err := r.db.Query(query, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get role module permissions: %w", err)
+	}
+	defer rows.Close()
+
+	var modulePermissions []models.RoleModulePermission
+	for rows.Next() {
+		perm := models.RoleModulePermission{}
+		err := rows.Scan(
+			&perm.ModuleID, &perm.ModuleName, &perm.ModuleURL,
+			&perm.CanRead, &perm.CanWrite, &perm.CanDelete,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan role module permission: %w", err)
+		}
+		modulePermissions = append(modulePermissions, perm)
+	}
+
+	return &models.RoleWithPermissions{
+		Role:    *role,
+		Modules: modulePermissions,
+	}, nil
+}
+
+// GetRoleModules retrieves module permissions for a role
+func (r *RoleRepository) GetRoleModules(roleID int64) ([]*models.RoleModule, error) {
+	query := `
+		SELECT rm.id, rm.role_id, rm.module_id, rm.can_read, rm.can_write, rm.can_delete, rm.created_at
+		FROM role_modules rm
+		WHERE rm.role_id = $1
+		ORDER BY rm.module_id
+	`
+
+	rows, err := r.db.Query(query, roleID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get role modules: %w", err)
+	}
+	defer rows.Close()
+
+	var roleModules []*models.RoleModule
+	for rows.Next() {
+		roleModule := &models.RoleModule{}
+		err := rows.Scan(
+			&roleModule.ID, &roleModule.RoleID, &roleModule.ModuleID,
+			&roleModule.CanRead, &roleModule.CanWrite, &roleModule.CanDelete,
+			&roleModule.CreatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan role module: %w", err)
+		}
+		roleModules = append(roleModules, roleModule)
+	}
+
+	return roleModules, nil
+}
+
+// Count returns total count of roles with filtering
+func (r *RoleRepository) Count(search string, isActive *bool) (int64, error) {
+	query := "SELECT COUNT(*) FROM roles WHERE 1=1"
+	args := []interface{}{}
+	argIndex := 1
+
+	if search != "" {
+		query += fmt.Sprintf(" AND (name ILIKE $%d OR description ILIKE $%d)", argIndex, argIndex+1)
+		searchPattern := "%" + search + "%"
+		args = append(args, searchPattern, searchPattern)
+		argIndex += 2
+	}
+
+	if isActive != nil {
+		query += fmt.Sprintf(" AND is_active = $%d", argIndex)
+		args = append(args, *isActive)
+	}
+
+	var count int64
+	err := r.db.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get role count: %w", err)
+	}
+
+	return count, nil
 }

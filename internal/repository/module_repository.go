@@ -20,7 +20,7 @@ func NewModuleRepository(db *sql.DB) *ModuleRepository {
 }
 
 // GetAll retrieves all modules with pagination and filtering
-func (r *ModuleRepository) GetAll(limit, offset int, category, search string, isActive *bool) ([]*models.Module, error) {
+func (r *ModuleRepository) GetAll(limit, offset int, search string, category, subscriptionTier string, parentID *int64, isActive *bool) ([]*models.Module, error) {
 	query := `
 		SELECT id, category, name, url, icon, description, parent_id, subscription_tier, is_active, created_at, updated_at
 		FROM modules
@@ -29,17 +29,29 @@ func (r *ModuleRepository) GetAll(limit, offset int, category, search string, is
 	args := []interface{}{}
 	argIndex := 1
 
+	if search != "" {
+		query += fmt.Sprintf(" AND (name ILIKE $%d OR description ILIKE $%d)", argIndex, argIndex+1)
+		searchPattern := "%" + search + "%"
+		args = append(args, searchPattern, searchPattern)
+		argIndex += 2
+	}
+
 	if category != "" {
 		query += fmt.Sprintf(" AND category = $%d", argIndex)
 		args = append(args, category)
 		argIndex++
 	}
 
-	if search != "" {
-		query += fmt.Sprintf(" AND (name ILIKE $%d OR description ILIKE $%d)", argIndex, argIndex+1)
-		searchPattern := "%" + search + "%"
-		args = append(args, searchPattern, searchPattern)
-		argIndex += 2
+	if subscriptionTier != "" {
+		query += fmt.Sprintf(" AND subscription_tier = $%d", argIndex)
+		args = append(args, subscriptionTier)
+		argIndex++
+	}
+
+	if parentID != nil {
+		query += fmt.Sprintf(" AND parent_id = $%d", argIndex)
+		args = append(args, *parentID)
+		argIndex++
 	}
 
 	if isActive != nil {
@@ -189,8 +201,8 @@ func (r *ModuleRepository) GetChildren(parentID int64) ([]*models.Module, error)
 	return modules, nil
 }
 
-// GetAncestors retrieves ancestor modules of a module
-func (r *ModuleRepository) GetAncestors(moduleID int64) ([]*models.Module, error) {
+// GetAncestors retrieves ancestor modules of a module with user filtering
+func (r *ModuleRepository) GetAncestors(moduleID int64, userID int64) ([]*models.Module, error) {
 	query := `
 		WITH RECURSIVE ancestors AS (
 			SELECT id, category, name, url, icon, description, parent_id, subscription_tier, is_active, created_at, updated_at
@@ -272,54 +284,48 @@ func (r *ModuleRepository) GetTree(category string) ([]*models.Module, error) {
 }
 
 // GetTreeStructure retrieves modules in hierarchical tree structure
-func (r *ModuleRepository) GetTreeStructure(category string) ([]*models.ModuleWithChildren, error) {
-	// First get all modules
-	modules, err := r.GetTree(category)
+// GetTreeStructure retrieves modules in hierarchical tree structure with user filtering
+func (r *ModuleRepository) GetTreeStructure(category string, userID int64) ([]*models.Module, error) {
+	// For now, just return flat modules - tree structure building is done in service
+	query := `
+		SELECT id, category, name, url, icon, description, parent_id, subscription_tier, is_active, created_at, updated_at
+		FROM modules
+		WHERE is_active = true
+	`
+	args := []interface{}{}
+
+	if category != "" {
+		query += " AND category = $1"
+		args = append(args, category)
+	}
+
+	query += " ORDER BY subscription_tier, name"
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get module tree: %w", err)
 	}
+	defer rows.Close()
 
-	// Convert to map for easy lookup
-	moduleMap := make(map[int64]*models.ModuleWithChildren)
-	var rootModules []*models.ModuleWithChildren
-
-	// Convert all modules to ModuleWithChildren
-	for _, module := range modules {
-		moduleWithChildren := &models.ModuleWithChildren{
-			ID:               module.ID,
-			Category:         module.Category,
-			Name:             module.Name,
-			URL:              module.URL,
-			Icon:             module.Icon,
-			Description:      module.Description,
-			ParentID:         module.ParentID,
-			SubscriptionTier: module.SubscriptionTier,
-			IsActive:         module.IsActive,
-			CreatedAt:        module.CreatedAt,
-			UpdatedAt:        module.UpdatedAt,
-			Children:         []*models.ModuleWithChildren{},
+	var modules []*models.Module
+	for rows.Next() {
+		module := &models.Module{}
+		err := rows.Scan(
+			&module.ID, &module.Category, &module.Name, &module.URL,
+			&module.Icon, &module.Description, &module.ParentID, &module.SubscriptionTier,
+			&module.IsActive, &module.CreatedAt, &module.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan module: %w", err)
 		}
-		moduleMap[module.ID] = moduleWithChildren
+		modules = append(modules, module)
 	}
 
-	// Build tree structure
-	for _, module := range moduleMap {
-		if module.ParentID == nil {
-			// Root module
-			rootModules = append(rootModules, module)
-		} else {
-			// Child module - add to parent's children
-			if parent, exists := moduleMap[*module.ParentID]; exists {
-				parent.Children = append(parent.Children, module)
-			}
-		}
-	}
-
-	return rootModules, nil
+	return modules, nil
 }
 
-// GetTreeByParentName retrieves modules tree structure by parent module name
-func (r *ModuleRepository) GetTreeByParentName(parentName string) ([]*models.ModuleWithChildren, error) {
+// GetTreeByParentName retrieves modules tree structure by parent module name with user filtering
+func (r *ModuleRepository) GetTreeByParentName(parentName string, userID int64) ([]*models.Module, error) {
 	// First find the parent module
 	parentQuery := `
 		SELECT id FROM modules 
@@ -331,7 +337,7 @@ func (r *ModuleRepository) GetTreeByParentName(parentName string) ([]*models.Mod
 	err := r.db.QueryRow(parentQuery, parentName).Scan(&parentID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return []*models.ModuleWithChildren{}, nil // Return empty array if parent not found
+			return []*models.Module{}, nil // Return empty array if parent not found
 		}
 		return nil, fmt.Errorf("failed to find parent module: %w", err)
 	}
@@ -377,129 +383,137 @@ func (r *ModuleRepository) GetTreeByParentName(parentName string) ([]*models.Mod
 		modules = append(modules, module)
 	}
 
-	// If no modules found, return empty array
-	if len(modules) == 0 {
-		return []*models.ModuleWithChildren{}, nil
-	}
-
-	// Convert to tree structure
-	moduleMap := make(map[int64]*models.ModuleWithChildren)
-	var rootModule *models.ModuleWithChildren
-
-	// Convert all modules to ModuleWithChildren and build map
-	for _, module := range modules {
-		moduleWithChildren := &models.ModuleWithChildren{
-			ID:               module.ID,
-			Category:         module.Category,
-			Name:             module.Name,
-			URL:              module.URL,
-			Icon:             module.Icon,
-			Description:      module.Description,
-			ParentID:         module.ParentID,
-			SubscriptionTier: module.SubscriptionTier,
-			IsActive:         module.IsActive,
-			CreatedAt:        module.CreatedAt,
-			UpdatedAt:        module.UpdatedAt,
-			Children:         []*models.ModuleWithChildren{},
-		}
-		moduleMap[module.ID] = moduleWithChildren
-
-		// Identify the root module (the one we searched for)
-		if module.ID == parentID {
-			rootModule = moduleWithChildren
-		}
-	}
-
-	// Build tree structure by connecting children to parents
-	for _, module := range moduleMap {
-		if module.ParentID != nil && module.ID != parentID {
-			// This is a child module - add to parent's children
-			if parent, exists := moduleMap[*module.ParentID]; exists {
-				parent.Children = append(parent.Children, module)
-			}
-		}
-	}
-
-	// Return only the root module with its nested children
-	if rootModule != nil {
-		return []*models.ModuleWithChildren{rootModule}, nil
-	}
-
-	return []*models.ModuleWithChildren{}, nil
+	return modules, nil
 }
 
-// GetUserModules retrieves modules accessible by a user
-func (r *ModuleRepository) GetUserModules(userID int64, category string, limit int) ([]*models.Module, error) {
+// GetUserModules retrieves modules accessible by a user with company filtering
+func (r *ModuleRepository) GetUserModules(userID, companyID int64) ([]*models.UserModule, error) {
 	query := `
-		SELECT DISTINCT m.id, m.category, m.name, m.url, m.icon, m.description, m.parent_id, m.subscription_tier, m.is_active, m.created_at, m.updated_at
+		SELECT DISTINCT m.id, m.category, m.name, m.url, m.icon, m.description, m.parent_id, m.subscription_tier, m.is_active, m.created_at, m.updated_at,
+			rm.can_read, rm.can_write, rm.can_delete
 		FROM modules m
 		JOIN role_modules rm ON m.id = rm.module_id
 		JOIN user_roles ur ON rm.role_id = ur.role_id
 		WHERE ur.user_id = $1 
+			AND (ur.company_id = $2 OR $2 = 0)
 			AND rm.can_read = true
 			AND m.is_active = true
+		ORDER BY m.category, m.subscription_tier, m.name
 	`
-	args := []interface{}{userID}
-	argIndex := 2
 
-	if category != "" {
-		query += fmt.Sprintf(" AND m.category = $%d", argIndex)
-		args = append(args, category)
-		argIndex++
-	}
-
-	query += " ORDER BY m.category, m.subscription_tier, m.name"
-
-	if limit > 0 {
-		query += fmt.Sprintf(" LIMIT $%d", argIndex)
-		args = append(args, limit)
-	}
-
-	rows, err := r.db.Query(query, args...)
+	rows, err := r.db.Query(query, userID, companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user modules: %w", err)
 	}
 	defer rows.Close()
 
-	var modules []*models.Module
+	var userModules []*models.UserModule
 	for rows.Next() {
-		module := &models.Module{}
+		userModule := &models.UserModule{}
 		err := rows.Scan(
-			&module.ID, &module.Category, &module.Name, &module.URL,
-			&module.Icon, &module.Description, &module.ParentID, &module.SubscriptionTier,
-			&module.IsActive, &module.CreatedAt, &module.UpdatedAt,
+			&userModule.ID, &userModule.Category, &userModule.Name, &userModule.URL,
+			&userModule.Icon, &userModule.Description, &userModule.ParentID, &userModule.SubscriptionTier,
+			&userModule.IsActive, &userModule.CreatedAt, &userModule.UpdatedAt,
+			&userModule.CanRead, &userModule.CanWrite, &userModule.CanDelete,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan module: %w", err)
+			return nil, fmt.Errorf("failed to scan user module: %w", err)
 		}
-		modules = append(modules, module)
+		userModules = append(userModules, userModule)
 	}
 
-	return modules, nil
+	return userModules, nil
 }
 
 // CheckUserAccess checks if user has access to a specific module
-func (r *ModuleRepository) CheckUserAccess(userIdentity, moduleURL string) (bool, error) {
+func (r *ModuleRepository) CheckUserAccess(userID int64, moduleURL string) (bool, error) {
 	query := `
 		SELECT EXISTS(
 			SELECT 1
 			FROM modules m
 			JOIN role_modules rm ON m.id = rm.module_id
 			JOIN user_roles ur ON rm.role_id = ur.role_id
-			JOIN users u ON ur.user_id = u.id
-			WHERE u.user_identity = $1 
+			WHERE ur.user_id = $1 
 				AND m.url = $2
 				AND rm.can_read = true
 				AND m.is_active = true
-				AND u.is_active = true
 		)
 	`
 
 	var hasAccess bool
-	err := r.db.QueryRow(query, userIdentity, moduleURL).Scan(&hasAccess)
+	err := r.db.QueryRow(query, userID, moduleURL).Scan(&hasAccess)
 	if err != nil {
 		return false, fmt.Errorf("failed to check user access: %w", err)
 	}
 
 	return hasAccess, nil
+}
+
+// GetByURL retrieves a module by URL
+func (r *ModuleRepository) GetByURL(url string) (*models.Module, error) {
+	query := `
+		SELECT id, category, name, url, icon, description, parent_id, subscription_tier, is_active, created_at, updated_at
+		FROM modules
+		WHERE url = $1
+	`
+
+	module := &models.Module{}
+	err := r.db.QueryRow(query, url).Scan(
+		&module.ID, &module.Category, &module.Name, &module.URL,
+		&module.Icon, &module.Description, &module.ParentID, &module.SubscriptionTier,
+		&module.IsActive, &module.CreatedAt, &module.UpdatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("module not found")
+		}
+		return nil, fmt.Errorf("failed to get module: %w", err)
+	}
+
+	return module, nil
+}
+
+// Count returns total count of modules with filtering
+func (r *ModuleRepository) Count(search string, category, subscriptionTier string, parentID *int64, isActive *bool) (int64, error) {
+	query := "SELECT COUNT(*) FROM modules WHERE 1=1"
+	args := []interface{}{}
+	argIndex := 1
+
+	if search != "" {
+		query += fmt.Sprintf(" AND (name ILIKE $%d OR description ILIKE $%d)", argIndex, argIndex+1)
+		searchPattern := "%" + search + "%"
+		args = append(args, searchPattern, searchPattern)
+		argIndex += 2
+	}
+
+	if category != "" {
+		query += fmt.Sprintf(" AND category = $%d", argIndex)
+		args = append(args, category)
+		argIndex++
+	}
+
+	if subscriptionTier != "" {
+		query += fmt.Sprintf(" AND subscription_tier = $%d", argIndex)
+		args = append(args, subscriptionTier)
+		argIndex++
+	}
+
+	if parentID != nil {
+		query += fmt.Sprintf(" AND parent_id = $%d", argIndex)
+		args = append(args, *parentID)
+		argIndex++
+	}
+
+	if isActive != nil {
+		query += fmt.Sprintf(" AND is_active = $%d", argIndex)
+		args = append(args, *isActive)
+	}
+
+	var count int64
+	err := r.db.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get module count: %w", err)
+	}
+
+	return count, nil
 }

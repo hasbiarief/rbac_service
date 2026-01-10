@@ -19,6 +19,10 @@ type UserRole struct {
 	BranchID  *int64    `json:"branch_id" db:"branch_id"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+
+	// Additional fields for joined data
+	RoleName    string `json:"role_name,omitempty" db:"-"`
+	CompanyName string `json:"company_name,omitempty" db:"-"`
 }
 
 type RoleModule struct {

@@ -211,8 +211,8 @@ func (r *UserRepository) GetAll(limit, offset int, search string, isActive *bool
 	return users, nil
 }
 
-// GetCount returns total count of users with filtering (excluding soft deleted)
-func (r *UserRepository) GetCount(search string, isActive *bool) (int64, error) {
+// Count returns total count of users with filtering (excluding soft deleted)
+func (r *UserRepository) Count(search string, isActive *bool) (int64, error) {
 	query := "SELECT COUNT(*) FROM users WHERE deleted_at IS NULL"
 	args := []interface{}{}
 	argIndex := 1
@@ -239,11 +239,20 @@ func (r *UserRepository) GetCount(search string, isActive *bool) (int64, error) 
 
 	return count, nil
 }
-func (r *UserRepository) GetUserRoles(userID int64) ([]string, error) {
+
+// GetWithRoles retrieves a user with their roles
+func (r *UserRepository) GetWithRoles(id int64) (*models.User, error) {
+	// For now, just return the user without roles
+	// This would need to be implemented properly with role data
+	return r.GetByID(id)
+}
+func (r *UserRepository) GetUserRoles(userID int64) ([]*models.UserRole, error) {
 	query := `
-		SELECT r.name
+		SELECT ur.id, ur.user_id, ur.role_id, ur.company_id, ur.created_at, ur.updated_at,
+		       r.name as role_name, c.name as company_name
 		FROM user_roles ur
 		JOIN roles r ON ur.role_id = r.id
+		LEFT JOIN companies c ON ur.company_id = c.id
 		WHERE ur.user_id = $1
 	`
 
@@ -253,16 +262,30 @@ func (r *UserRepository) GetUserRoles(userID int64) ([]string, error) {
 	}
 	defer rows.Close()
 
-	var roles []string
+	var userRoles []*models.UserRole
 	for rows.Next() {
-		var role string
-		if err := rows.Scan(&role); err != nil {
-			return nil, fmt.Errorf("failed to scan role: %w", err)
+		userRole := &models.UserRole{}
+		var roleName, companyName *string
+
+		err := rows.Scan(
+			&userRole.ID, &userRole.UserID, &userRole.RoleID, &userRole.CompanyID,
+			&userRole.CreatedAt, &userRole.UpdatedAt, &roleName, &companyName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan user role: %w", err)
 		}
-		roles = append(roles, role)
+
+		if roleName != nil {
+			userRole.RoleName = *roleName
+		}
+		if companyName != nil {
+			userRole.CompanyName = *companyName
+		}
+
+		userRoles = append(userRoles, userRole)
 	}
 
-	return roles, nil
+	return userRoles, nil
 }
 
 // GetUserModulesWithSubscription retrieves user modules filtered by subscription

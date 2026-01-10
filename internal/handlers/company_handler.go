@@ -1,7 +1,9 @@
 package handlers
 
 import (
-	"gin-scalable-api/internal/service"
+	"gin-scalable-api/internal/constants"
+	"gin-scalable-api/internal/dto"
+	"gin-scalable-api/internal/interfaces"
 	"strconv"
 
 	"gin-scalable-api/pkg/response"
@@ -11,17 +13,17 @@ import (
 )
 
 type CompanyHandler struct {
-	companyService *service.CompanyService
+	companyService interfaces.CompanyServiceInterface
 }
 
-func NewCompanyHandler(companyService *service.CompanyService) *CompanyHandler {
+func NewCompanyHandler(companyService interfaces.CompanyServiceInterface) *CompanyHandler {
 	return &CompanyHandler{
 		companyService: companyService,
 	}
 }
 
 func (h *CompanyHandler) GetCompanies(c *gin.Context) {
-	var req service.CompanyListRequest
+	var req dto.CompanyListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
 		return
@@ -33,7 +35,7 @@ func (h *CompanyHandler) GetCompanies(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgCompaniesRetrieved, result)
 }
 
 func (h *CompanyHandler) GetCompanyByID(c *gin.Context) {
@@ -45,44 +47,35 @@ func (h *CompanyHandler) GetCompanyByID(c *gin.Context) {
 
 	result, err := h.companyService.GetCompanyByID(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Not found", err.Error())
+		response.Error(c, http.StatusNotFound, constants.MsgCompanyNotFound, err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgCompanyRetrieved, result)
 }
 
 func (h *CompanyHandler) CreateCompany(c *gin.Context) {
-	// Get validated body from context (set by validation middleware)
+	// Ambil body yang sudah divalidasi dari context (diset oleh middleware validasi)
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
 		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Name string `json:"name" validate:"required,min=2,max=100"`
-		Code string `json:"code" validate:"required,min=2,max=20"`
-	})
+	// Type assertion ke DTO yang diharapkan
+	req, ok := validatedBody.(*dto.CreateCompanyRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	createReq := &service.CreateCompanyRequest{
-		Name: req.Name,
-		Code: req.Code,
-	}
-
-	result, err := h.companyService.CreateCompany(createReq)
+	result, err := h.companyService.CreateCompany(req)
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Failed to create company", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Created successfully", result)
+	response.Success(c, http.StatusCreated, constants.MsgCompanyCreated, result)
 }
 
 func (h *CompanyHandler) UpdateCompany(c *gin.Context) {
@@ -92,36 +85,27 @@ func (h *CompanyHandler) UpdateCompany(c *gin.Context) {
 		return
 	}
 
-	// Get validated body from context (set by validation middleware)
+	// Ambil body yang sudah divalidasi dari context (diset oleh middleware validasi)
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
 		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
 		return
 	}
 
-	// Type assert to the expected struct
-	req, ok := validatedBody.(*struct {
-		Name string `json:"name"`
-		Code string `json:"code"`
-	})
+	// Type assertion ke DTO yang diharapkan
+	req, ok := validatedBody.(*dto.UpdateCompanyRequest)
 	if !ok {
 		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
 		return
 	}
 
-	// Convert to service request
-	updateReq := &service.UpdateCompanyRequest{
-		Name: req.Name,
-		Code: req.Code,
-	}
-
-	result, err := h.companyService.UpdateCompany(id, updateReq)
+	result, err := h.companyService.UpdateCompany(id, req)
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", result)
+	response.Success(c, http.StatusOK, constants.MsgCompanyUpdated, result)
 }
 
 func (h *CompanyHandler) DeleteCompany(c *gin.Context) {
@@ -136,5 +120,5 @@ func (h *CompanyHandler) DeleteCompany(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Company deleted successfully", nil)
+	response.Success(c, http.StatusOK, constants.MsgCompanyDeleted, nil)
 }
