@@ -5,6 +5,7 @@ import (
 	"gin-scalable-api/config"
 	"gin-scalable-api/internal/handlers"
 	"gin-scalable-api/internal/interfaces"
+	"gin-scalable-api/internal/mapper"
 	"gin-scalable-api/internal/repository"
 	"gin-scalable-api/internal/routes"
 	"gin-scalable-api/internal/service"
@@ -13,6 +14,7 @@ import (
 	"gin-scalable-api/pkg/jobs"
 	"gin-scalable-api/pkg/rbac"
 	"gin-scalable-api/pkg/token"
+	"gin-scalable-api/pkg/utils"
 	"log"
 	"time"
 
@@ -91,20 +93,31 @@ func (s *Server) initializeRepositories(db *database.DB) *Repositories {
 	auditRepo := repository.NewAuditRepository(db.DB)
 	branchRepo := repository.NewBranchRepository(db.DB)
 
+	// Unit repositories
+	unitRepo := repository.NewUnitRepository(db.DB)
+	unitRoleRepo := repository.NewUnitRoleRepository(db.DB)
+	unitRoleModuleRepo := repository.NewUnitRoleModuleRepository(db.DB)
+
 	return &Repositories{
-		User:         userRepo,
-		Module:       moduleRepo,
-		Company:      companyRepo,
-		Role:         roleRepo,
-		Subscription: subscriptionRepo,
-		Audit:        auditRepo,
-		Branch:       branchRepo,
+		User:           userRepo,
+		Module:         moduleRepo,
+		Company:        companyRepo,
+		Role:           roleRepo,
+		Subscription:   subscriptionRepo,
+		Audit:          auditRepo,
+		Branch:         branchRepo,
+		Unit:           unitRepo.(*repository.UnitRepository),
+		UnitRole:       unitRoleRepo.(*repository.UnitRoleRepository),
+		UnitRoleModule: unitRoleModuleRepo.(*repository.UnitRoleModuleRepository),
 	}
 }
 
 func (s *Server) initializeServices(repos *Repositories, redis *redis.Client) *Services {
 	tokenService := token.NewSimpleTokenService(redis)
 	rbacService := rbac.NewRBACService(repos.User.GetDB())
+
+	// Initialize unit mapper
+	unitMapper := mapper.NewUnitMapper()
 
 	return &Services{
 		Auth:         service.NewAuthService(repos.User, tokenService, s.config.JWT.Secret),
@@ -115,10 +128,15 @@ func (s *Server) initializeServices(repos *Repositories, redis *redis.Client) *S
 		Subscription: service.NewSubscriptionService(repos.Subscription),
 		Audit:        service.NewAuditService(repos.Audit),
 		Branch:       service.NewBranchService(repos.Branch),
+		Unit:         service.NewUnitService(repos.Unit, repos.UnitRole, repos.UnitRoleModule, repos.Branch, repos.Role, repos.Module, unitMapper),
 	}
 }
 
 func (s *Server) initializeHandlers(services *Services, repos *Repositories) *routes.Handlers {
+	// Initialize helper utilities
+	responseHelper := utils.NewResponseHelper()
+	validationHelper := utils.NewValidationHelper()
+
 	return &routes.Handlers{
 		Auth:         handlers.NewAuthHandler(services.Auth),
 		Module:       handlers.NewModuleHandler(services.Module),
@@ -128,6 +146,8 @@ func (s *Server) initializeHandlers(services *Services, repos *Repositories) *ro
 		Subscription: handlers.NewSubscriptionHandler(services.Subscription),
 		Audit:        handlers.NewAuditHandler(services.Audit),
 		Branch:       handlers.NewBranchHandler(services.Branch),
+		Unit:         handlers.NewUnitHandler(services.Unit, responseHelper, validationHelper),
+		UnitContext:  handlers.NewUnitContextHandler(responseHelper, validationHelper),
 	}
 }
 
@@ -138,13 +158,16 @@ func (s *Server) Run() error {
 
 // Repositories struct to group all repositories
 type Repositories struct {
-	User         *repository.UserRepository
-	Module       *repository.ModuleRepository
-	Company      *repository.CompanyRepository
-	Role         *repository.RoleRepository
-	Subscription *repository.SubscriptionRepository
-	Audit        *repository.AuditRepository
-	Branch       *repository.BranchRepository
+	User           *repository.UserRepository
+	Module         *repository.ModuleRepository
+	Company        *repository.CompanyRepository
+	Role           *repository.RoleRepository
+	Subscription   *repository.SubscriptionRepository
+	Audit          *repository.AuditRepository
+	Branch         *repository.BranchRepository
+	Unit           *repository.UnitRepository
+	UnitRole       *repository.UnitRoleRepository
+	UnitRoleModule *repository.UnitRoleModuleRepository
 }
 
 // Services struct to group all services
@@ -157,4 +180,5 @@ type Services struct {
 	Subscription interfaces.SubscriptionServiceInterface
 	Audit        interfaces.AuditServiceInterface
 	Branch       interfaces.BranchServiceInterface
+	Unit         interfaces.UnitServiceInterface
 }

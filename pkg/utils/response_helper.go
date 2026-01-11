@@ -69,8 +69,8 @@ func (h *ResponseHelper) Conflict(c *gin.Context, message, details string) {
 }
 
 // BadRequest sends a bad request response
-func (h *ResponseHelper) BadRequest(c *gin.Context, message, details string) {
-	response.Error(c, http.StatusBadRequest, message, details)
+func (h *ResponseHelper) BadRequest(c *gin.Context, message string) {
+	response.Error(c, http.StatusBadRequest, message, "")
 }
 
 // InternalServerError sends an internal server error response

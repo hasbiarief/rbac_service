@@ -170,6 +170,7 @@ func (s *RoleService) GetUsersByRole(roleID int64, limit int) (interface{}, erro
 		return nil, err
 	}
 
+	// Always return an array, even if empty
 	var response []map[string]interface{}
 	for _, user := range users {
 		userIdentity := ""
@@ -186,7 +187,12 @@ func (s *RoleService) GetUsersByRole(roleID int64, limit int) (interface{}, erro
 		})
 	}
 
-	return response, nil
+	// Return the response with metadata
+	return map[string]interface{}{
+		"users":   response,
+		"total":   len(response),
+		"role_id": roleID,
+	}, nil
 }
 
 func (s *RoleService) GetUserRoles(userID int64) (interface{}, error) {
@@ -242,4 +248,44 @@ func (s *RoleService) GetUserAccessSummary(userID int64) (interface{}, error) {
 	}
 
 	return summary, nil
+}
+
+// GetAllUserRoleAssignments - Debug method to see all user role assignments
+func (s *RoleService) GetAllUserRoleAssignments() (interface{}, error) {
+	assignments, err := s.roleRepo.GetAllUserRoleAssignments()
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"assignments": assignments,
+		"total":       len(assignments),
+	}, nil
+}
+
+// GetUserRolesByUserID - Debug method to check specific user's role assignments
+func (s *RoleService) GetUserRolesByUserID(userID int64) (interface{}, error) {
+	assignments, err := s.roleRepo.GetUserRolesByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"user_id":     userID,
+		"assignments": assignments,
+		"total":       len(assignments),
+	}, nil
+}
+
+// GetRoleUsersMapping - Debug method to show role-user mapping
+func (s *RoleService) GetRoleUsersMapping() (interface{}, error) {
+	mappings, err := s.roleRepo.GetRoleUsersMapping()
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"role_mappings": mappings,
+		"total_roles":   len(mappings),
+	}, nil
 }

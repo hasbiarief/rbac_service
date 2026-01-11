@@ -81,11 +81,86 @@ func (h *ValidationHelper) GetValidatedBody(c *gin.Context, target interface{}) 
 			*v = body
 			return nil
 		}
+	// Unit-related DTOs
+	case **dto.CreateUnitRequest:
+		if body, ok := validatedBody.(*dto.CreateUnitRequest); ok {
+			*v = body
+			return nil
+		}
+	case **dto.UpdateUnitRequest:
+		if body, ok := validatedBody.(*dto.UpdateUnitRequest); ok {
+			*v = body
+			return nil
+		}
+	case **dto.BulkUpdateUnitRoleModulesRequest:
+		if body, ok := validatedBody.(*dto.BulkUpdateUnitRoleModulesRequest); ok {
+			*v = body
+			return nil
+		}
+	case **dto.CopyUnitPermissionsRequest:
+		if body, ok := validatedBody.(*dto.CopyUnitPermissionsRequest); ok {
+			*v = body
+			return nil
+		}
 	default:
 		return errors.NewValidationError("unsupported body type")
 	}
 
 	return errors.NewValidationError("invalid body structure")
+}
+
+// GetValidatedQuery extracts and type-asserts validated query from context
+func (h *ValidationHelper) GetValidatedQuery(c *gin.Context, target interface{}) error {
+	// For query parameters, we'll build them manually since they're not pre-validated
+	switch v := target.(type) {
+	case **dto.UnitListRequest:
+		req := &dto.UnitListRequest{}
+
+		// Parse branch_id
+		if branchIDStr := c.Query("branch_id"); branchIDStr != "" {
+			if branchID, err := strconv.ParseInt(branchIDStr, 10, 64); err == nil {
+				req.BranchID = &branchID
+			}
+		}
+
+		// Parse parent_id
+		if parentIDStr := c.Query("parent_id"); parentIDStr != "" {
+			if parentID, err := strconv.ParseInt(parentIDStr, 10, 64); err == nil {
+				req.ParentID = &parentID
+			}
+		}
+
+		// Parse search
+		req.Search = c.Query("search")
+
+		// Parse is_active
+		if isActiveStr := c.Query("is_active"); isActiveStr != "" {
+			if isActive, err := strconv.ParseBool(isActiveStr); err == nil {
+				req.IsActive = &isActive
+			}
+		}
+
+		// Parse limit with default
+		req.Limit = 10
+		if limitStr := c.Query("limit"); limitStr != "" {
+			if limit, err := strconv.Atoi(limitStr); err == nil && limit > 0 && limit <= 100 {
+				req.Limit = limit
+			}
+		}
+
+		// Parse offset with default
+		req.Offset = 0
+		if offsetStr := c.Query("offset"); offsetStr != "" {
+			if offset, err := strconv.Atoi(offsetStr); err == nil && offset >= 0 {
+				req.Offset = offset
+			}
+		}
+
+		*v = req
+		return nil
+	default:
+		return errors.NewValidationError("unsupported query type")
+	}
 }
 
 // GetIDParam extracts and validates ID parameter from URL

@@ -20,11 +20,15 @@ func (e *AppError) Error() string {
 }
 
 // Predefined error constructors
-func NewBadRequestError(message, details string) *AppError {
+func NewBadRequestError(message string, details ...string) *AppError {
+	var detail string
+	if len(details) > 0 {
+		detail = details[0]
+	}
 	return &AppError{
 		Code:    http.StatusBadRequest,
 		Message: message,
-		Details: details,
+		Details: detail,
 	}
 }
 

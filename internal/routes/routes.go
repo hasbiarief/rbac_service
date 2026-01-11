@@ -18,6 +18,8 @@ type Handlers struct {
 	Subscription *handlers.SubscriptionHandler
 	Audit        *handlers.AuditHandler
 	Branch       *handlers.BranchHandler
+	Unit         *handlers.UnitHandler
+	UnitContext  *handlers.UnitContextHandler
 }
 
 func SetupRoutes(r *gin.Engine, h *Handlers, jwtSecret string, redis *redis.Client) {
@@ -62,6 +64,12 @@ func SetupRoutes(r *gin.Engine, h *Handlers, jwtSecret string, redis *redis.Clie
 
 			// Rute cabang
 			setupBranchRoutes(protected, h.Branch)
+
+			// Rute unit
+			setupUnitRoutes(protected, h.Unit)
+
+			// Rute unit context
+			setupUnitContextRoutes(protected, h.UnitContext)
 		}
 	}
 }
@@ -288,5 +296,60 @@ func setupBranchRoutes(protected *gin.RouterGroup, branchHandler *handlers.Branc
 
 		// Validasi ID perusahaan
 		branches.GET("/company/:companyId", middleware.ValidateRequest(validation.CompanyIDValidation), branchHandler.GetCompanyBranches)
+	}
+}
+
+func setupUnitRoutes(protected *gin.RouterGroup, unitHandler *handlers.UnitHandler) {
+	units := protected.Group("/units")
+	{
+		// Unit CRUD operations
+		units.GET("", middleware.ValidateRequest(validation.UnitListValidation), unitHandler.GetUnits)
+		units.POST("", middleware.ValidateRequest(validation.CreateUnitValidation), unitHandler.CreateUnit)
+		units.GET("/:id", middleware.ValidateRequest(validation.IDValidation), unitHandler.GetUnitByID)
+		units.PUT("/:id", middleware.ValidateRequest(validation.UpdateUnitValidation), unitHandler.UpdateUnit)
+		units.DELETE("/:id", middleware.ValidateRequest(validation.IDValidation), unitHandler.DeleteUnit)
+
+		// Unit statistics
+		units.GET("/:id/stats", middleware.ValidateRequest(validation.IDValidation), unitHandler.GetUnitWithStats)
+
+		// Unit roles management - using :id consistently
+		units.GET("/:id/roles", middleware.ValidateRequest(validation.IDValidation), unitHandler.GetUnitRoles)
+		units.POST("/:id/roles/:role_id", unitHandler.AssignRoleToUnit)
+		units.DELETE("/:id/roles/:role_id", unitHandler.RemoveRoleFromUnit)
+
+		// Unit permissions management - using :id consistently
+		units.GET("/:id/roles/:role_id/permissions", unitHandler.GetUnitPermissions)
+
+		// Bulk operations
+		units.POST("/copy-permissions", middleware.ValidateRequest(validation.CopyUnitPermissionsValidation), unitHandler.CopyPermissions)
+	}
+
+	// Unit Role operations
+	unitRoles := protected.Group("/unit-roles")
+	{
+		unitRoles.PUT("/:unit_role_id/permissions", middleware.ValidateRequest(validation.BulkUpdateUnitRoleModulesValidation), unitHandler.UpdateUnitPermissions)
+	}
+
+	// Branch-specific unit operations
+	branches := protected.Group("/branches")
+	{
+		branches.GET("/:id/units/hierarchy", unitHandler.GetUnitHierarchy)
+	}
+
+	// User-specific operations
+	users := protected.Group("/users")
+	{
+		users.GET("/:id/effective-permissions", unitHandler.GetUserEffectivePermissions)
+	}
+}
+func setupUnitContextRoutes(protected *gin.RouterGroup, unitContextHandler *handlers.UnitContextHandler) {
+	// Unit context routes
+	auth := protected.Group("/auth")
+	{
+		// Get current user's unit context
+		auth.GET("/my-unit-context", unitContextHandler.GetMyUnitContext)
+
+		// Get current user's unit permissions
+		auth.GET("/my-unit-permissions", unitContextHandler.GetMyUnitPermissions)
 	}
 }

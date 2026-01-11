@@ -39,15 +39,17 @@ type UserListRequest struct {
 
 // User Response DTO
 type UserResponse struct {
-	ID           int64                 `json:"id"`
-	Name         string                `json:"name"`
-	Email        string                `json:"email"`
-	UserIdentity *string               `json:"user_identity"`
-	IsActive     bool                  `json:"is_active"`
-	CreatedAt    string                `json:"created_at"`
-	UpdatedAt    string                `json:"updated_at"`
-	Roles        []string              `json:"roles,omitempty"`   // For login response
-	Modules      map[string][][]string `json:"modules,omitempty"` // For login response
+	ID              int64                    `json:"id"`
+	Name            string                   `json:"name"`
+	Email           string                   `json:"email"`
+	UserIdentity    *string                  `json:"user_identity"`
+	IsActive        bool                     `json:"is_active"`
+	CreatedAt       string                   `json:"created_at"`
+	UpdatedAt       string                   `json:"updated_at"`
+	Roles           []string                 `json:"roles,omitempty"`   // For backward compatibility
+	Modules         map[string][][]string    `json:"modules,omitempty"` // For login response
+	RoleAssignments []map[string]interface{} `json:"role_assignments"`  // Enhanced role assignments
+	TotalRoles      int                      `json:"total_roles"`       // Total role count
 }
 
 // UserWithRoles Response DTO

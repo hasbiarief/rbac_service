@@ -28,6 +28,10 @@ type UserServiceInterface interface {
 	DeleteUser(id int64) error
 	ChangePassword(userID int64, req *dto.ChangePasswordRequest) error
 	ChangeUserPassword(userID int64, req *dto.ChangePasswordRequest) error
+
+	// Enhanced methods with role assignments
+	GetUserByIDWithRoles(id int64) (interface{}, error)
+	GetUsersWithRoles(req *dto.UserListRequest) (interface{}, error)
 }
 
 // CompanyServiceInterface mendefinisikan kontrak untuk service perusahaan
@@ -54,6 +58,11 @@ type RoleServiceInterface interface {
 	GetUsersByRole(roleID int64, limit int) (interface{}, error)
 	GetUserRoles(userID int64) (interface{}, error)
 	GetUserAccessSummary(userID int64) (interface{}, error)
+
+	// Debug methods
+	GetAllUserRoleAssignments() (interface{}, error)
+	GetUserRolesByUserID(userID int64) (interface{}, error)
+	GetRoleUsersMapping() (interface{}, error)
 }
 
 // ModuleServiceInterface mendefinisikan kontrak untuk service modul
@@ -121,4 +130,22 @@ type BranchServiceInterface interface {
 	GetCompanyBranchesNested(companyID int64) ([]*dto.NestedBranchResponse, error)
 	GetBranchChildren(parentID int64) ([]*dto.BranchResponse, error)
 	GetBranchHierarchyByID(id int64, nested bool) (interface{}, error)
+}
+
+// UnitServiceInterface mendefinisikan kontrak untuk service unit
+type UnitServiceInterface interface {
+	GetUnits(req *dto.UnitListRequest) (*dto.UnitListResponse, error)
+	GetUnitByID(id int64) (*dto.UnitResponse, error)
+	GetUnitHierarchy(branchID int64) ([]*dto.UnitHierarchyResponse, error)
+	GetUnitWithStats(id int64) (*dto.UnitWithStatsResponse, error)
+	CreateUnit(req *dto.CreateUnitRequest) (*dto.UnitResponse, error)
+	UpdateUnit(id int64, req *dto.UpdateUnitRequest) (*dto.UnitResponse, error)
+	DeleteUnit(id int64) error
+	AssignRoleToUnit(unitID, roleID int64) error
+	RemoveRoleFromUnit(unitID, roleID int64) error
+	GetUnitRoles(unitID int64) ([]*dto.UnitRoleResponse, error)
+	GetUnitPermissions(unitID, roleID int64) ([]*dto.UnitRoleModuleResponse, error)
+	UpdateUnitPermissions(unitRoleID int64, req *dto.BulkUpdateUnitRoleModulesRequest) error
+	CopyPermissions(req *dto.CopyUnitPermissionsRequest) error
+	GetUserEffectivePermissions(userID int64) ([]*dto.UnitRoleModuleResponse, error)
 }

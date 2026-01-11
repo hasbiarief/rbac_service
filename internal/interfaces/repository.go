@@ -16,6 +16,10 @@ type UserRepositoryInterface interface {
 	GetUserModulesGroupedWithSubscription(userID int64) (map[string][][]string, error)
 	GetUserModulesWithSubscription(userID int64) ([]string, error)
 	GetUserRoles(userID int64) ([]*models.UserRole, error)
+
+	// Enhanced methods with role assignments
+	GetByIDWithRoles(id int64) (map[string]interface{}, error)
+	GetAllWithRoles(limit, offset int, search string, isActive *bool) ([]map[string]interface{}, error)
 }
 
 // CompanyRepositoryInterface mendefinisikan kontrak untuk repository perusahaan
@@ -50,6 +54,11 @@ type RoleRepositoryInterface interface {
 	RemoveUserRole(userID, roleID, companyID int64) error
 	GetUserRoles(userID int64) ([]*models.UserRole, error)
 	GetUsersByRole(roleID int64, limit int) ([]*models.User, error)
+
+	// Debug methods
+	GetAllUserRoleAssignments() ([]map[string]interface{}, error)
+	GetUserRolesByUserID(userID int64) ([]map[string]interface{}, error)
+	GetRoleUsersMapping() ([]map[string]interface{}, error)
 }
 
 // ModuleRepositoryInterface mendefinisikan kontrak untuk repository modul
@@ -117,4 +126,50 @@ type BranchRepositoryInterface interface {
 	Delete(id int64) error
 	GetByCompany(companyID int64, includeHierarchy bool) ([]*models.Branch, error)
 	GetChildren(parentID int64) ([]*models.Branch, error)
+}
+
+// UnitRepositoryInterface mendefinisikan kontrak untuk repository unit
+type UnitRepositoryInterface interface {
+	GetAll(branchID *int64, limit, offset int, search string, isActive *bool) ([]*models.UnitWithBranch, error)
+	GetByID(id int64) (*models.UnitWithBranch, error)
+	GetByCode(branchID int64, code string) (*models.Unit, error)
+	Create(unit *models.Unit) error
+	Update(unit *models.Unit) error
+	Delete(id int64) error
+	GetHierarchy(branchID int64) ([]*models.UnitHierarchy, error)
+	GetChildren(parentID int64) ([]*models.Unit, error)
+	GetParentPath(unitID int64) ([]*models.Unit, error)
+	GetWithStats(id int64) (*models.UnitWithStats, error)
+	GetByBranch(branchID int64) ([]*models.Unit, error)
+	CountByBranch(branchID int64) (int64, error)
+	ExistsByCode(branchID int64, code string, excludeID *int64) (bool, error)
+	HasChildren(unitID int64) (bool, error)
+	HasUsers(unitID int64) (bool, error)
+}
+
+// UnitRoleRepositoryInterface mendefinisikan kontrak untuk repository unit-role
+type UnitRoleRepositoryInterface interface {
+	GetAll(unitID, roleID *int64, limit, offset int) ([]*models.UnitRole, error)
+	GetByID(id int64) (*models.UnitRole, error)
+	Create(unitRole *models.UnitRole) error
+	Delete(id int64) error
+	GetRolesByUnit(unitID int64) ([]*models.UnitRole, error)
+	GetUnitsByRole(roleID int64) ([]*models.UnitRole, error)
+	ExistsByUnitAndRole(unitID, roleID int64) (bool, error)
+	GetWithPermissions(unitRoleID int64) (*models.UnitRoleWithPermissions, error)
+}
+
+// UnitRoleModuleRepositoryInterface mendefinisikan kontrak untuk repository unit-role-module
+type UnitRoleModuleRepositoryInterface interface {
+	GetAll(unitRoleID *int64, moduleID *int64, limit, offset int) ([]*models.UnitRoleModule, error)
+	GetByID(id int64) (*models.UnitRoleModule, error)
+	Create(unitRoleModule *models.UnitRoleModule) error
+	Update(unitRoleModule *models.UnitRoleModule) error
+	Delete(id int64) error
+	BulkCreate(unitRoleModules []*models.UnitRoleModule) error
+	BulkUpdate(unitRoleModules []*models.UnitRoleModule) error
+	DeleteByUnitRole(unitRoleID int64) error
+	GetByUnitRole(unitRoleID int64) ([]*models.UnitRoleModule, error)
+	GetEffectivePermissions(userID int64) ([]*models.UnitRoleModulePermission, error)
+	ExistsByUnitRoleAndModule(unitRoleID, moduleID int64) (bool, error)
 }

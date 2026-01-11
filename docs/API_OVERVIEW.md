@@ -57,6 +57,24 @@ Authorization: Bearer YOUR_JWT_TOKEN
 | PUT | `/branches/{id}` | Update branch |
 | DELETE | `/branches/{id}` | Delete branch |
 | GET | `/branches/company/{companyId}` | Get company branches |
+| GET | `/branches/{branch_id}/units/hierarchy` | Get unit hierarchy for branch |
+
+### 🏢 Unit Management
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/units` | Get units list |
+| GET | `/units/{id}` | Get unit by ID |
+| POST | `/units` | Create new unit |
+| PUT | `/units/{id}` | Update unit |
+| DELETE | `/units/{id}` | Delete unit |
+| GET | `/units/{id}/stats` | Get unit with statistics |
+| GET | `/units/{id}/roles` | Get unit roles |
+| POST | `/units/{unit_id}/roles/{role_id}` | Assign role to unit |
+| DELETE | `/units/{unit_id}/roles/{role_id}` | Remove role from unit |
+| GET | `/units/{unit_id}/roles/{role_id}/permissions` | Get unit permissions |
+| PUT | `/unit-roles/{unit_role_id}/permissions` | Update unit permissions |
+| POST | `/units/copy-permissions` | Copy permissions between units |
+| GET | `/users/{user_id}/effective-permissions` | Get user effective permissions |
 
 ### 🎭 Role Management
 | Method | Endpoint | Description |

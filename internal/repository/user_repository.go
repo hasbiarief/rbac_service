@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"gin-scalable-api/internal/models"
 	"gin-scalable-api/pkg/model"
+	"strings"
+	"time"
 )
 
 type UserRepository struct {
@@ -456,4 +458,318 @@ func (r *UserRepository) getUserBasicModulesGrouped(userID int64) (map[string][]
 	}
 
 	return modules, nil
+}
+
+// GetByIDWithRoles retrieves a user by ID with complete role assignments
+func (r *UserRepository) GetByIDWithRoles(id int64) (map[string]interface{}, error) {
+	// Get basic user info
+	userQuery := `
+		SELECT id, name, email, user_identity, is_active, created_at, updated_at
+		FROM users 
+		WHERE id = $1 AND deleted_at IS NULL
+	`
+
+	var user map[string]interface{}
+	var userID int64
+	var name, email string
+	var userIdentity *string
+	var isActive bool
+	var createdAt, updatedAt time.Time
+
+	err := r.db.QueryRow(userQuery, id).Scan(
+		&userID, &name, &email, &userIdentity, &isActive, &createdAt, &updatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	user = map[string]interface{}{
+		"id":         userID,
+		"name":       name,
+		"email":      email,
+		"is_active":  isActive,
+		"created_at": createdAt,
+		"updated_at": updatedAt,
+	}
+
+	if userIdentity != nil {
+		user["user_identity"] = *userIdentity
+	}
+
+	// Get role assignments with company, branch, unit info
+	rolesQuery := `
+		SELECT 
+			ur.id as assignment_id,
+			r.id as role_id,
+			r.name as role_name,
+			r.description as role_description,
+			ur.company_id,
+			c.name as company_name,
+			ur.branch_id,
+			b.name as branch_name,
+			ur.unit_id,
+			u.name as unit_name,
+			CASE 
+				WHEN ur.unit_id IS NOT NULL THEN 'unit'
+				WHEN ur.branch_id IS NOT NULL THEN 'branch'
+				ELSE 'company'
+			END as assignment_level
+		FROM user_roles ur
+		JOIN roles r ON ur.role_id = r.id
+		JOIN companies c ON ur.company_id = c.id
+		LEFT JOIN branches b ON ur.branch_id = b.id
+		LEFT JOIN units u ON ur.unit_id = u.id
+		WHERE ur.user_id = $1
+		ORDER BY ur.id
+	`
+
+	rows, err := r.db.Query(rolesQuery, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user roles: %w", err)
+	}
+	defer rows.Close()
+
+	var roleAssignments []map[string]interface{}
+	// Initialize as empty slice to avoid nil
+	roleAssignments = make([]map[string]interface{}, 0)
+	for rows.Next() {
+		var assignmentID, roleID, companyID int64
+		var branchID, unitID *int64
+		var roleName, roleDescription, companyName string
+		var branchName, unitName *string
+		var assignmentLevel string
+
+		err := rows.Scan(
+			&assignmentID, &roleID, &roleName, &roleDescription,
+			&companyID, &companyName, &branchID, &branchName,
+			&unitID, &unitName, &assignmentLevel,
+		)
+		if err != nil {
+			continue
+		}
+
+		assignment := map[string]interface{}{
+			"assignment_id":    assignmentID,
+			"role_id":          roleID,
+			"role_name":        roleName,
+			"role_description": roleDescription,
+			"company_id":       companyID,
+			"company_name":     companyName,
+			"assignment_level": assignmentLevel,
+		}
+
+		if branchID != nil {
+			assignment["branch_id"] = *branchID
+			if branchName != nil {
+				assignment["branch_name"] = *branchName
+			}
+		}
+
+		if unitID != nil {
+			assignment["unit_id"] = *unitID
+			if unitName != nil {
+				assignment["unit_name"] = *unitName
+			}
+		}
+
+		roleAssignments = append(roleAssignments, assignment)
+	}
+
+	user["role_assignments"] = roleAssignments
+	user["total_roles"] = len(roleAssignments)
+
+	// Ensure role_assignments is never nil
+	if user["role_assignments"] == nil {
+		user["role_assignments"] = []map[string]interface{}{}
+	}
+
+	return user, nil
+}
+
+// GetAllWithRoles retrieves all users with complete role assignments
+func (r *UserRepository) GetAllWithRoles(limit, offset int, search string, isActive *bool) ([]map[string]interface{}, error) {
+	// Build user query with filters
+	userQuery := `
+		SELECT id, name, email, user_identity, is_active, created_at, updated_at
+		FROM users 
+		WHERE deleted_at IS NULL
+	`
+	args := []interface{}{}
+	argIndex := 1
+
+	// Add search filter
+	if search != "" {
+		userQuery += fmt.Sprintf(" AND (name ILIKE $%d OR email ILIKE $%d)", argIndex, argIndex+1)
+		searchPattern := "%" + search + "%"
+		args = append(args, searchPattern, searchPattern)
+		argIndex += 2
+	}
+
+	// Add active filter
+	if isActive != nil {
+		userQuery += fmt.Sprintf(" AND is_active = $%d", argIndex)
+		args = append(args, *isActive)
+		argIndex++
+	}
+
+	// Add ordering and pagination
+	userQuery += " ORDER BY created_at DESC"
+	if limit > 0 {
+		userQuery += fmt.Sprintf(" LIMIT $%d", argIndex)
+		args = append(args, limit)
+		argIndex++
+	}
+	if offset > 0 {
+		userQuery += fmt.Sprintf(" OFFSET $%d", argIndex)
+		args = append(args, offset)
+	}
+
+	rows, err := r.db.Query(userQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []map[string]interface{}
+	var userIDs []int64
+
+	// Collect users and their IDs
+	for rows.Next() {
+		var userID int64
+		var name, email string
+		var userIdentity *string
+		var isActive bool
+		var createdAt, updatedAt time.Time
+
+		err := rows.Scan(
+			&userID, &name, &email, &userIdentity, &isActive, &createdAt, &updatedAt,
+		)
+		if err != nil {
+			continue
+		}
+
+		user := map[string]interface{}{
+			"id":         userID,
+			"name":       name,
+			"email":      email,
+			"is_active":  isActive,
+			"created_at": createdAt,
+			"updated_at": updatedAt,
+		}
+
+		if userIdentity != nil {
+			user["user_identity"] = *userIdentity
+		}
+
+		users = append(users, user)
+		userIDs = append(userIDs, userID)
+	}
+
+	// If no users found, return empty slice
+	if len(users) == 0 {
+		return users, nil
+	}
+
+	// Get role assignments for all users
+	placeholders := make([]string, len(userIDs))
+	roleArgs := make([]interface{}, len(userIDs))
+	for i, userID := range userIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		roleArgs[i] = userID
+	}
+
+	rolesQuery := fmt.Sprintf(`
+		SELECT 
+			ur.user_id,
+			ur.id as assignment_id,
+			r.id as role_id,
+			r.name as role_name,
+			r.description as role_description,
+			ur.company_id,
+			c.name as company_name,
+			ur.branch_id,
+			b.name as branch_name,
+			ur.unit_id,
+			u.name as unit_name,
+			CASE 
+				WHEN ur.unit_id IS NOT NULL THEN 'unit'
+				WHEN ur.branch_id IS NOT NULL THEN 'branch'
+				ELSE 'company'
+			END as assignment_level
+		FROM user_roles ur
+		JOIN roles r ON ur.role_id = r.id
+		JOIN companies c ON ur.company_id = c.id
+		LEFT JOIN branches b ON ur.branch_id = b.id
+		LEFT JOIN units u ON ur.unit_id = u.id
+		WHERE ur.user_id IN (%s)
+		ORDER BY ur.user_id, ur.id
+	`, strings.Join(placeholders, ","))
+
+	roleRows, err := r.db.Query(rolesQuery, roleArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user roles: %w", err)
+	}
+	defer roleRows.Close()
+
+	// Group role assignments by user ID
+	userRoles := make(map[int64][]map[string]interface{})
+	for roleRows.Next() {
+		var userID, assignmentID, roleID, companyID int64
+		var branchID, unitID *int64
+		var roleName, roleDescription, companyName string
+		var branchName, unitName *string
+		var assignmentLevel string
+
+		err := roleRows.Scan(
+			&userID, &assignmentID, &roleID, &roleName, &roleDescription,
+			&companyID, &companyName, &branchID, &branchName,
+			&unitID, &unitName, &assignmentLevel,
+		)
+		if err != nil {
+			continue
+		}
+
+		assignment := map[string]interface{}{
+			"assignment_id":    assignmentID,
+			"role_id":          roleID,
+			"role_name":        roleName,
+			"role_description": roleDescription,
+			"company_id":       companyID,
+			"company_name":     companyName,
+			"assignment_level": assignmentLevel,
+		}
+
+		if branchID != nil {
+			assignment["branch_id"] = *branchID
+			if branchName != nil {
+				assignment["branch_name"] = *branchName
+			}
+		}
+
+		if unitID != nil {
+			assignment["unit_id"] = *unitID
+			if unitName != nil {
+				assignment["unit_name"] = *unitName
+			}
+		}
+
+		userRoles[userID] = append(userRoles[userID], assignment)
+	}
+
+	// Add role assignments to users
+	for i, user := range users {
+		userID := user["id"].(int64)
+		if roles, exists := userRoles[userID]; exists {
+			users[i]["role_assignments"] = roles
+			users[i]["total_roles"] = len(roles)
+		} else {
+			users[i]["role_assignments"] = []map[string]interface{}{}
+			users[i]["total_roles"] = 0
+		}
+	}
+
+	return users, nil
 }

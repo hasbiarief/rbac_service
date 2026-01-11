@@ -266,3 +266,42 @@ func (h *RoleHandler) GetUserAccessSummary(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "User access summary successfully retrieved", result)
 }
+
+// GetAllUserRoleAssignments - Debug endpoint to see all user role assignments
+func (h *RoleHandler) GetAllUserRoleAssignments(c *gin.Context) {
+	result, err := h.roleService.GetAllUserRoleAssignments()
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "User role assignments retrieved", result)
+}
+
+// GetUserRolesByUserID - Debug endpoint to check specific user's role assignments
+func (h *RoleHandler) GetUserRolesByUserID(c *gin.Context) {
+	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid user ID")
+		return
+	}
+
+	result, err := h.roleService.GetUserRolesByUserID(userID)
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "User role assignments retrieved", result)
+}
+
+// GetRoleUsersMapping - Debug endpoint to show role-user mapping
+func (h *RoleHandler) GetRoleUsersMapping(c *gin.Context) {
+	result, err := h.roleService.GetRoleUsersMapping()
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Operation failed", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Role users mapping retrieved", result)
+}

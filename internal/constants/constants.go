@@ -88,6 +88,27 @@ const (
 	MsgBranchHierarchyRetrieved = "Branch hierarchy successfully retrieved"
 )
 
+// Pesan unit
+const (
+	MsgUnitRetrieved          = "Unit successfully retrieved"
+	MsgUnitsRetrieved         = "Units list successfully retrieved"
+	MsgUnitCreated            = "Unit successfully created"
+	MsgUnitUpdated            = "Unit successfully updated"
+	MsgUnitDeleted            = "Unit successfully deleted"
+	MsgUnitNotFound           = "Unit not found"
+	MsgUnitCodeExists         = "Unit code already exists in this branch"
+	MsgUnitHasChildren        = "Cannot delete unit that has child units"
+	MsgUnitHasUsers           = "Cannot delete unit with assigned users"
+	MsgUnitHierarchyRetrieved = "Unit hierarchy successfully retrieved"
+	MsgUnitStatsRetrieved     = "Unit statistics successfully retrieved"
+	MsgUnitRoleAssigned       = "Role successfully assigned to unit"
+	MsgUnitRoleRemoved        = "Role successfully removed from unit"
+	MsgUnitRolesRetrieved     = "Unit roles successfully retrieved"
+	MsgUnitPermissionsUpdated = "Unit permissions successfully updated"
+	MsgPermissionsCopied      = "Permissions successfully copied between units"
+	MsgEffectivePermissions   = "Effective permissions successfully retrieved"
+)
+
 // Pesan audit
 const (
 	MsgAuditLogRetrieved   = "Audit log successfully retrieved"
@@ -121,6 +142,11 @@ const (
 	MinCodeLength     = 2
 	MaxCodeLength     = 20
 	MinPasswordLength = 6
+	MsgInvalidID      = "Invalid ID format"
+	MsgDataRetrieved  = "Data successfully retrieved"
+	MsgDataCreated    = "Data successfully created"
+	MsgDataUpdated    = "Data successfully updated"
+	MsgDataDeleted    = "Data successfully deleted"
 )
 
 // Konstanta database

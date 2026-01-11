@@ -34,21 +34,8 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 		return
 	}
 
-	// Get user ID from context (set by auth middleware)
-	userID, exists := c.Get("user_id")
-	if !exists {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized", "User ID not found in context")
-		return
-	}
-
-	userIDInt64, ok := userID.(int64)
-	if !ok {
-		response.Error(c, http.StatusInternalServerError, "Internal error", "Invalid user ID type")
-		return
-	}
-
-	// Use filtered method to get users based on requesting user's permissions
-	result, err := h.userService.GetUsersFiltered(userIDInt64, &req)
+	// Use the enhanced method that includes role assignments
+	result, err := h.userService.GetUsersWithRoles(&req)
 	if err != nil {
 		response.ErrorWithAutoStatus(c, "Failed to get users", err.Error())
 		return
@@ -70,7 +57,8 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	result, err := h.userService.GetUserByID(id)
+	// Use the enhanced method that includes role assignments
+	result, err := h.userService.GetUserByIDWithRoles(id)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, constants.MsgUserNotFound, err.Error())
 		return
@@ -313,4 +301,62 @@ func (h *UserHandler) ChangeUserPassword(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, constants.MsgPasswordChanged, nil)
+}
+
+// GetUserByIDWithRoles godoc
+// @Summary Get user by ID with role assignments
+// @Description Retrieve user information with complete role assignments including company, branch, and unit details
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} utils.SuccessResponse
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /users/{id}/with-roles [get]
+func (h *UserHandler) GetUserByIDWithRoles(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid user ID")
+		return
+	}
+
+	result, err := h.userService.GetUserByIDWithRoles(id)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, constants.MsgUserNotFound, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, constants.MsgUserRetrieved, result)
+}
+
+// GetUsersWithRoles godoc
+// @Summary Get all users with role assignments
+// @Description Retrieve all users with complete role assignments including company, branch, and unit details
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Param search query string false "Search term"
+// @Param is_active query bool false "Filter by active status"
+// @Success 200 {object} utils.SuccessResponse
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /users/with-roles [get]
+func (h *UserHandler) GetUsersWithRoles(c *gin.Context) {
+	var req dto.UserListRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+		return
+	}
+
+	result, err := h.userService.GetUsersWithRoles(&req)
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to get users", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, constants.MsgUsersRetrieved, result)
 }

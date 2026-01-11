@@ -73,31 +73,31 @@ func (s *AuthService) Login(req *dto.LoginRequest) (*dto.LoginResponse, error) {
 		ip = *req.IP
 	}
 
-	// Dapatkan peran dan modul user
-	userRoles, err := s.userRepo.GetUserRoles(user.ID)
-	if err != nil {
-		userRoles = []*models.UserRole{} // Default ke kosong jika error
-	}
-
-	// Konversi peran ke slice string menggunakan nama role
-	var roles []string
-	for _, userRole := range userRoles {
-		if userRole.RoleName != "" {
-			roles = append(roles, userRole.RoleName)
+	// Dapatkan user dengan role assignments lengkap
+	userWithRoles, err := s.userRepo.GetByIDWithRoles(user.ID)
+	if err != nil || userWithRoles == nil {
+		// If error getting role assignments or nil result, create empty structure
+		userWithRoles = map[string]interface{}{
+			"role_assignments": []map[string]interface{}{},
+			"total_roles":      0,
 		}
 	}
 
-	// Dapatkan modul user dalam format yang diharapkan
+	// Ensure role_assignments is never nil
+	if userWithRoles["role_assignments"] == nil {
+		userWithRoles["role_assignments"] = []map[string]interface{}{}
+	}
+	if userWithRoles["total_roles"] == nil {
+		userWithRoles["total_roles"] = 0
+	}
+
+	// Dapatkan modul user dengan unit-aware enhancement (fallback to traditional for now)
 	modules, err := s.userRepo.GetUserModulesGroupedWithSubscription(user.ID)
 	if err != nil {
 		modules = make(map[string][][]string) // Default ke kosong jika error
 	}
 
-	// Dapatkan modul user sebagai URL untuk kemampuan token
 	moduleURLs, err := s.userRepo.GetUserModulesWithSubscription(user.ID)
-	if err != nil {
-		moduleURLs = []string{} // Default ke kosong jika error
-	}
 	if err != nil {
 		moduleURLs = []string{} // Default ke kosong jika error
 	}
@@ -149,8 +149,8 @@ func (s *AuthService) Login(req *dto.LoginRequest) (*dto.LoginResponse, error) {
 	// Hitung expires in dalam detik
 	expiresIn := int64(15 * 60) // 15 menit dalam detik
 
-	// Gunakan mapper untuk membuat response dengan roles dan modules
-	return s.authMapper.ToLoginResponseWithRolesAndModules(user, accessToken, refreshToken, expiresIn, roles, modules), nil
+	// Gunakan mapper untuk membuat response dengan user data lengkap termasuk role assignments
+	return s.authMapper.ToLoginResponseWithUserRoles(user, userWithRoles, accessToken, refreshToken, expiresIn, modules), nil
 }
 
 func (s *AuthService) generateFamilyID() (string, error) {
@@ -192,7 +192,7 @@ func (s *AuthService) RefreshToken(req *dto.RefreshTokenRequest) (*dto.RefreshTo
 		roles = append(roles, fmt.Sprintf("role_%d", userRole.RoleID))
 	}
 
-	// Dapatkan modul user sebagai URL untuk kemampuan token
+	// Dapatkan modul user dengan unit-aware enhancement (fallback to traditional for now)
 	moduleURLs, err := s.userRepo.GetUserModulesWithSubscription(user.ID)
 	if err != nil {
 		moduleURLs = []string{}

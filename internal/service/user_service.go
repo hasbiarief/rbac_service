@@ -202,3 +202,42 @@ func (s *UserService) ChangePassword(userID int64, req *dto.ChangePasswordReques
 func (s *UserService) ChangeUserPassword(userID int64, req *dto.ChangePasswordRequest) error {
 	return s.ChangePassword(userID, req)
 }
+
+// GetUserByIDWithRoles retrieves a user by ID with complete role assignments
+func (s *UserService) GetUserByIDWithRoles(id int64) (interface{}, error) {
+	user, err := s.userRepo.GetByIDWithRoles(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// GetUsersWithRoles retrieves all users with complete role assignments
+func (s *UserService) GetUsersWithRoles(req *dto.UserListRequest) (interface{}, error) {
+	// Set default values
+	if req.Limit <= 0 {
+		req.Limit = 10
+	}
+	if req.Offset < 0 {
+		req.Offset = 0
+	}
+
+	users, err := s.userRepo.GetAllWithRoles(req.Limit, req.Offset, req.Search, req.IsActive)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get total count for pagination
+	total, err := s.userRepo.Count(req.Search, req.IsActive)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"users":  users,
+		"total":  total,
+		"limit":  req.Limit,
+		"offset": req.Offset,
+	}, nil
+}

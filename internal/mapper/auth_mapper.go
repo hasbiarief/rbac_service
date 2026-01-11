@@ -3,6 +3,7 @@ package mapper
 import (
 	"gin-scalable-api/internal/dto"
 	"gin-scalable-api/internal/models"
+	"time"
 )
 
 // AuthMapper handles conversion between auth models and DTOs
@@ -95,5 +96,59 @@ func (m *AuthMapper) ToUserModel(req *dto.RegisterRequest) *models.User {
 		Email:        req.Email,
 		UserIdentity: req.UserIdentity,
 		IsActive:     true, // Default to active
+	}
+}
+
+// ToLoginResponseWithUserRoles creates login response DTO with complete user role assignments
+func (m *AuthMapper) ToLoginResponseWithUserRoles(user *models.User, userWithRoles map[string]interface{}, accessToken, refreshToken string, expiresIn int64, modules map[string][][]string) *dto.LoginResponse {
+	if user == nil {
+		return nil
+	}
+
+	// Handle nil userWithRoles
+	if userWithRoles == nil {
+		userWithRoles = map[string]interface{}{
+			"role_assignments": []map[string]interface{}{},
+			"total_roles":      0,
+		}
+	}
+
+	// Extract role assignments from userWithRoles
+	roleAssignments, ok := userWithRoles["role_assignments"].([]map[string]interface{})
+	if !ok || roleAssignments == nil {
+		roleAssignments = []map[string]interface{}{}
+	}
+	totalRoles, ok := userWithRoles["total_roles"].(int)
+	if !ok {
+		totalRoles = 0
+	}
+
+	// Create enhanced user response with complete role assignments
+	enhancedUser := dto.UserResponse{
+		ID:           user.ID,
+		Name:         user.Name,
+		Email:        user.Email,
+		UserIdentity: user.UserIdentity,
+		IsActive:     user.IsActive,
+		CreatedAt:    user.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    user.UpdatedAt.Format(time.RFC3339),
+		Modules:      modules, // Add modules
+	}
+
+	// Add role assignments to user response
+	enhancedUser.RoleAssignments = roleAssignments
+	enhancedUser.TotalRoles = totalRoles
+
+	// Ensure role_assignments is never nil in JSON output
+	if enhancedUser.RoleAssignments == nil {
+		enhancedUser.RoleAssignments = []map[string]interface{}{}
+	}
+
+	return &dto.LoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    expiresIn,
+		User:         enhancedUser,
 	}
 }
