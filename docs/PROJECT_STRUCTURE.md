@@ -140,7 +140,7 @@ rbac-service/
 │   └── ...
 │
 ├── docs/                        # Documentation
-│   ├── BACKEND_ENGINEER_SOP.md
+│   ├── ENGINEER_RULES.md
 │   ├── PROJECT_STRUCTURE.md
 │   ├── API_OVERVIEW.md
 │   └── *.postman_collection.json
@@ -279,6 +279,6 @@ Buat module baru ketika:
 
 ## 📚 Related Documentation
 
-- [Backend Engineer SOP](BACKEND_ENGINEER_SOP.md) - Panduan development
+- [Backend Engineer Rules](ENGINEER_RULES.md) - Panduan development
 - [API Overview](API_OVERVIEW.md) - API documentation
 - [README](../README.md) - Project overview

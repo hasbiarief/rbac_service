@@ -378,7 +378,7 @@ func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
 - **[📚 Documentation Index](docs/INDEX.md)** - Navigasi dokumentasi lengkap
 - **[🚀 Quick Start Guide](docs/QUICK_START.md)** - Setup cepat & Makefile commands
 - **[🏗️ Project Structure](docs/PROJECT_STRUCTURE.md)** - Module-based architecture
-- **[👨‍💻 Backend Engineer Rules](docs/BACKEND_ENGINEER_SOP.md)** - Development guide
+- **[👨‍💻 Backend Engineer Rules](docs/ENGINEER_RULES.md)** - Development guide
 - **[📡 API Overview](docs/API_OVERVIEW.md)** - API documentation
 - **[🧪 Postman Collection](docs/HUMINOR_RBAC_API_MODULE_BASED.postman_collection.json)** - API testing
 

@@ -8,7 +8,7 @@ Panduan setup cepat untuk development dan production. Termasuk Makefile commands
 ### 🏗️ [Project Structure](PROJECT_STRUCTURE.md)
 Penjelasan lengkap tentang module-based architecture, struktur folder, dan prinsip desain.
 
-### 👨‍💻 [Backend Engineer SOP](BACKEND_ENGINEER_SOP.md)
+### 👨‍💻 [Backend Engineer Rules](ENGINEER_RULES.md)
 Panduan lengkap untuk backend engineer: development workflow, module structure, best practices.
 
 ### 📡 [API Overview](API_OVERVIEW.md)
@@ -27,7 +27,7 @@ Import ke Postman untuk testing lengkap semua endpoints.
 **Untuk memulai development:**
 1. Baca [Quick Start Guide](QUICK_START.md)
 2. Pahami [Project Structure](PROJECT_STRUCTURE.md)
-3. Ikuti [Backend Engineer SOP](BACKEND_ENGINEER_SOP.md)
+3. Ikuti [Backend Engineer Rules](ENGINEER_RULES.md)
 
 **Untuk testing API:**
 1. Import Postman collection
@@ -38,7 +38,7 @@ Import ke Postman untuk testing lengkap semua endpoints.
 
 1. **Setup** → [Quick Start Guide](QUICK_START.md)
 2. **Arsitektur** → [Project Structure](PROJECT_STRUCTURE.md)
-3. **Development** → [Backend Engineer SOP](BACKEND_ENGINEER_SOP.md)
+3. **Development** → [Backend Engineer Rules](ENGINEER_RULES.md)
 4. **API** → [API Overview](API_OVERVIEW.md)
 5. **Testing** → Postman Collection
 

@@ -258,7 +258,7 @@ curl -X POST http://localhost:8081/api/v1/employees \
 
 ## 📚 Dokumentasi Lengkap
 
-- [Backend Engineer SOP](BACKEND_ENGINEER_SOP.md) - Panduan lengkap
+- [Backend Engineer Rules](ENGINEER_RULES.md) - Panduan lengkap
 - [Project Structure](PROJECT_STRUCTURE.md) - Arsitektur detail
 - [API Overview](API_OVERVIEW.md) - API documentation
 - [README](../README.md) - Project overview

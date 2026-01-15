@@ -807,6 +807,6 @@ Gunakan Postman collection untuk testing lengkap:
 
 ## 🔗 Related Documentation
 
-- [Backend Engineer SOP](BACKEND_ENGINEER_SOP.md) - Development guide
+- [Backend Engineer Rules](ENGINEER_RULES.md) - Development guide
 - [Project Structure](PROJECT_STRUCTURE.md) - Architecture overview
 - [README](../README.md) - Project overview
