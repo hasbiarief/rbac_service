@@ -1,55 +1,62 @@
-# RBAC API - Clean Architecture
+# RBAC API - Module-Based Architecture
 
-Sistem ERP dengan Role-Based Access Control (RBAC) menggunakan **Clean Architecture**, Go, PostgreSQL, dan Redis. Menggunakan raw SQL tanpa ORM untuk performa optimal.
+Sistem ERP dengan Role-Based Access Control (RBAC) menggunakan **Module-Based Architecture** (Express.js style), Go, PostgreSQL, dan Redis. Menggunakan raw SQL tanpa ORM untuk performa optimal.
 
 ## 🏗️ Arsitektur
 
-Project ini menggunakan **Clean Architecture** dengan struktur:
+Project ini menggunakan **vertical module-based structure** dengan prinsip: **1 fitur = 1 folder**
 
 ```
 internal/
-├── dto/           # Data Transfer Objects (Request/Response)
-├── interfaces/    # Contracts untuk Service & Repository  
-├── mapper/        # Konversi antara Model dan DTO
-├── handlers/      # HTTP Request/Response handlers
-├── service/       # Business logic layer
-├── repository/    # Data access layer
-├── models/        # Database entities
-├── validation/    # Request validation rules
-├── routes/        # Route definitions
-└── constants/     # Konstanta aplikasi
+├── app/           # Server initialization & route registration
+├── modules/       # 🔥 SEMUA FITUR DI SINI
+│   ├── auth/      # Authentication (7 files: route, handler, service, repository, model, dto, validator)
+│   ├── user/      # User management
+│   ├── role/      # Role management
+│   ├── company/   # Company management
+│   ├── branch/    # Branch management (hierarchical)
+│   ├── module/    # Module system (menu/features)
+│   ├── unit/      # Unit management (unit-based RBAC)
+│   ├── subscription/  # Subscription system
+│   └── audit/     # Audit logging
+└── constants/     # Shared constants
 
-pkg/
-├── errors/        # Custom error types
-├── query/         # Query builder utilities
-├── pagination/    # Pagination helpers
-├── utils/         # Response & validation helpers
-└── response/      # Standardized API responses
+middleware/        # HTTP middleware (auth, CORS, rate limit)
+pkg/              # Reusable utilities (generic only)
+migrations/       # SQL migrations
 ```
+
+**Key Differences:**
+- ❌ Tidak ada folder `interfaces/`, `mapper/`, `dto/` global
+- ❌ Tidak ada separation `handlers/`, `service/`, `repository/` terpisah
+- ✅ Setiap module punya semua layer-nya sendiri (route, handler, service, repository, model, dto, validator)
+- ✅ Model lokal per module (tidak shared)
+- ✅ No cross-module imports
 
 ## ✨ Fitur Utama
 
-- **Clean Architecture** - Separation of concerns yang jelas
+- **Module-Based Architecture** - 1 fitur = 1 folder (Express.js style)
 - **Authentication** - JWT token system dengan Redis storage
-- **RBAC System** - Role-based access control dengan module permissions
-- **Multi-Company** - Company dan branch hierarchy (4 levels)
+- **Unit-Based RBAC** - Hierarchical RBAC: Company → Branch → Unit → Role → User
+- **Multi-Company** - Company dan branch hierarchy dengan unit management
 - **Subscription** - Tiered subscription dengan module access control
-- **Audit Logging** - Complete audit trail
+- **Audit Logging** - Complete audit trail untuk semua actions
 - **User Management** - User lifecycle dengan soft delete
-- **DTO Pattern** - Consistent request/response structure
-- **Custom Error Handling** - Structured error responses
-- **Query Builder** - Dynamic SQL query building
+- **Module System** - Dynamic menu/feature management
+- **Raw SQL** - Tanpa ORM untuk performa optimal
 - **Validation Middleware** - Centralized input validation
+- **CORS & Rate Limiting** - Production-ready security
 
 ## 🛠️ Tech Stack
 
-- **Go 1.25+** dengan Gin framework
-- **PostgreSQL** dengan raw SQL (tanpa ORM)
-- **Redis** untuk token storage dan caching
-- **Clean Architecture** dengan DTO, Mapper, Interface patterns
-- **Custom Error Types** untuk error handling
-- **Validation Middleware** untuk input validation
+- **Go 1.21+** dengan Gin framework
+- **PostgreSQL 13+** dengan raw SQL (tanpa ORM)
+- **Redis 6+** untuk token storage dan caching
+- **Module-Based Architecture** (Express.js style)
+- **JWT Authentication** dengan refresh token
+- **Validation Middleware** dengan go-playground/validator
 - **bcrypt** untuk password hashing
+- **Air** untuk hot reload development
 
 ## 🚀 Quick Start
 
@@ -230,22 +237,40 @@ GET /api/v1/subscription/module-access/1/1
 
 ## 🏗️ Development Guide
 
-### Membuat Fitur Baru
+### Membuat Module Baru
 
-1. **Buat DTO** di `internal/dto/`
-2. **Buat Interface** di `internal/interfaces/`
-3. **Buat Mapper** di `internal/mapper/`
-4. **Implementasi Repository** di `internal/repository/`
-5. **Implementasi Service** di `internal/service/`
-6. **Implementasi Handler** di `internal/handlers/`
-7. **Tambah Validation** di `internal/validation/`
-8. **Tambah Routes** di `internal/routes/`
+1. **Buat folder module** di `internal/modules/feature_name/`
+2. **Buat 7 file standar:**
+   - `route.go` - Route registration
+   - `handler.go` - HTTP handlers
+   - `service.go` - Business logic
+   - `repository.go` - Database queries (raw SQL)
+   - `model.go` - Database entities (local)
+   - `dto.go` - Request/Response structures
+   - `validator.go` - Custom validation rules
+3. **Register module** di `internal/app/routes.go`
 
 ### Contoh Implementasi
 
+**Model:**
+```go
+// internal/modules/employee/model.go
+package employee
+
+type Employee struct {
+    ID        int64     `json:"id" db:"id"`
+    Name      string    `json:"name" db:"name"`
+    Email     string    `json:"email" db:"email"`
+    IsActive  bool      `json:"is_active" db:"is_active"`
+    CreatedAt time.Time `json:"created_at" db:"created_at"`
+}
+```
+
 **DTO:**
 ```go
-// internal/dto/employee_dto.go
+// internal/modules/employee/dto.go
+package employee
+
 type CreateEmployeeRequest struct {
     Name  string `json:"name" validate:"required,min=2,max=100"`
     Email string `json:"email" validate:"required,email"`
@@ -259,43 +284,103 @@ type EmployeeResponse struct {
 }
 ```
 
-**Service Interface:**
+**Repository:**
 ```go
-// internal/interfaces/service.go
-type EmployeeServiceInterface interface {
-    CreateEmployee(req *dto.CreateEmployeeRequest) (*dto.EmployeeResponse, error)
-    GetEmployeeByID(id int64) (*dto.EmployeeResponse, error)
+// internal/modules/employee/repository.go
+package employee
+
+type Repository struct {
+    db *sql.DB
+}
+
+func NewRepository(db *sql.DB) *Repository {
+    return &Repository{db: db}
+}
+
+func (r *Repository) Create(emp *Employee) error {
+    query := `INSERT INTO employees (name, email, is_active, created_at, updated_at)
+              VALUES ($1, $2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+              RETURNING id, created_at`
+    return r.db.QueryRow(query, emp.Name, emp.Email).Scan(&emp.ID, &emp.CreatedAt)
+}
+```
+
+**Service:**
+```go
+// internal/modules/employee/service.go
+package employee
+
+type Service struct {
+    repo *Repository
+}
+
+func NewService(repo *Repository) *Service {
+    return &Service{repo: repo}
+}
+
+func (s *Service) CreateEmployee(req *CreateEmployeeRequest) (*EmployeeResponse, error) {
+    emp := &Employee{Name: req.Name, Email: req.Email}
+    if err := s.repo.Create(emp); err != nil {
+        return nil, err
+    }
+    return &EmployeeResponse{
+        ID:        emp.ID,
+        Name:      emp.Name,
+        Email:     emp.Email,
+        CreatedAt: emp.CreatedAt.Format(time.RFC3339),
+    }, nil
 }
 ```
 
 **Handler:**
 ```go
-// internal/handlers/employee_handler.go
-func (h *EmployeeHandler) CreateEmployee(c *gin.Context) {
-    var req *dto.CreateEmployeeRequest
-    if err := h.validationHelper.GetValidatedBody(c, &req); err != nil {
-        h.responseHelper.HandleError(c, err)
-        return
-    }
+// internal/modules/employee/handler.go
+package employee
+
+type Handler struct {
+    service *Service
+}
+
+func NewHandler(service *Service) *Handler {
+    return &Handler{service: service}
+}
+
+func (h *Handler) CreateEmployee(c *gin.Context) {
+    validatedBody, _ := c.Get("validated_body")
+    req := validatedBody.(*CreateEmployeeRequest)
     
-    result, err := h.employeeService.CreateEmployee(req)
+    result, err := h.service.CreateEmployee(req)
     if err != nil {
-        h.responseHelper.HandleError(c, err)
+        response.ErrorWithAutoStatus(c, "Failed to create employee", err.Error())
         return
     }
     
-    h.responseHelper.Created(c, constants.MsgEmployeeCreated, result)
+    response.Success(c, http.StatusCreated, "Employee created", result)
+}
+```
+
+**Route:**
+```go
+// internal/modules/employee/route.go
+package employee
+
+func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
+    employees := router.Group("/employees")
+    {
+        employees.POST("", middleware.ValidateJSON(&CreateEmployeeRequest{}), handler.CreateEmployee)
+        employees.GET("/:id", handler.GetEmployee)
+    }
 }
 ```
 
 ## 📖 Documentation
 
-- **[Documentation Index](docs/INDEX.md)** - Daftar dan navigasi dokumentasi
-- **[Backend SOP](docs/BACKEND_ENGINEER_SOP.md)** - Panduan lengkap pengembangan
-- **[Migration Guide](docs/MIGRATIONS.md)** - Prosedur database migration
-- **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Overview arsitektur
-- **[Role Permissions](docs/ROLE_PERMISSIONS_MAPPING.md)** - Dokumentasi RBAC
-- **[Postman Collection](docs/ERP_RBAC_API_MODULE_BASED.postman_collection.json)** - API testing
+- **[📚 Documentation Index](docs/INDEX.md)** - Navigasi dokumentasi lengkap
+- **[🚀 Quick Start Guide](docs/QUICK_START.md)** - Setup cepat & Makefile commands
+- **[🏗️ Project Structure](docs/PROJECT_STRUCTURE.md)** - Module-based architecture
+- **[👨‍💻 Backend Engineer SOP](docs/BACKEND_ENGINEER_SOP.md)** - Development guide
+- **[📡 API Overview](docs/API_OVERVIEW.md)** - API documentation
+- **[🧪 Postman Collection](docs/HUMINOR_RBAC_API_MODULE_BASED.postman_collection.json)** - API testing
 
 ## ⚙️ Environment Variables
 

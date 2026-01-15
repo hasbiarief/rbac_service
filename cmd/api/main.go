@@ -2,7 +2,7 @@ package main
 
 import (
 	"gin-scalable-api/config"
-	"gin-scalable-api/internal/server"
+	"gin-scalable-api/internal/app"
 	"log"
 )
 
@@ -10,8 +10,8 @@ func main() {
 	// Load configuration
 	cfg := config.Load()
 
-	// Initialize server
-	srv := server.NewServer(cfg)
+	// Initialize server with module-based structure
+	srv := app.NewServer(cfg)
 
 	// Initialize all components (database, repositories, services, handlers, routes)
 	if err := srv.Initialize(); err != nil {

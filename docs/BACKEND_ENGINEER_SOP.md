@@ -1,12 +1,12 @@
 # Backend Engineer SOP - RBAC Service
 
-Panduan lengkap untuk bekerja dengan RBAC Service yang menggunakan Clean Architecture dengan Unit-Based RBAC system.
+Panduan lengkap untuk bekerja dengan RBAC Service yang menggunakan **Module-Based Architecture** (Express.js style) dengan Unit-Based RBAC system.
 
 ## 📋 Table of Contents
 1. [Quick Start](#quick-start)
-2. [Project Structure](#project-structure)
+2. [Module-Based Architecture](#module-based-architecture)
 3. [Development Workflow](#development-workflow)
-4. [Component Details](#component-details)
+4. [Module Structure](#module-structure)
 5. [Database & Migrations](#database--migrations)
 6. [Testing](#testing)
 7. [Deployment](#deployment)
@@ -42,359 +42,406 @@ air  # atau go run cmd/api/main.go
 
 Server akan berjalan di `http://localhost:8081`
 
-## 🏗️ Project Structure
+## 🏗️ Module-Based Architecture
+
+Project ini menggunakan **vertical module-based structure** (Express.js style), bukan horizontal layer-based.
+
+**Prinsip: 1 fitur = 1 folder**
 
 ```
 rbac-service/
-├── cmd/api/                 # Entry point aplikasi
+├── cmd/
+│   ├── api/main.go          # Entry point aplikasi
+│   └── migrate/main.go      # Migration tool
+│
 ├── internal/
-│   ├── constants/          # Konstanta aplikasi
-│   ├── dto/               # Data Transfer Objects
-│   ├── handlers/          # HTTP handlers (controllers)
-│   ├── interfaces/        # Interface definitions
-│   ├── mapper/           # Data mapping logic
-│   ├── models/           # Database models
-│   ├── repository/       # Data access layer
-│   ├── routes/           # Route definitions
-│   ├── server/           # Server setup
-│   ├── service/          # Business logic layer
-│   └── validation/       # Request validation
-├── middleware/           # HTTP middleware
-├── migrations/          # Database migrations
-├── pkg/                # Shared packages
-└── docs/               # Documentation
+│   ├── app/
+│   │   ├── server.go        # Server initialization
+│   │   └── routes.go        # Route registration
+│   │
+│   ├── modules/             # 🔥 SEMUA FITUR DI SINI
+│   │   ├── auth/            # Authentication module
+│   │   │   ├── route.go     # Routes
+│   │   │   ├── handler.go   # HTTP handlers
+│   │   │   ├── service.go   # Business logic
+│   │   │   ├── repository.go # Database queries
+│   │   │   ├── model.go     # Local models
+│   │   │   ├── dto.go       # Request/Response DTOs
+│   │   │   └── validator.go # Validation rules
+│   │   │
+│   │   ├── user/            # User management
+│   │   ├── role/            # Role management
+│   │   ├── company/         # Company management
+│   │   ├── branch/          # Branch management
+│   │   ├── module/          # Module system
+│   │   ├── unit/            # Unit management
+│   │   ├── subscription/    # Subscription system
+│   │   └── audit/           # Audit logging
+│   │
+│   └── constants/           # Shared constants
+│
+├── middleware/              # HTTP middleware (auth, CORS, rate limit)
+├── migrations/              # SQL migrations
+├── pkg/                     # Reusable utilities
+│   ├── model/              # Base repository helper
+│   ├── response/           # Response helpers
+│   └── utils/              # General utilities
+│
+├── config/                  # Configuration
+└── docs/                    # Documentation
 ```
+
+**Key Differences dari Clean Architecture:**
+- ❌ Tidak ada folder `interfaces/`, `mapper/`, `dto/` global
+- ❌ Tidak ada separation `handlers/`, `service/`, `repository/` terpisah
+- ✅ Setiap module punya semua layer-nya sendiri
+- ✅ Model lokal per module (tidak shared)
+- ✅ Repository lokal per module (tidak shared)
 
 ## 🔄 Development Workflow
 
-Ketika mengembangkan fitur baru, ikuti urutan ini:
+Ketika mengembangkan fitur baru dalam **module-based architecture**:
 
-### 1. Analisis & Desain
-- Tentukan endpoint yang dibutuhkan
-- Desain struktur data request/response
-- Identifikasi business logic yang diperlukan
+### 1. Buat Module Folder
+```bash
+mkdir -p internal/modules/feature_name
+```
 
-### 2. Database (jika diperlukan)
-- Buat migration file baru
-- Definisikan model database
+### 2. Buat File Structure (dalam 1 folder)
+```bash
+cd internal/modules/feature_name
+touch route.go handler.go service.go repository.go model.go dto.go validator.go
+```
 
-### 3. DTO (Data Transfer Objects)
-- Buat request/response DTOs
-- Tambahkan validation tags
+### 3. Implementasi (urutan yang disarankan)
 
-### 4. Interface
-- Definisikan interface untuk repository dan service
-- Tambahkan method signatures
+**a. Model (`model.go`)** - Database entities
+```go
+package feature_name
 
-### 5. Repository
-- Implementasi data access logic
-- Handle database operations
+type Feature struct {
+    ID        int64     `json:"id" db:"id"`
+    Name      string    `json:"name" db:"name"`
+    IsActive  bool      `json:"is_active" db:"is_active"`
+    CreatedAt time.Time `json:"created_at" db:"created_at"`
+    UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+```
 
-### 6. Service
-- Implementasi business logic
-- Orchestrate repository calls
+**b. DTO (`dto.go`)** - Request/Response structures
+```go
+package feature_name
 
-### 7. Mapper
-- Convert antara models dan DTOs
-- Handle data transformation
+type CreateFeatureRequest struct {
+    Name string `json:"name" validate:"required,min=2,max=100"`
+}
 
-### 8. Handler
-- Handle HTTP requests
-- Call service methods
-- Return responses
+type FeatureResponse struct {
+    ID        int64  `json:"id"`
+    Name      string `json:"name"`
+    IsActive  bool   `json:"is_active"`
+    CreatedAt string `json:"created_at"`
+}
+```
 
-### 9. Routes
-- Register endpoints
-- Apply middleware
+**c. Repository (`repository.go`)** - Database queries (raw SQL)
+```go
+package feature_name
 
-### 10. Testing
-- Test dengan Postman/curl
-- Verify business logic
+type Repository struct {
+    db *sql.DB
+}
 
-## 🧩 Component Details
+func NewRepository(db *sql.DB) *Repository {
+    return &Repository{db: db}
+}
 
-### 📝 DTO (Data Transfer Objects)
-**Location**: `internal/dto/`
+func (r *Repository) Create(feature *Feature) error {
+    // Raw SQL query
+}
+```
 
-DTOs mendefinisikan struktur data untuk request dan response API.
+**d. Service (`service.go`)** - Business logic
+```go
+package feature_name
 
-**Contoh membuat DTO baru:**
+type Service struct {
+    repo *Repository
+}
+
+func NewService(repo *Repository) *Service {
+    return &Service{repo: repo}
+}
+
+func (s *Service) CreateFeature(req *CreateFeatureRequest) (*FeatureResponse, error) {
+    // Business logic
+}
+```
+
+**e. Handler (`handler.go`)** - HTTP handlers
+```go
+package feature_name
+
+type Handler struct {
+    service *Service
+}
+
+func NewHandler(service *Service) *Handler {
+    return &Handler{service: service}
+}
+
+func (h *Handler) CreateFeature(c *gin.Context) {
+    // Handle HTTP request
+}
+```
+
+**f. Route (`route.go`)** - Route registration
+```go
+package feature_name
+
+func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
+    features := router.Group("/features")
+    {
+        features.POST("", middleware.ValidateJSON(&CreateFeatureRequest{}), handler.CreateFeature)
+        features.GET("/:id", handler.GetFeature)
+    }
+}
+```
+
+### 4. Register Module di `internal/app/routes.go`
+```go
+featureModule "gin-scalable-api/internal/modules/feature_name"
+
+// Di SetupNewModuleRoutes:
+featureModule.RegisterRoutes(protected, h.Feature)
+```
+
+### 5. Testing
+- Test dengan Postman collection
+- Verify dengan `go build ./cmd/api`
+
+## 🧩 Module Structure
+
+Setiap module memiliki 7 file standar dalam 1 folder:
+
+### 📝 1. model.go - Database Entities
+**Lokasi**: `internal/modules/{module}/model.go`
+
+Model mendefinisikan struktur data database. Setiap module punya model lokalnya sendiri.
 
 ```go
-// internal/dto/example_dto.go
-package dto
+package user
+
+import "time"
+
+type User struct {
+    ID           int64     `json:"id" db:"id"`
+    Name         string    `json:"name" db:"name"`
+    Email        string    `json:"email" db:"email"`
+    UserIdentity *string   `json:"user_identity" db:"user_identity"`
+    PasswordHash string    `json:"-" db:"password_hash"`
+    IsActive     bool      `json:"is_active" db:"is_active"`
+    CreatedAt    time.Time `json:"created_at" db:"created_at"`
+    UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
+}
+
+func (User) TableName() string {
+    return "users"
+}
+```
+
+**Best Practices:**
+- Model lokal per module (tidak shared)
+- Gunakan pointer untuk nullable fields (`*int64`, `*string`)
+- Tag `json:"-"` untuk field sensitif (password)
+- Method `TableName()` untuk explicit table name
+
+### 📦 2. dto.go - Request/Response DTOs
+**Lokasi**: `internal/modules/{module}/dto.go`
+
+DTOs mendefinisikan struktur data untuk API request dan response.
+
+```go
+package user
 
 // Request DTO
-type CreateExampleRequest struct {
-    Name        string `json:"name" validate:"required,min=2,max=100"`
-    Description string `json:"description" validate:"required"`
-    IsActive    bool   `json:"is_active"`
+type CreateUserRequest struct {
+    Name         string  `json:"name" validate:"required,min=2,max=100"`
+    Email        string  `json:"email" validate:"required,email"`
+    UserIdentity *string `json:"user_identity" validate:"omitempty"`
+    Password     string  `json:"password" validate:"required,min=8"`
 }
 
 // Response DTO
-type ExampleResponse struct {
-    ID          int64  `json:"id"`
-    Name        string `json:"name"`
-    Description string `json:"description"`
-    IsActive    bool   `json:"is_active"`
-    CreatedAt   string `json:"created_at"`
-    UpdatedAt   string `json:"updated_at"`
+type UserResponse struct {
+    ID           int64   `json:"id"`
+    Name         string  `json:"name"`
+    Email        string  `json:"email"`
+    UserIdentity *string `json:"user_identity,omitempty"`
+    IsActive     bool    `json:"is_active"`
+    CreatedAt    string  `json:"created_at"`
+    UpdatedAt    string  `json:"updated_at"`
 }
 
 // List Response DTO
-type ExampleListResponse struct {
-    Data    []*ExampleResponse `json:"data"`
-    Total   int64              `json:"total"`
-    Limit   int                `json:"limit"`
-    Offset  int                `json:"offset"`
-    HasMore bool               `json:"has_more"`
+type UserListResponse struct {
+    Data    []*UserResponse `json:"data"`
+    Total   int64           `json:"total"`
+    Limit   int             `json:"limit"`
+    Offset  int             `json:"offset"`
+    HasMore bool            `json:"has_more"`
 }
 ```
 
 **Validation Tags:**
-- `required`: Field wajib diisi
-- `email`: Validasi format email
-- `min=n,max=n`: Panjang minimum/maksimum
-- `omitempty`: Field opsional dalam JSON
+- `required` - Field wajib diisi
+- `email` - Validasi format email
+- `min=n,max=n` - Panjang minimum/maksimum
+- `omitempty` - Field opsional
 
-### 🔌 Interfaces
-**Location**: `internal/interfaces/`
+### 🗃️ 3. repository.go - Database Queries
+**Lokasi**: `internal/modules/{module}/repository.go`
 
-Interfaces mendefinisikan kontrak untuk repository dan service layers.
-
-**Contoh interface:**
+Repository menangani semua operasi database dengan raw SQL.
 
 ```go
-// internal/interfaces/repository.go
-type ExampleRepositoryInterface interface {
-    Create(example *models.Example) error
-    GetByID(id int64) (*models.Example, error)
-    GetAll(limit, offset int, search string) ([]*models.Example, error)
-    Update(example *models.Example) error
-    Delete(id int64) error
-    Count(search string) (int64, error)
-}
-
-// internal/interfaces/service.go
-type ExampleServiceInterface interface {
-    CreateExample(req *dto.CreateExampleRequest) (*dto.ExampleResponse, error)
-    GetExampleByID(id int64) (*dto.ExampleResponse, error)
-    GetExamples(req *dto.ExampleListRequest) (*dto.ExampleListResponse, error)
-    UpdateExample(id int64, req *dto.UpdateExampleRequest) (*dto.ExampleResponse, error)
-    DeleteExample(id int64) error
-}
-```
-
-### 🗃️ Repository Layer
-**Location**: `internal/repository/`
-
-Repository menangani semua operasi database.
-
-**Contoh repository:**
-
-```go
-// internal/repository/example_repository.go
-package repository
+package user
 
 import (
     "database/sql"
-    "gin-scalable-api/internal/models"
+    "fmt"
+    "gin-scalable-api/pkg/model"
 )
 
-type ExampleRepository struct {
+type Repository struct {
+    *model.Repository
     db *sql.DB
 }
 
-func NewExampleRepository(db *sql.DB) *ExampleRepository {
-    return &ExampleRepository{db: db}
+func NewRepository(db *sql.DB) *Repository {
+    return &Repository{
+        Repository: model.NewRepository(db),
+        db:         db,
+    }
 }
 
-func (r *ExampleRepository) Create(example *models.Example) error {
+func (r *Repository) Create(user *User) error {
     query := `
-        INSERT INTO examples (name, description, is_active, created_at, updated_at)
-        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        INSERT INTO users (name, email, user_identity, password_hash, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING id, created_at, updated_at
     `
     
-    err := r.db.QueryRow(query, example.Name, example.Description, example.IsActive).Scan(
-        &example.ID, &example.CreatedAt, &example.UpdatedAt,
+    err := r.db.QueryRow(query, user.Name, user.Email, user.UserIdentity, user.PasswordHash, user.IsActive).Scan(
+        &user.ID, &user.CreatedAt, &user.UpdatedAt,
     )
     if err != nil {
-        return fmt.Errorf("failed to create example: %w", err)
+        return fmt.Errorf("failed to create user: %w", err)
     }
     
     return nil
 }
 
-func (r *ExampleRepository) GetByID(id int64) (*models.Example, error) {
-    example := &models.Example{}
+func (r *Repository) GetByID(id int64) (*User, error) {
+    user := &User{}
     query := `
-        SELECT id, name, description, is_active, created_at, updated_at
-        FROM examples 
+        SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at
+        FROM users 
         WHERE id = $1 AND deleted_at IS NULL
     `
     
     err := r.db.QueryRow(query, id).Scan(
-        &example.ID, &example.Name, &example.Description,
-        &example.IsActive, &example.CreatedAt, &example.UpdatedAt,
+        &user.ID, &user.Name, &user.Email, &user.UserIdentity,
+        &user.PasswordHash, &user.IsActive, &user.CreatedAt, &user.UpdatedAt,
     )
     if err != nil {
         if err == sql.ErrNoRows {
-            return nil, fmt.Errorf("example not found")
+            return nil, fmt.Errorf("user not found")
         }
-        return nil, fmt.Errorf("failed to get example: %w", err)
+        return nil, fmt.Errorf("failed to get user: %w", err)
     }
     
-    return example, nil
+    return user, nil
 }
 ```
 
-**Best Practices Repository:**
-- Gunakan prepared statements untuk keamanan
+**Best Practices:**
+- Gunakan raw SQL (tidak pakai ORM)
 - Handle `sql.ErrNoRows` untuk data tidak ditemukan
 - Gunakan soft delete dengan `deleted_at`
 - Return error yang descriptive
 
-### 🏢 Service Layer
-**Location**: `internal/service/`
+### 🏢 4. service.go - Business Logic
+**Lokasi**: `internal/modules/{module}/service.go`
 
 Service layer berisi business logic dan orchestrate repository calls.
 
-**Contoh service:**
-
 ```go
-// internal/service/example_service.go
-package service
+package user
 
 import (
-    "gin-scalable-api/internal/dto"
-    "gin-scalable-api/internal/interfaces"
-    "gin-scalable-api/internal/mapper"
+    "fmt"
+    "time"
+    "golang.org/x/crypto/bcrypt"
 )
 
-type ExampleService struct {
-    exampleRepo   interfaces.ExampleRepositoryInterface
-    exampleMapper *mapper.ExampleMapper
+type Service struct {
+    repo *Repository
 }
 
-func NewExampleService(exampleRepo interfaces.ExampleRepositoryInterface) *ExampleService {
-    return &ExampleService{
-        exampleRepo:   exampleRepo,
-        exampleMapper: mapper.NewExampleMapper(),
-    }
+func NewService(repo *Repository) *Service {
+    return &Service{repo: repo}
 }
 
-func (s *ExampleService) CreateExample(req *dto.CreateExampleRequest) (*dto.ExampleResponse, error) {
-    // Business logic validation
-    if req.Name == "" {
-        return nil, errors.New("name cannot be empty")
+func (s *Service) CreateUser(req *CreateUserRequest) (*UserResponse, error) {
+    // Hash password
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+    if err != nil {
+        return nil, fmt.Errorf("failed to hash password: %w", err)
     }
     
-    // Convert DTO to model
-    example := s.exampleMapper.ToModel(req)
+    // Create user model
+    user := &User{
+        Name:         req.Name,
+        Email:        req.Email,
+        UserIdentity: req.UserIdentity,
+        PasswordHash: string(hashedPassword),
+        IsActive:     true,
+    }
     
     // Save to database
-    err := s.exampleRepo.Create(example)
-    if err != nil {
-        return nil, fmt.Errorf("failed to create example: %w", err)
+    if err := s.repo.Create(user); err != nil {
+        return nil, fmt.Errorf("failed to create user: %w", err)
     }
     
-    // Convert model to response DTO
-    return s.exampleMapper.ToResponse(example), nil
-}
-
-func (s *ExampleService) GetExampleByID(id int64) (*dto.ExampleResponse, error) {
-    example, err := s.exampleRepo.GetByID(id)
-    if err != nil {
-        return nil, err
-    }
-    
-    return s.exampleMapper.ToResponse(example), nil
+    // Convert to response
+    return &UserResponse{
+        ID:           user.ID,
+        Name:         user.Name,
+        Email:        user.Email,
+        UserIdentity: user.UserIdentity,
+        IsActive:     user.IsActive,
+        CreatedAt:    user.CreatedAt.Format(time.RFC3339),
+        UpdatedAt:    user.UpdatedAt.Format(time.RFC3339),
+    }, nil
 }
 ```
 
-**Best Practices Service:**
-- Jangan ada struct definitions di service layer
-- Semua struct harus di DTO layer
-- Focus pada business logic, bukan data access
-- Use mapper untuk konversi data
+**Best Practices:**
+- Tidak ada struct definitions di service (harus di DTO/Model)
+- Focus pada business logic
+- Konversi Model ↔ DTO dilakukan inline (tidak perlu mapper terpisah)
 
-### 🔄 Mapper Layer
-**Location**: `internal/mapper/`
-
-Mapper menangani konversi antara models dan DTOs.
-
-**Contoh mapper:**
-
-```go
-// internal/mapper/example_mapper.go
-package mapper
-
-import (
-    "gin-scalable-api/internal/dto"
-    "gin-scalable-api/internal/models"
-    "time"
-)
-
-type ExampleMapper struct{}
-
-func NewExampleMapper() *ExampleMapper {
-    return &ExampleMapper{}
-}
-
-// Convert DTO to Model
-func (m *ExampleMapper) ToModel(req *dto.CreateExampleRequest) *models.Example {
-    return &models.Example{
-        Name:        req.Name,
-        Description: req.Description,
-        IsActive:    req.IsActive,
-    }
-}
-
-// Convert Model to Response DTO
-func (m *ExampleMapper) ToResponse(example *models.Example) *dto.ExampleResponse {
-    return &dto.ExampleResponse{
-        ID:          example.ID,
-        Name:        example.Name,
-        Description: example.Description,
-        IsActive:    example.IsActive,
-        CreatedAt:   example.CreatedAt.Format(time.RFC3339),
-        UpdatedAt:   example.UpdatedAt.Format(time.RFC3339),
-    }
-}
-
-// Convert Models to List Response DTO
-func (m *ExampleMapper) ToListResponse(examples []*models.Example, total int64, limit, offset int) *dto.ExampleListResponse {
-    var responses []*dto.ExampleResponse
-    for _, example := range examples {
-        responses = append(responses, m.ToResponse(example))
-    }
-    
-    return &dto.ExampleListResponse{
-        Data:    responses,
-        Total:   total,
-        Limit:   limit,
-        Offset:  offset,
-        HasMore: int64(offset+limit) < total,
-    }
-}
-```
-
-### 🎮 Handler Layer
-**Location**: `internal/handlers/`
+### 🎮 5. handler.go - HTTP Handlers
+**Lokasi**: `internal/modules/{module}/handler.go`
 
 Handlers menangani HTTP requests dan responses.
 
-**Contoh handler:**
-
 ```go
-// internal/handlers/example_handler.go
-package handlers
+package user
 
 import (
     "gin-scalable-api/internal/constants"
-    "gin-scalable-api/internal/dto"
-    "gin-scalable-api/internal/interfaces"
     "gin-scalable-api/pkg/response"
     "net/http"
     "strconv"
@@ -402,17 +449,15 @@ import (
     "github.com/gin-gonic/gin"
 )
 
-type ExampleHandler struct {
-    exampleService interfaces.ExampleServiceInterface
+type Handler struct {
+    service *Service
 }
 
-func NewExampleHandler(exampleService interfaces.ExampleServiceInterface) *ExampleHandler {
-    return &ExampleHandler{
-        exampleService: exampleService,
-    }
+func NewHandler(service *Service) *Handler {
+    return &Handler{service: service}
 }
 
-func (h *ExampleHandler) CreateExample(c *gin.Context) {
+func (h *Handler) CreateUser(c *gin.Context) {
     // Get validated body from middleware
     validatedBody, exists := c.Get("validated_body")
     if !exists {
@@ -420,100 +465,99 @@ func (h *ExampleHandler) CreateExample(c *gin.Context) {
         return
     }
     
-    req, ok := validatedBody.(*dto.CreateExampleRequest)
+    req, ok := validatedBody.(*CreateUserRequest)
     if !ok {
         response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
         return
     }
     
-    result, err := h.exampleService.CreateExample(req)
+    result, err := h.service.CreateUser(req)
     if err != nil {
-        response.ErrorWithAutoStatus(c, "Failed to create example", err.Error())
+        response.ErrorWithAutoStatus(c, "Failed to create user", err.Error())
         return
     }
     
-    response.Success(c, http.StatusCreated, constants.MsgExampleCreated, result)
+    response.Success(c, http.StatusCreated, constants.MsgUserCreated, result)
 }
 
-func (h *ExampleHandler) GetExampleByID(c *gin.Context) {
+func (h *Handler) GetUserByID(c *gin.Context) {
     id, err := strconv.ParseInt(c.Param("id"), 10, 64)
     if err != nil {
         response.Error(c, http.StatusBadRequest, "Bad request", "Invalid ID")
         return
     }
     
-    result, err := h.exampleService.GetExampleByID(id)
+    result, err := h.service.GetUserByID(id)
     if err != nil {
-        response.Error(c, http.StatusNotFound, constants.MsgExampleNotFound, err.Error())
+        response.Error(c, http.StatusNotFound, constants.MsgUserNotFound, err.Error())
         return
     }
     
-    response.Success(c, http.StatusOK, constants.MsgExampleRetrieved, result)
+    response.Success(c, http.StatusOK, constants.MsgUserRetrieved, result)
 }
 ```
 
-**Best Practices Handler:**
+**Best Practices:**
 - Gunakan validation middleware untuk request validation
 - Gunakan `response` package untuk consistent responses
 - Handle errors dengan appropriate HTTP status codes
 - Gunakan constants untuk messages
 
-### 🛣️ Routes
-**Location**: `internal/routes/`
+### 🛣️ 6. route.go - Route Registration
+**Lokasi**: `internal/modules/{module}/route.go`
 
 Routes mendefinisikan endpoint dan middleware.
 
-**Contoh routes:**
-
 ```go
-// internal/routes/example_routes.go
-func setupExampleRoutes(router *gin.RouterGroup, exampleHandler *handlers.ExampleHandler) {
-    examples := router.Group("/examples")
+package user
+
+import (
+    "gin-scalable-api/middleware"
+    "github.com/gin-gonic/gin"
+)
+
+func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
+    users := router.Group("/users")
     {
-        examples.GET("", exampleHandler.GetExamples)
-        examples.POST("", 
-            middleware.ValidateJSON(&dto.CreateExampleRequest{}),
-            exampleHandler.CreateExample,
+        users.GET("", handler.GetUsers)
+        users.POST("", 
+            middleware.ValidateJSON(&CreateUserRequest{}),
+            handler.CreateUser,
         )
-        examples.GET("/:id", exampleHandler.GetExampleByID)
-        examples.PUT("/:id",
-            middleware.ValidateJSON(&dto.UpdateExampleRequest{}),
-            exampleHandler.UpdateExample,
+        users.GET("/:id", handler.GetUserByID)
+        users.PUT("/:id",
+            middleware.ValidateJSON(&UpdateUserRequest{}),
+            handler.UpdateUser,
         )
-        examples.DELETE("/:id", exampleHandler.DeleteExample)
+        users.DELETE("/:id", handler.DeleteUser)
+        
+        // User modules
+        users.GET("/:id/modules", handler.GetUserModules)
+        users.GET("/identity/:identity/modules", handler.GetUserModulesByIdentity)
+        users.POST("/check-access", 
+            middleware.ValidateJSON(&CheckAccessRequest{}),
+            handler.CheckUserAccess,
+        )
     }
 }
 ```
 
-### ✅ Validation
-**Location**: `internal/validation/`
+### ✅ 7. validator.go - Custom Validation
+**Lokasi**: `internal/modules/{module}/validator.go`
 
-Validation rules untuk request DTOs.
-
-**Contoh validation:**
+Validation rules tambahan jika diperlukan.
 
 ```go
-// internal/validation/example_validation.go
-package validation
+package user
 
 import (
-    "gin-scalable-api/internal/dto"
     "github.com/go-playground/validator/v10"
 )
 
-func ValidateCreateExampleRequest(req *dto.CreateExampleRequest) error {
-    validate := validator.New()
-    
-    // Custom validation rules
-    validate.RegisterValidation("example_name", validateExampleName)
-    
-    return validate.Struct(req)
-}
-
-func validateExampleName(fl validator.FieldLevel) bool {
-    name := fl.Field().String()
+func ValidateUserIdentity(fl validator.FieldLevel) bool {
+    identity := fl.Field().String()
     // Custom validation logic
-    return len(name) >= 2 && len(name) <= 100
+    return len(identity) == 9 // Example: must be 9 digits
 }
 ```
 

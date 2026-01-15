@@ -1,6 +1,11 @@
 package constants
 
-// Pesan Status HTTP
+// Package constants provides shared constants across all modules
+// in the module-based architecture. This is one of the few exceptions
+// where cross-module sharing is allowed, as constants are immutable
+// and don't create coupling between modules.
+
+// HTTP Status Messages
 const (
 	MsgSuccess          = "Success"
 	MsgCreated          = "Created"
@@ -12,7 +17,7 @@ const (
 	MsgForbidden        = "Forbidden"
 )
 
-// Pesan autentikasi
+// Auth Module Messages
 const (
 	MsgLoginSuccess         = "Login successful"
 	MsgLogoutSuccess        = "Logout successful"
@@ -26,7 +31,7 @@ const (
 	MsgTokenInvalid         = "Token is invalid"
 )
 
-// Pesan pengguna
+// User Module Messages
 const (
 	MsgUserRetrieved      = "User successfully retrieved"
 	MsgUsersRetrieved     = "Users list successfully retrieved"
@@ -37,7 +42,7 @@ const (
 	MsgEmailAlreadyExists = "Email already exists"
 )
 
-// Pesan perusahaan
+// Company Module Messages
 const (
 	MsgCompanyRetrieved   = "Company successfully retrieved"
 	MsgCompaniesRetrieved = "Companies list successfully retrieved"
@@ -48,7 +53,7 @@ const (
 	MsgCompanyCodeExists  = "Company code already exists"
 )
 
-// Pesan peran
+// Role Module Messages
 const (
 	MsgRoleRetrieved      = "Role successfully retrieved"
 	MsgRolesRetrieved     = "Roles list successfully retrieved"
@@ -62,7 +67,7 @@ const (
 	MsgPermissionsUpdated = "Permissions successfully updated"
 )
 
-// Pesan modul
+// Module Module Messages
 const (
 	MsgModuleRetrieved      = "Module successfully retrieved"
 	MsgModulesRetrieved     = "Modules list successfully retrieved"
@@ -70,11 +75,11 @@ const (
 	MsgModuleUpdated        = "Module successfully updated"
 	MsgModuleDeleted        = "Module successfully deleted"
 	MsgModuleNotFound       = "Module not found"
-	MsgModuleURLExists      = "module's URL already available"
-	MsgUserModulesRetrieved = "User's module successfully retrieved"
+	MsgModuleURLExists      = "Module URL already exists"
+	MsgUserModulesRetrieved = "User modules successfully retrieved"
 )
 
-// Pesan cabang
+// Branch Module Messages
 const (
 	MsgBranchRetrieved          = "Branch successfully retrieved"
 	MsgBranchesRetrieved        = "Branches list successfully retrieved"
@@ -88,7 +93,7 @@ const (
 	MsgBranchHierarchyRetrieved = "Branch hierarchy successfully retrieved"
 )
 
-// Pesan unit
+// Unit Module Messages
 const (
 	MsgUnitRetrieved          = "Unit successfully retrieved"
 	MsgUnitsRetrieved         = "Units list successfully retrieved"
@@ -109,7 +114,7 @@ const (
 	MsgEffectivePermissions   = "Effective permissions successfully retrieved"
 )
 
-// Pesan audit
+// Audit Module Messages
 const (
 	MsgAuditLogRetrieved   = "Audit log successfully retrieved"
 	MsgAuditLogsRetrieved  = "Audit logs list successfully retrieved"
@@ -118,7 +123,7 @@ const (
 	MsgAuditLogsCleanedUp  = "Old audit logs successfully cleaned up"
 )
 
-// Pesan langganan
+// Subscription Module Messages
 const (
 	MsgSubscriptionPlanRetrieved  = "Subscription plan successfully retrieved"
 	MsgSubscriptionPlansRetrieved = "Subscription plans list successfully retrieved"
@@ -135,7 +140,7 @@ const (
 	MsgSubscriptionPlanNotFound   = "Subscription plan not found"
 )
 
-// Konstanta validasi
+// Validation Constants
 const (
 	MinNameLength     = 2
 	MaxNameLength     = 100
@@ -149,14 +154,14 @@ const (
 	MsgDataDeleted    = "Data successfully deleted"
 )
 
-// Konstanta database
+// Database Constants
 const (
 	DefaultLimit  = 10
 	MaxLimit      = 100
 	DefaultOffset = 0
 )
 
-// Parameter query
+// Query Parameters
 const (
 	QueryNested           = "nested"
 	QueryIncludeHierarchy = "include_hierarchy"
@@ -172,14 +177,14 @@ const (
 	QueryDateTo           = "date_to"
 )
 
-// Tier langganan
+// Subscription Tiers
 const (
 	TierBasic        = "basic"
 	TierProfessional = "professional"
 	TierEnterprise   = "enterprise"
 )
 
-// Status langganan
+// Subscription Status
 const (
 	StatusActive    = "active"
 	StatusInactive  = "inactive"
@@ -187,20 +192,20 @@ const (
 	StatusExpired   = "expired"
 )
 
-// Status pembayaran
+// Payment Status
 const (
 	PaymentPending = "pending"
 	PaymentPaid    = "paid"
 	PaymentFailed  = "failed"
 )
 
-// Siklus penagihan
+// Billing Cycles
 const (
 	BillingMonthly = "monthly"
 	BillingYearly  = "yearly"
 )
 
-// Status audit
+// Audit Status
 const (
 	AuditSuccess = "success"
 	AuditError   = "error"

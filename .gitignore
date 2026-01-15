@@ -5,6 +5,11 @@
 *.so
 *.dylib
 
+# Compiled binaries (without extension)
+/server
+/main
+/api
+
 # Test binary, built with `go test -c`
 *.test
 

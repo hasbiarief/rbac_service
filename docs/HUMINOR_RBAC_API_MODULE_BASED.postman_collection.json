@@ -1,0 +1,2903 @@
+{
+	"info": {
+		"_postman_id": "87654321-4321-4321-4321-210987654321",
+		"name": "Huminor RBAC API - Unit-Based System",
+		"description": "Complete API Collection for ERP with Unit-Based Role Access Control (RBAC) - Updated with unit management, unit-aware permissions, hierarchical access control (Company → Branch → Unit → Role → User), and enhanced authentication system",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "87654321"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/health",
+					"host": ["{{base_url}}"],
+					"path": ["health"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login with user_identity",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('accessToken', response.data.access_token);",
+									"        pm.environment.set('refreshToken', response.data.refresh_token);",
+									"        pm.environment.set('userIdentity', response.data.user.user_identity);",
+									"        pm.environment.set('userId', response.data.user.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_identity\": \"{{userIdentity}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login with email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('accessToken', response.data.access_token);",
+									"        pm.environment.set('refreshToken', response.data.refresh_token);",
+									"        pm.environment.set('userIdentity', response.data.user.user_identity);",
+									"        pm.environment.set('userId', response.data.user.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login-email",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login-email"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('accessToken', response.data.access_token);",
+									"        pm.environment.set('refreshToken', response.data.refresh_token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/refresh",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout by User ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": {{userId}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check User Tokens",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/check-tokens?user_id={{userId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "check-tokens"],
+							"query": [
+								{
+									"key": "user_id",
+									"value": "{{userId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Session Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/session-count?user_id={{userId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "session-count"],
+							"query": [
+								{
+									"key": "user_id",
+									"value": "{{userId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Module System",
+			"item": [
+				{
+					"name": "Get All Modules",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules?limit=20&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "category",
+									"value": "Core HR / Master Data",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Modules by Category",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules?category=Core HR / Master Data&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules"],
+							"query": [
+								{
+									"key": "category",
+									"value": "Core HR / Master Data"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Module Tree by Parent",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/tree?parent=Core HR Management",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "tree"],
+							"query": [
+								{
+									"key": "parent",
+									"value": "Core HR Management",
+									"description": "Get nested tree structure for specific parent module"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Module by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Module",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"category\": \"Test Category\",\n  \"name\": \"Test Module\",\n  \"url\": \"/test/module\",\n  \"icon\": \"Test\",\n  \"description\": \"Test module for validation\",\n  \"level\": 1,\n  \"subscription_tier\": \"basic\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Child Module",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"category\": \"Test Category\",\n  \"name\": \"Child Test Module\",\n  \"url\": \"/test/module/child\",\n  \"icon\": \"TestChild\",\n  \"description\": \"Child test module\",\n  \"parent_id\": 90,\n  \"level\": 2,\n  \"subscription_tier\": \"basic\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Module",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Test Module\",\n  \"description\": \"Updated description\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/90",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "90"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Module",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/90",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "90"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Module Children",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/1/children",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "1", "children"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Module Ancestors",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/modules/5/ancestors",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "modules", "5", "ancestors"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Module Access",
+			"item": [
+				{
+					"name": "Get User Modules by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/3/modules?limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "3", "modules"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "category",
+									"value": "Core HR / Master Data",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Modules by Identity",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/identity/{{userIdentity}}/modules?limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "identity", "{{userIdentity}}", "modules"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "category",
+									"value": "Core HR / Master Data",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Modules by Category",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/identity/{{userIdentity}}/modules?category=Employee Self Service&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "identity", "{{userIdentity}}", "modules"],
+							"query": [
+								{
+									"key": "category",
+									"value": "Employee Self Service"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check User Access",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_identity\": \"{{userIdentity}}\",\n  \"module_url\": \"/core-hr/employees\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/check-access",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "check-access"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Role Management System",
+			"item": [
+				{
+					"name": "Assign User Role (Company/Branch Level)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": 2,\n  \"role_id\": 4,\n  \"company_id\": 1,\n  \"branch_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/assign-user-role",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "assign-user-role"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assign User Role (Unit Level)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": 2,\n  \"role_id\": 4,\n  \"company_id\": 1,\n  \"branch_id\": 1,\n  \"unit_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/assign-user-role",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "assign-user-role"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove User Role",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/user/10/role/4",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "user", "10", "role", "4"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Assign Roles",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_ids\": [2, 3],\n  \"role_id\": 4,\n  \"company_id\": 1,\n  \"branch_id\": 1,\n  \"unit_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/bulk-assign-roles",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "bulk-assign-roles"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Role Modules",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"modules\": [\n    {\n      \"module_id\": 1,\n      \"can_read\": true,\n      \"can_write\": true,\n      \"can_delete\": false\n    },\n    {\n      \"module_id\": 2,\n      \"can_read\": true,\n      \"can_write\": false,\n      \"can_delete\": false\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/role/4/modules",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "role", "4", "modules"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Users by Role",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/role/3/users?limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "role", "3", "users"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Roles (with Unit Context)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/user/3/roles",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "user", "3", "roles"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Access Summary (Unit-Aware)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/user/{{userId}}/access-summary",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "user", "{{userId}}", "access-summary"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "🔍 Debug: Get All User Role Assignments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/debug/all-assignments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "debug", "all-assignments"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "🔍 Debug: Get User ID 3 Role Assignments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/debug/user/3/roles",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "debug", "user", "3", "roles"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "🔍 Debug: Get Role-Users Mapping",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/debug/role-users-mapping",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "debug", "role-users-mapping"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Audit Logging",
+			"item": [
+				{
+					"name": "Get Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/logs?limit=20&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "user_id",
+									"value": "3",
+									"disabled": true
+								},
+								{
+									"key": "action",
+									"value": "login",
+									"disabled": true
+								},
+								{
+									"key": "resource",
+									"value": "user",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "success",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Audit Logs by User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/logs?user_id={{userId}}&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "logs"],
+							"query": [
+								{
+									"key": "user_id",
+									"value": "{{userId}}"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Audit Logs by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/users/{{userId}}/logs?limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "users", "{{userId}}", "logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Audit Logs by Identity",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/users/identity/{{userIdentity}}/logs?limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "users", "identity", "{{userIdentity}}", "logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Audit Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "stats"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Audit Log (Manual)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": {{userId}},\n  \"user_identity\": \"{{userIdentity}}\",\n  \"action\": \"manual_test\",\n  \"resource\": \"test_resource\",\n  \"resource_id\": \"123\",\n  \"method\": \"POST\",\n  \"url\": \"/api/v1/test\",\n  \"status\": \"success\",\n  \"status_code\": 200,\n  \"message\": \"Manual audit log for testing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/audit/logs",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "audit", "logs"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Company Management",
+			"item": [
+				{
+					"name": "Get All Companies",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/companies?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "companies"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Company by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/companies/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "companies", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Company",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"PT. Test Company\",\n  \"code\": \"TEST\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/companies",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "companies"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Company",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"PT. Updated Company\",\n  \"code\": \"UPDATED\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/companies/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "companies", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Company",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/companies/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "companies", "1"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Branch Management (Hierarchical)",
+			"item": [
+				{
+					"name": "Get All Branches",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "company_id",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Branch Hierarchy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches?company_id=1&include_hierarchy=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches"],
+							"query": [
+								{
+									"key": "company_id",
+									"value": "1"
+								},
+								{
+									"key": "include_hierarchy",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Branch Hierarchy (Nested Structure)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches?nested=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches"],
+							"query": [
+								{
+									"key": "nested",
+									"value": "true"
+								},
+								{
+									"key": "company_id",
+									"value": "1",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Company Branches (Nested Structure)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches/company/1?nested=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches", "company", "1"],
+							"query": [
+								{
+									"key": "nested",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Branch Hierarchy by ID (Flat)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches/3/hierarchy",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches", "3", "hierarchy"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Branch Hierarchy by ID (Nested)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches/3/hierarchy?nested=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches", "3", "hierarchy"],
+							"query": [
+								{
+									"key": "nested",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Branch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"company_id\": 1,\n  \"name\": \"Cabang Test\",\n  \"code\": \"TEST\",\n  \"parent_id\": null\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Sub-Branch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"company_id\": 1,\n  \"name\": \"Sub Cabang Test\",\n  \"code\": \"SUB_TEST\",\n  \"parent_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Unit Management (Unit-Based RBAC)",
+			"item": [
+				{
+					"name": "Get All Units",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/units?limit=20&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "branch_id",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unit by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Unit",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('unitId', response.data.id);",
+									"        console.log('Unit created:', response.data.name);",
+									"        console.log('Unit ID:', response.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"branch_id\": 1,\n  \"name\": \"Test Unit\",\n  \"code\": \"TEST_UNIT\",\n  \"description\": \"Test unit for validation\",\n  \"parent_id\": null\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/units",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Sub-Unit",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"branch_id\": 1,\n  \"name\": \"Sub Test Unit\",\n  \"code\": \"SUB_TEST_UNIT\",\n  \"description\": \"Sub unit for testing hierarchy\",\n  \"parent_id\": {{unitId}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/units",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Unit",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Test Unit\",\n  \"description\": \"Updated description\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/{{unitId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "{{unitId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Unit",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/{{unitId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "{{unitId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unit with Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/1/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "1", "stats"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unit Hierarchy",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/branches/1/units/hierarchy",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "branches", "1", "units", "hierarchy"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Unit Role Management",
+			"item": [
+				{
+					"name": "Get Unit Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/1/roles",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "1", "roles"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Role to Unit",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/1/roles/3",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "1", "roles", "3"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Role from Unit",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/1/roles/3",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "1", "roles", "3"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unit Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/1/roles/3/permissions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "1", "roles", "3", "permissions"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Unit Permissions",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"modules\": [\n    {\n      \"module_id\": 1,\n      \"can_read\": true,\n      \"can_write\": true,\n      \"can_delete\": false,\n      \"can_approve\": false\n    },\n    {\n      \"module_id\": 2,\n      \"can_read\": true,\n      \"can_write\": false,\n      \"can_delete\": false,\n      \"can_approve\": false\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/unit-roles/1/permissions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "unit-roles", "1", "permissions"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Copy Unit Permissions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"source_unit_id\": 1,\n  \"target_unit_ids\": [2, 3],\n  \"copy_role_assignments\": true,\n  \"copy_permissions\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/copy-permissions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "copy-permissions"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Effective Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{userId}}/effective-permissions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{userId}}", "effective-permissions"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Unit Context & Authentication",
+			"item": [
+				{
+					"name": "Get My Unit Context",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/my-unit-context",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "my-unit-context"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Unit Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/my-unit-permissions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "my-unit-permissions"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Role Management (Basic)",
+			"item": [
+				{
+					"name": "Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/roles?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "roles"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Role by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/roles/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "roles", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"CUSTOM_ROLE\",\n  \"description\": \"Custom role for testing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/roles",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "roles"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('new_user_id', response.data.id);",
+									"        pm.environment.set('new_user_identity', response.data.user_identity);",
+									"        console.log('New user created:', response.data.name);",
+									"        console.log('User ID:', response.data.id);",
+									"        console.log('User Identity:', response.data.user_identity);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@company.com\",\n  \"user_identity\": \"100000010\",\n  \"password\": \"{{userPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User with Default Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Jane Smith\",\n  \"email\": \"jane.smith@company.com\",\n  \"user_identity\": \"100000011\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{userId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Name\",\n  \"email\": \"updated.email@company.com\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{new_user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{new_user_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{new_user_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{new_user_id}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Password Management",
+			"item": [
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"current_password\": \"{{userPassword}}\",\n  \"new_password\": \"newpassword456\",\n  \"confirm_password\": \"newpassword456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{userId}}/password",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "{{userId}}", "password"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Subscription Management",
+			"item": [
+				{
+					"name": "Get All Subscription Plans (Public)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/plans",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "plans"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subscription Plan by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/plans/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "plans", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Subscriptions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions?limit=10&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subscription by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscriptionId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscriptionId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Subscription",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('subscriptionId', response.data.id);",
+									"        console.log('Subscription created:', response.data.id);",
+									"        console.log('Plan:', response.data.plan_display_name);",
+									"        console.log('Status:', response.data.status);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"company_id\": 1,\n  \"plan_id\": 2,\n  \"billing_cycle\": \"yearly\",\n  \"auto_renew\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Subscription",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"plan_id\": 3,\n  \"auto_renew\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscriptionId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscriptionId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "🆕 Renew Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"billing_cycle\": \"yearly\",\n  \"plan_id\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscriptionId}}/renew",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscriptionId}}", "renew"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Switching to different solution\",\n  \"cancel_immediately\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscriptionId}}/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscriptionId}}", "cancel"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Payment as Paid",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/subscriptions/{{subscriptionId}}/mark-paid",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "subscriptions", "{{subscriptionId}}", "mark-paid"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Company Subscription",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/companies/1/subscription",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "companies", "1", "subscription"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Company Subscription Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/companies/1/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "companies", "1", "status"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Module Access",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/module-access/1/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "module-access", "1", "1"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subscription Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/stats",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "stats"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Expiring Subscriptions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/expiring?days=30",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "expiring"],
+							"query": [
+								{
+									"key": "days",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Expired Subscriptions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscription/update-expired",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscription", "update-expired"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin - Subscription Plan Management",
+			"item": [
+				{
+					"name": "🆕 Create Subscription Plan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('planId', response.data.id);",
+									"        console.log('Plan created:', response.data.id);",
+									"        console.log('Plan name:', response.data.display_name);",
+									"        console.log('Monthly price:', response.data.price_monthly);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}",
+								"description": "Admin JWT token required"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"premium\",\n    \"display_name\": \"Premium Plan\",\n    \"description\": \"Premium features for growing businesses\",\n    \"price_monthly\": 99000,\n    \"price_yearly\": 990000,\n    \"max_users\": 50,\n    \"max_branches\": 10,\n    \"features\": {\n        \"advanced_reporting\": true,\n        \"api_access\": true,\n        \"priority_support\": true,\n        \"custom_integrations\": false\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/subscription-plans",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "subscription-plans"]
+						},
+						"description": "Create a new subscription plan (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "🆕 Update Subscription Plan",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}",
+								"description": "Admin JWT token required"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"display_name\": \"Premium Plus Plan\",\n    \"description\": \"Enhanced premium features\",\n    \"price_monthly\": 129000,\n    \"price_yearly\": 1290000,\n    \"max_users\": 100,\n    \"features\": {\n        \"advanced_reporting\": true,\n        \"api_access\": true,\n        \"priority_support\": true,\n        \"custom_integrations\": true,\n        \"white_label\": true\n    },\n    \"is_active\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/subscription-plans/{{planId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "subscription-plans", "{{planId}}"]
+						},
+						"description": "Update an existing subscription plan (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "🆕 Delete Subscription Plan",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{adminToken}}",
+								"description": "Admin JWT token required"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/subscription-plans/{{planId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "subscription-plans", "{{planId}}"]
+						},
+						"description": "Delete a subscription plan (Admin only)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Test Scenarios",
+			"item": [
+				{
+					"name": "Test Different User Access Levels",
+					"item": [
+						{
+							"name": "Test Super Admin Access",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/users/identity/{{userIdentity}}/modules",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "users", "identity", "{{userIdentity}}", "modules"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test HR Manager Access",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{hr_access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/users/identity/100000004/modules",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "users", "identity", "100000004", "modules"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Employee Access",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{employee_access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/users/identity/100000006/modules",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "users", "identity", "100000006", "modules"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Test Unit-Based Access Control",
+					"item": [
+						{
+							"name": "Test Unit Admin Access",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/auth/my-unit-context",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "auth", "my-unit-context"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Unit Permissions",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/auth/my-unit-permissions",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "auth", "my-unit-permissions"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Unit Hierarchy Access",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/branches/1/units/hierarchy",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "branches", "1", "units", "hierarchy"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test User Effective Permissions",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/users/{{userId}}/effective-permissions",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "users", "{{userId}}", "effective-permissions"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Test Module Categories",
+					"item": [
+						{
+							"name": "Test Core HR Modules",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/modules?category=Core HR / Master Data",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "modules"],
+									"query": [
+										{
+											"key": "category",
+											"value": "Core HR / Master Data"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Payroll Modules",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/modules?category=Payroll & Compensation",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "modules"],
+									"query": [
+										{
+											"key": "category",
+											"value": "Payroll & Compensation"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test ESS Modules",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/modules?category=Employee Self Service",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "modules"],
+									"query": [
+										{
+											"key": "category",
+											"value": "Employee Self Service"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Test Error Scenarios",
+					"item": [
+						{
+							"name": "Test Without Token",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/modules",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "modules"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Invalid Token",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer invalid_token_here"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/modules",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "modules"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Invalid user_identity Login",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"user_identity\": \"999999999\",\n  \"password\": \"wrongpassword\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/auth/login",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "auth", "login"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Access Denied",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{employee_access_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"user_identity\": \"100000006\",\n  \"module_url\": \"/payroll/salary\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/users/check-access",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "users", "check-access"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Test Unit Access Denied",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{employee_access_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/units/999",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "units", "999"]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "hr_access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "hr_refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "employee_access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "employee_refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_identity",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "new_user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "new_user_identity",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "subscriptionId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "planId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adminToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "unitId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
