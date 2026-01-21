@@ -57,12 +57,12 @@ modules/{module}/
 - [x] **Step 4.4**: Delete `validator.go` dan `handler.go`
 - [x] **Step 4.5**: Test module company masih berfungsi normal
 
-### ✅ Module 5: /module
-- [ ] **Step 5.1**: Merge `validator.go` content ke `dto.go`
-- [ ] **Step 5.2**: Merge `handler.go` content ke `route.go`
-- [ ] **Step 5.3**: Update imports di `route.go` jika diperlukan
-- [ ] **Step 5.4**: Delete `validator.go` dan `handler.go`
-- [ ] **Step 5.5**: Test module module masih berfungsi normal
+### ✅ Module 5: /module - COMPLETED ✅
+- [x] **Step 5.1**: Merge `validator.go` content ke `dto.go`
+- [x] **Step 5.2**: Merge `handler.go` content ke `route.go`
+- [x] **Step 5.3**: Update imports di `route.go` jika diperlukan
+- [x] **Step 5.4**: Delete `validator.go` dan `handler.go`
+- [x] **Step 5.5**: Test module module masih berfungsi normal
 
 ### ✅ Module 6: /role
 - [ ] **Step 6.1**: Merge `validator.go` content ke `dto.go`
