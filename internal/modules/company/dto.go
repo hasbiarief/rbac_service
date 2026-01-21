@@ -1,5 +1,7 @@
 package company
 
+import "github.com/go-playground/validator/v10"
+
 type CreateCompanyRequest struct {
 	Name string `json:"name" validate:"required,min=2,max=100"`
 	Code string `json:"code" validate:"required,min=2,max=20"`
@@ -39,4 +41,26 @@ type CompanyListResponse struct {
 	Limit   int                `json:"limit"`
 	Offset  int                `json:"offset"`
 	HasMore bool               `json:"has_more"`
+}
+
+// Validation functions
+var validate *validator.Validate
+
+func init() {
+	validate = validator.New()
+}
+
+// ValidateCreateCompanyRequest validates create company request
+func ValidateCreateCompanyRequest(req *CreateCompanyRequest) error {
+	return validate.Struct(req)
+}
+
+// ValidateUpdateCompanyRequest validates update company request
+func ValidateUpdateCompanyRequest(req *UpdateCompanyRequest) error {
+	return validate.Struct(req)
+}
+
+// ValidateCompanyListRequest validates company list request
+func ValidateCompanyListRequest(req *CompanyListRequest) error {
+	return validate.Struct(req)
 }
