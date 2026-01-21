@@ -109,10 +109,19 @@ func (h *Handler) GetAuditStats(c *gin.Context) {
 func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
 	audit := router.Group("/audit")
 	{
-		audit.GET("", handler.GetAuditLogs)
-		audit.POST("", handler.CreateAuditLog)
+		// GET /api/v1/audit/logs - Get audit logs
+		audit.GET("/logs", handler.GetAuditLogs)
+
+		// POST /api/v1/audit/logs - Create audit log
+		audit.POST("/logs", handler.CreateAuditLog)
+
+		// GET /api/v1/audit/stats - Get audit statistics
 		audit.GET("/stats", handler.GetAuditStats)
-		audit.GET("/users/:userId", handler.GetUserAuditLogs)
-		audit.GET("/identity/:identity", handler.GetUserAuditLogsByIdentity)
+
+		// GET /api/v1/audit/users/:userId/logs - Get user audit logs by ID
+		audit.GET("/users/:userId/logs", handler.GetUserAuditLogs)
+
+		// GET /api/v1/audit/users/identity/:identity/logs - Get user audit logs by identity
+		audit.GET("/users/identity/:identity/logs", handler.GetUserAuditLogsByIdentity)
 	}
 }

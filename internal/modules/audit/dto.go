@@ -19,39 +19,33 @@ type AuditListRequest struct {
 }
 
 type CreateAuditLogRequest struct {
-	UserID       *int64                 `json:"user_id"`
-	UserIdentity *string                `json:"user_identity"`
-	Action       string                 `json:"action" validate:"required"`
-	Resource     string                 `json:"resource" validate:"required"`
-	ResourceID   *string                `json:"resource_id"`
-	Method       string                 `json:"method" validate:"required"`
-	URL          string                 `json:"url" validate:"required"`
-	UserAgent    *string                `json:"user_agent"`
-	IP           *string                `json:"ip"`
-	Status       string                 `json:"status" validate:"required"`
-	StatusCode   int                    `json:"status_code" validate:"required"`
-	Message      string                 `json:"message"`
-	Metadata     map[string]interface{} `json:"metadata"`
+	UserID       *int64  `json:"user_id"`
+	UserIdentity *string `json:"user_identity"`
+	Action       string  `json:"action" validate:"required"`
+	Resource     string  `json:"resource" validate:"required"`
+	ResourceID   *string `json:"resource_id"`
+	Method       string  `json:"method" validate:"required"`
+	URL          string  `json:"url" validate:"required"`
+	Status       string  `json:"status" validate:"required"`
+	StatusCode   int     `json:"status_code" validate:"required"`
+	Message      string  `json:"message"`
 }
 
 type AuditLogResponse struct {
-	ID           int64                  `json:"id"`
-	UserID       *int64                 `json:"user_id"`
-	UserIdentity *string                `json:"user_identity"`
-	Action       string                 `json:"action"`
-	Resource     string                 `json:"resource"`
-	ResourceID   *string                `json:"resource_id"`
-	Method       string                 `json:"method"`
-	URL          string                 `json:"url"`
-	UserAgent    *string                `json:"user_agent"`
-	IP           *string                `json:"ip"`
-	Status       string                 `json:"status"`
-	StatusCode   int                    `json:"status_code"`
-	Message      string                 `json:"message"`
-	Metadata     map[string]interface{} `json:"metadata"`
-	CreatedAt    string                 `json:"created_at"`
-	UserName     *string                `json:"user_name,omitempty"`
-	UserEmail    *string                `json:"user_email,omitempty"`
+	ID           int64   `json:"id"`
+	UserID       *int64  `json:"user_id"`
+	UserIdentity *string `json:"user_identity"`
+	Action       string  `json:"action"`
+	Resource     string  `json:"resource"`
+	ResourceID   *string `json:"resource_id"`
+	Method       string  `json:"method"`
+	URL          string  `json:"url"`
+	Status       string  `json:"status"`
+	StatusCode   int     `json:"status_code"`
+	Message      string  `json:"message"`
+	CreatedAt    string  `json:"created_at"`
+	UserName     *string `json:"user_name,omitempty"`
+	UserEmail    *string `json:"user_email,omitempty"`
 }
 
 type AuditListResponse struct {
