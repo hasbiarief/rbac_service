@@ -4,15 +4,15 @@ package user
 type CreateUserRequest struct {
 	Name         string  `json:"name" validate:"required,min=2,max=100"`
 	Email        string  `json:"email" validate:"required,email"`
-	UserIdentity *string `json:"user_identity"`
-	Password     string  `json:"password" validate:"required,min=6"`
+	UserIdentity *string `json:"user_identity" validate:"omitempty"`
+	Password     string  `json:"password" validate:"omitempty,min=6"`
 }
 
 // UpdateUserRequest DTO
 type UpdateUserRequest struct {
-	Name         string  `json:"name"`
+	Name         string  `json:"name" validate:"omitempty,min=2,max=100"`
 	Email        string  `json:"email" validate:"omitempty,email"`
-	UserIdentity *string `json:"user_identity"`
+	UserIdentity *string `json:"user_identity" validate:"omitempty"`
 	IsActive     *bool   `json:"is_active"`
 }
 

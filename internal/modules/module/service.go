@@ -145,6 +145,11 @@ func (s *Service) GetModuleAncestorsFiltered(userID int64, id int64) ([]*ModuleR
 }
 
 func (s *Service) CreateModule(req *CreateModuleRequest) (*ModuleResponse, error) {
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
+
 	module := &Module{
 		Category:         req.Category,
 		Name:             req.Name,
@@ -153,7 +158,7 @@ func (s *Service) CreateModule(req *CreateModuleRequest) (*ModuleResponse, error
 		Description:      req.Description,
 		ParentID:         req.ParentID,
 		SubscriptionTier: req.SubscriptionTier,
-		IsActive:         true,
+		IsActive:         isActive,
 	}
 
 	if err := s.repo.Create(module); err != nil {

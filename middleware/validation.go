@@ -56,6 +56,18 @@ type ValidationRules struct {
 	Body   interface{}       `json:"body,omitempty"` // struct for body validation
 }
 
+// ValidateJSON creates a middleware that validates JSON request body
+func ValidateJSON(bodyStruct interface{}) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if err := validateBody(c, bodyStruct); err != nil {
+			response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
 // ValidateRequest creates a middleware that validates request parameters, query, and body
 func ValidateRequest(rules ValidationRules) gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -182,3 +182,63 @@ func (h *Handler) GetCompanySubscription(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, constants.MsgSubscriptionRetrieved, result)
 }
+
+// Plan Modules Management Handlers
+
+func (h *Handler) GetPlanModules(c *gin.Context) {
+	planID, err := strconv.ParseInt(c.Param("plan_id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid plan ID")
+		return
+	}
+
+	result, err := h.service.GetPlanModules(planID)
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to get plan modules", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Plan modules retrieved successfully", result)
+}
+
+func (h *Handler) AddModulesToPlan(c *gin.Context) {
+	planID, err := strconv.ParseInt(c.Param("plan_id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid plan ID")
+		return
+	}
+
+	var req AddModulesToPlanRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", err.Error())
+		return
+	}
+
+	if err := h.service.AddModulesToPlan(planID, &req); err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to add modules to plan", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Modules successfully added to plan", nil)
+}
+
+func (h *Handler) RemoveModuleFromPlan(c *gin.Context) {
+	planID, err := strconv.ParseInt(c.Param("plan_id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid plan ID")
+		return
+	}
+
+	moduleID, err := strconv.ParseInt(c.Param("module_id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid module ID")
+		return
+	}
+
+	if err := h.service.RemoveModuleFromPlan(planID, moduleID); err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to remove module from plan", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Module successfully removed from plan", nil)
+}

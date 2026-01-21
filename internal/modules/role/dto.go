@@ -8,9 +8,9 @@ type CreateRoleRequest struct {
 
 // UpdateRoleRequest DTO
 type UpdateRoleRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsActive    *bool  `json:"is_active"`
+	Name        string `json:"name" validate:"omitempty,min=2,max=100"`
+	Description string `json:"description" validate:"omitempty"`
+	IsActive    *bool  `json:"is_active" validate:"omitempty"`
 }
 
 // AssignRoleRequest DTO
@@ -19,6 +19,16 @@ type AssignRoleRequest struct {
 	RoleID    int64  `json:"role_id" validate:"required"`
 	CompanyID int64  `json:"company_id" validate:"required"`
 	BranchID  *int64 `json:"branch_id"`
+	UnitID    *int64 `json:"unit_id"`
+}
+
+// BulkAssignRoleRequest DTO
+type BulkAssignRoleRequest struct {
+	UserIDs   []int64 `json:"user_ids" validate:"required,min=1"`
+	RoleID    int64   `json:"role_id" validate:"required"`
+	CompanyID int64   `json:"company_id" validate:"required"`
+	BranchID  *int64  `json:"branch_id"`
+	UnitID    *int64  `json:"unit_id"`
 }
 
 // RolePermissionRequest DTO
@@ -31,7 +41,7 @@ type RolePermissionRequest struct {
 
 // UpdateRolePermissionsRequest DTO
 type UpdateRolePermissionsRequest struct {
-	Permissions []RolePermissionRequest `json:"permissions" validate:"required,dive"`
+	Modules []RolePermissionRequest `json:"modules" validate:"required,dive"`
 }
 
 // RoleListRequest DTO
@@ -75,9 +85,11 @@ type UserRoleAssignmentResponse struct {
 	RoleID      int64   `json:"role_id"`
 	CompanyID   int64   `json:"company_id"`
 	BranchID    *int64  `json:"branch_id"`
+	UnitID      *int64  `json:"unit_id"`
 	RoleName    string  `json:"role_name"`
 	CompanyName string  `json:"company_name"`
 	BranchName  *string `json:"branch_name"`
+	UnitName    *string `json:"unit_name"`
 	CreatedAt   string  `json:"created_at"`
 }
 

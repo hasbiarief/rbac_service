@@ -81,14 +81,14 @@ func (r *RoleRepository) GetAll(limit, offset int, search string, isActive *bool
 // GetByID retrieves a role by ID
 func (r *RoleRepository) GetByID(id int64) (*Role, error) {
 	query := `
-		SELECT id, name, description, created_at, updated_at
+		SELECT id, name, description, is_active, created_at, updated_at
 		FROM roles
 		WHERE id = $1
 	`
 
 	role := &Role{}
 	err := r.db.QueryRow(query, id).Scan(
-		&role.ID, &role.Name, &role.Description,
+		&role.ID, &role.Name, &role.Description, &role.IsActive,
 		&role.CreatedAt, &role.UpdatedAt,
 	)
 	if err != nil {
@@ -162,16 +162,15 @@ func (r *RoleRepository) CheckUserExists(userID int64) (bool, error) {
 // AssignUserRole assigns a role to a user
 func (r *RoleRepository) AssignUserRole(userRole *UserRole) error {
 	query := `
-		INSERT INTO user_roles (user_id, role_id, company_id, branch_id, created_at)
-		VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-		ON CONFLICT (user_id, role_id, company_id, branch_id) DO NOTHING
+		INSERT INTO user_roles (user_id, role_id, company_id, branch_id, unit_id, created_at)
+		VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
 		RETURNING id, created_at
 	`
 
-	err := r.db.QueryRow(query, userRole.UserID, userRole.RoleID, userRole.CompanyID, userRole.BranchID).Scan(
+	err := r.db.QueryRow(query, userRole.UserID, userRole.RoleID, userRole.CompanyID, userRole.BranchID, userRole.UnitID).Scan(
 		&userRole.ID, &userRole.CreatedAt,
 	)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil {
 		return fmt.Errorf("failed to assign user role: %w", err)
 	}
 
@@ -313,82 +312,6 @@ func (r *RoleRepository) GetUsersByRole(roleID int64, limit int) ([]*User, error
 	}
 
 	return users, nil
-}
-
-// GetAllUserRoleAssignments - Debug method to see all user role assignments
-func (r *RoleRepository) GetAllUserRoleAssignments() ([]map[string]interface{}, error) {
-	query := `
-		SELECT 
-			ur.id as assignment_id,
-			u.id as user_id, 
-			u.name as user_name,
-			u.email as user_email,
-			u.is_active as user_active,
-			r.id as role_id,
-			r.name as role_name,
-			ur.company_id,
-			ur.branch_id,
-			ur.unit_id,
-			c.name as company_name,
-			b.name as branch_name,
-			un.name as unit_name
-		FROM user_roles ur
-		JOIN users u ON ur.user_id = u.id
-		JOIN roles r ON ur.role_id = r.id
-		LEFT JOIN companies c ON ur.company_id = c.id
-		LEFT JOIN branches b ON ur.branch_id = b.id
-		LEFT JOIN units un ON ur.unit_id = un.id
-		ORDER BY ur.id
-	`
-
-	rows, err := r.db.Query(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user role assignments: %w", err)
-	}
-	defer rows.Close()
-
-	var assignments []map[string]interface{}
-	for rows.Next() {
-		var assignmentID, userID, roleID, companyID int64
-		var branchID, unitID *int64
-		var userName, userEmail, roleName, companyName string
-		var branchName, unitName *string
-		var userActive bool
-
-		err := rows.Scan(
-			&assignmentID, &userID, &userName, &userEmail, &userActive,
-			&roleID, &roleName, &companyID, &branchID, &unitID,
-			&companyName, &branchName, &unitName,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan assignment: %w", err)
-		}
-
-		assignment := map[string]interface{}{
-			"assignment_id": assignmentID,
-			"user_id":       userID,
-			"user_name":     userName,
-			"user_email":    userEmail,
-			"user_active":   userActive,
-			"role_id":       roleID,
-			"role_name":     roleName,
-			"company_id":    companyID,
-			"company_name":  companyName,
-			"branch_id":     branchID,
-			"unit_id":       unitID,
-		}
-
-		if branchName != nil {
-			assignment["branch_name"] = *branchName
-		}
-		if unitName != nil {
-			assignment["unit_name"] = *unitName
-		}
-
-		assignments = append(assignments, assignment)
-	}
-
-	return assignments, nil
 }
 
 // UpdateRoleModules updates module permissions for a role
@@ -546,133 +469,4 @@ func (r *RoleRepository) Count(search string, isActive *bool) (int64, error) {
 	}
 
 	return count, nil
-}
-
-// GetUserRolesByUserID - Debug method to check specific user's role assignments
-func (r *RoleRepository) GetUserRolesByUserID(userID int64) ([]map[string]interface{}, error) {
-	query := `
-		SELECT 
-			ur.id as assignment_id,
-			ur.user_id,
-			u.name as user_name,
-			u.email as user_email,
-			u.is_active as user_active,
-			ur.role_id,
-			r.name as role_name,
-			ur.company_id,
-			ur.branch_id,
-			ur.unit_id,
-			c.name as company_name,
-			b.name as branch_name,
-			un.name as unit_name
-		FROM user_roles ur
-		JOIN users u ON ur.user_id = u.id
-		JOIN roles r ON ur.role_id = r.id
-		LEFT JOIN companies c ON ur.company_id = c.id
-		LEFT JOIN branches b ON ur.branch_id = b.id
-		LEFT JOIN units un ON ur.unit_id = un.id
-		WHERE ur.user_id = $1
-		ORDER BY ur.id
-	`
-
-	rows, err := r.db.Query(query, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user role assignments for user %d: %w", userID, err)
-	}
-	defer rows.Close()
-
-	var assignments []map[string]interface{}
-	for rows.Next() {
-		var assignmentID, roleID, companyID int64
-		var branchID, unitID *int64
-		var userName, userEmail, roleName, companyName string
-		var branchName, unitName *string
-		var userActive bool
-
-		err := rows.Scan(
-			&assignmentID, &userID, &userName, &userEmail, &userActive,
-			&roleID, &roleName, &companyID, &branchID, &unitID,
-			&companyName, &branchName, &unitName,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan assignment: %w", err)
-		}
-
-		assignment := map[string]interface{}{
-			"assignment_id": assignmentID,
-			"user_id":       userID,
-			"user_name":     userName,
-			"user_email":    userEmail,
-			"user_active":   userActive,
-			"role_id":       roleID,
-			"role_name":     roleName,
-			"company_id":    companyID,
-			"company_name":  companyName,
-			"branch_id":     branchID,
-			"unit_id":       unitID,
-		}
-
-		if branchName != nil {
-			assignment["branch_name"] = *branchName
-		}
-		if unitName != nil {
-			assignment["unit_name"] = *unitName
-		}
-
-		assignments = append(assignments, assignment)
-	}
-
-	return assignments, nil
-}
-
-// GetRoleUsersMapping - Debug method to show role-user mapping
-func (r *RoleRepository) GetRoleUsersMapping() ([]map[string]interface{}, error) {
-	query := `
-		SELECT 
-			r.id as role_id,
-			r.name as role_name,
-			COUNT(ur.user_id) as user_count,
-			STRING_AGG(DISTINCT u.id::text || ':' || u.name, ', ') as users_list
-		FROM roles r
-		LEFT JOIN user_roles ur ON r.id = ur.role_id
-		LEFT JOIN users u ON ur.user_id = u.id AND u.is_active = true
-		WHERE r.is_active = true
-		GROUP BY r.id, r.name
-		ORDER BY r.id
-	`
-
-	rows, err := r.db.Query(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get role users mapping: %w", err)
-	}
-	defer rows.Close()
-
-	var mappings []map[string]interface{}
-	for rows.Next() {
-		var roleID int64
-		var roleName string
-		var userCount int
-		var usersList *string
-
-		err := rows.Scan(&roleID, &roleName, &userCount, &usersList)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan mapping: %w", err)
-		}
-
-		mapping := map[string]interface{}{
-			"role_id":    roleID,
-			"role_name":  roleName,
-			"user_count": userCount,
-		}
-
-		if usersList != nil {
-			mapping["users_list"] = *usersList
-		} else {
-			mapping["users_list"] = "No users assigned"
-		}
-
-		mappings = append(mappings, mapping)
-	}
-
-	return mappings, nil
 }

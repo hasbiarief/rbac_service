@@ -34,3 +34,8 @@ func ValidateUpdateSubscriptionRequest(req *UpdateSubscriptionRequest) error {
 func ValidateSubscriptionListRequest(req *SubscriptionListRequest) error {
 	return validate.Struct(req)
 }
+
+// ValidateAddModulesToPlanRequest validates add modules to plan request
+func ValidateAddModulesToPlanRequest(req *AddModulesToPlanRequest) error {
+	return validate.Struct(req)
+}

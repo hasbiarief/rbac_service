@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "87654321-4321-4321-4321-210987654321",
-		"name": "Huminor RBAC API - Unit-Based System",
+		"name": "Huminor Console API - Unit-Based System",
 		"description": "Complete API Collection for ERP with Unit-Based Role Access Control (RBAC) - Updated with unit management, unit-aware permissions, hierarchical access control (Company → Branch → Unit → Role → User), and enhanced authentication system",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "87654321"
@@ -588,7 +588,7 @@
 			"name": "Role Management System",
 			"item": [
 				{
-					"name": "Assign User Role (Company/Branch Level)",
+					"name": "Assign User Role",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -603,33 +603,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"user_id\": 2,\n  \"role_id\": 4,\n  \"company_id\": 1,\n  \"branch_id\": 1\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/role-management/assign-user-role",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "role-management", "assign-user-role"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Assign User Role (Unit Level)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{accessToken}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"user_id\": 2,\n  \"role_id\": 4,\n  \"company_id\": 1,\n  \"branch_id\": 1,\n  \"unit_id\": 1\n}"
+							"raw": "{\n  \"user_id\": {{new_user_id}},\n  \"role_id\": {{test_role_id}},\n  \"company_id\": {{test_company_id}},\n  \"branch_id\": {{test_branch_id}},\n  \"unit_id\": {{test_unit_id}}\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/role-management/assign-user-role",
@@ -650,9 +624,15 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/v1/role-management/user/10/role/4",
+							"raw": "{{base_url}}/api/v1/role-management/user/{{new_user_id}}/role/{{test_role_id}}?company_id={{test_company_id}}",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "role-management", "user", "10", "role", "4"]
+							"path": ["api", "v1", "role-management", "user", "{{new_user_id}}", "role", "{{test_role_id}}"],
+							"query": [
+								{
+									"key": "company_id",
+									"value": "{{test_company_id}}"
+								}
+							]
 						}
 					},
 					"response": []
@@ -699,7 +679,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"modules\": [\n    {\n      \"module_id\": 1,\n      \"can_read\": true,\n      \"can_write\": true,\n      \"can_delete\": false\n    },\n    {\n      \"module_id\": 2,\n      \"can_read\": true,\n      \"can_write\": false,\n      \"can_delete\": false\n    }\n  ]\n}"
+							"raw": "{\n  \"permissions\": [\n    {\n      \"module_id\": 1,\n      \"can_read\": true,\n      \"can_write\": true,\n      \"can_delete\": false\n    },\n    {\n      \"module_id\": 2,\n      \"can_read\": true,\n      \"can_write\": false,\n      \"can_delete\": false\n    }\n  ]\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/role-management/role/4/modules",
@@ -765,60 +745,6 @@
 							"raw": "{{base_url}}/api/v1/role-management/user/{{userId}}/access-summary",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "role-management", "user", "{{userId}}", "access-summary"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "🔍 Debug: Get All User Role Assignments",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{accessToken}}"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/v1/role-management/debug/all-assignments",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "role-management", "debug", "all-assignments"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "🔍 Debug: Get User ID 3 Role Assignments",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{accessToken}}"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/v1/role-management/debug/user/3/roles",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "role-management", "debug", "user", "3", "roles"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "🔍 Debug: Get Role-Users Mapping",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{accessToken}}"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/v1/role-management/debug/role-users-mapping",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "role-management", "debug", "role-users-mapping"]
 						}
 					},
 					"response": []
@@ -1685,12 +1611,62 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"source_unit_id\": 1,\n  \"target_unit_ids\": [2, 3],\n  \"copy_role_assignments\": true,\n  \"copy_permissions\": true\n}"
+							"raw": "{\n  \"source_unit_id\": 1,\n  \"target_unit_id\": 2,\n  \"role_id\": 3,\n  \"overwrite_existing\": false\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/units/copy-permissions",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "units", "copy-permissions"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Copy Unit Role Permissions (Flexible)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"source_unit_role_id\": 123,\n  \"target_unit_role_id\": 456,\n  \"overwrite_existing\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/copy-unit-role-permissions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "copy-unit-role-permissions"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unit Role Info (Helper)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/units/unit-role-info?unit_id=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "units", "unit-role-info"],
+							"query": [
+								{
+									"key": "unit_id",
+									"value": "1"
+								}
+							]
 						}
 					},
 					"response": []
@@ -1812,6 +1788,24 @@
 				},
 				{
 					"name": "Create Role",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data) {",
+									"        pm.environment.set('new_role_id', response.data.id);",
+									"        console.log('New role created:', response.data.name);",
+									"        console.log('Role ID:', response.data.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -1832,6 +1826,76 @@
 							"raw": "{{base_url}}/api/v1/roles",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "roles"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"UPDATED_ROLE_NAME\",\n  \"description\": \"Updated role description\",\n  \"is_active\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/roles/{{test_role_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "roles", "{{test_role_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Role (Partial)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"NEW_ROLE_NAME\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/roles/{{test_role_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "roles", "{{test_role_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Role",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/roles/{{test_role_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "roles", "{{test_role_id}}"]
 						}
 					},
 					"response": []
@@ -2477,6 +2541,76 @@
 							"path": ["api", "v1", "admin", "subscription-plans", "{{planId}}"]
 						},
 						"description": "Delete a subscription plan (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "🆕 Get Plan Modules",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/plan-modules/{{planId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "plan-modules", "{{planId}}"]
+						},
+						"description": "Get all modules included in a subscription plan"
+					},
+					"response": []
+				},
+				{
+					"name": "🆕 Add Modules to Plan",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"module_ids\": [137, 138]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/plan-modules/{{planId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "plan-modules", "{{planId}}"]
+						},
+						"description": "Add modules to a subscription plan"
+					},
+					"response": []
+				},
+				{
+					"name": "🆕 Remove Module from Plan",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/plan-modules/{{planId}}/{{moduleId}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "plan-modules", "{{planId}}", "{{moduleId}}"]
+						},
+						"description": "Remove a module from a subscription plan"
 					},
 					"response": []
 				}

@@ -111,3 +111,10 @@ type CopyUnitPermissionsRequest struct {
 	RoleID            int64 `json:"role_id" validate:"required"`
 	OverwriteExisting bool  `json:"overwrite_existing"`
 }
+
+// Alternative request for more flexible copying between different unit roles
+type CopyUnitRolePermissionsRequest struct {
+	SourceUnitRoleID  int64 `json:"source_unit_role_id" validate:"required"`
+	TargetUnitRoleID  int64 `json:"target_unit_role_id" validate:"required"`
+	OverwriteExisting bool  `json:"overwrite_existing"`
+}

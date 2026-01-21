@@ -251,6 +251,22 @@ func (h *Handler) CopyPermissions(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Permissions successfully copied", nil)
 }
 
+// CopyUnitRolePermissions - More flexible version using unit_role_id directly
+func (h *Handler) CopyUnitRolePermissions(c *gin.Context) {
+	var req CopyUnitRolePermissionsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid request format", err.Error())
+		return
+	}
+
+	if err := h.service.CopyUnitRolePermissions(&req); err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to copy permissions", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Permissions successfully copied", nil)
+}
+
 func (h *Handler) GetUserEffectivePermissions(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -265,4 +281,21 @@ func (h *Handler) GetUserEffectivePermissions(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, constants.MsgDataRetrieved, result)
+}
+
+// GetUnitRoleInfo - Helper endpoint to get unit_role_id information
+func (h *Handler) GetUnitRoleInfo(c *gin.Context) {
+	unitID, err := strconv.ParseInt(c.Query("unit_id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Invalid unit_id parameter", err.Error())
+		return
+	}
+
+	result, err := h.service.GetUnitRoleInfo(unitID)
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to get unit role info", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Unit role information retrieved", result)
 }

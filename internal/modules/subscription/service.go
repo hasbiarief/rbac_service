@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -369,4 +370,91 @@ func toSubscriptionResponse(sub *Subscription) *SubscriptionResponse {
 		CreatedAt:       sub.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:       sub.UpdatedAt.Format(time.RFC3339),
 	}
+}
+
+// Plan Modules Management Methods
+
+func (s *Service) GetPlanModules(planID int64) (*PlanModulesListResponse, error) {
+	// Check if plan exists
+	exists, err := s.repo.CheckPlanExists(planID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.New("subscription plan not found")
+	}
+
+	// Get plan modules
+	modules, err := s.repo.GetPlanModules(planID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get plan name only (avoid features field issue)
+	var planName string
+	if len(modules) > 0 {
+		planName = "Plan " + fmt.Sprintf("%d", planID) // Simple fallback
+	} else {
+		planName = "Plan " + fmt.Sprintf("%d", planID)
+	}
+
+	return &PlanModulesListResponse{
+		Data:     modules,
+		Total:    int64(len(modules)),
+		PlanID:   planID,
+		PlanName: planName,
+	}, nil
+}
+
+func (s *Service) AddModulesToPlan(planID int64, req *AddModulesToPlanRequest) error {
+	// Validate request
+	if err := ValidateAddModulesToPlanRequest(req); err != nil {
+		return err
+	}
+
+	// Check if plan exists
+	exists, err := s.repo.CheckPlanExists(planID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("subscription plan not found")
+	}
+
+	// Check if all modules exist
+	for _, moduleID := range req.ModuleIDs {
+		exists, err := s.repo.CheckModuleExists(moduleID)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return errors.New("one or more modules not found")
+		}
+	}
+
+	// Add modules to plan
+	return s.repo.AddModulesToPlan(planID, req.ModuleIDs)
+}
+
+func (s *Service) RemoveModuleFromPlan(planID int64, moduleID int64) error {
+	// Check if plan exists
+	exists, err := s.repo.CheckPlanExists(planID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("subscription plan not found")
+	}
+
+	// Check if module exists
+	exists, err = s.repo.CheckModuleExists(moduleID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("module not found")
+	}
+
+	// Remove module from plan
+	return s.repo.RemoveModuleFromPlan(planID, moduleID)
 }

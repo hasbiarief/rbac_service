@@ -99,6 +99,28 @@ type SubscriptionPlanListResponse struct {
 	HasMore bool                        `json:"has_more"`
 }
 
+// Plan Modules Management DTOs
+type AddModulesToPlanRequest struct {
+	ModuleIDs []int64 `json:"module_ids" validate:"required,min=1"`
+}
+
+type PlanModuleResponse struct {
+	ID         int64  `json:"id"`
+	PlanID     int64  `json:"plan_id"`
+	ModuleID   int64  `json:"module_id"`
+	ModuleName string `json:"module_name"`
+	Category   string `json:"category"`
+	IsIncluded bool   `json:"is_included"`
+	CreatedAt  string `json:"created_at"`
+}
+
+type PlanModulesListResponse struct {
+	Data     []*PlanModuleResponse `json:"data"`
+	Total    int64                 `json:"total"`
+	PlanID   int64                 `json:"plan_id"`
+	PlanName string                `json:"plan_name"`
+}
+
 type SubscriptionListResponse struct {
 	Data    []*SubscriptionResponse `json:"data"`
 	Total   int64                   `json:"total"`

@@ -49,5 +49,8 @@ func SetupNewModuleRoutes(r *gin.Engine, h *NewModuleHandlers, jwtSecret string,
 		moduleModule.RegisterRoutes(protected, h.Module)
 		unitModule.RegisterRoutes(protected, h.Unit)
 		auditModule.RegisterRoutes(protected, h.Audit)
+
+		// Subscription admin routes (protected)
+		subscriptionModule.RegisterProtectedRoutes(protected, h.Subscription)
 	}
 }

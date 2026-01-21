@@ -3,17 +3,33 @@ package subscription
 import "github.com/gin-gonic/gin"
 
 func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
-	// Public plan routes
+	// Public plan routes (read-only)
 	plans := router.Group("/subscription-plans")
 	{
 		plans.GET("", handler.GetAllPlans)
 		plans.GET("/:id", handler.GetPlanByID)
-		plans.POST("", handler.CreateSubscriptionPlan)
-		plans.PUT("/:id", handler.UpdateSubscriptionPlan)
-		plans.DELETE("/:id", handler.DeleteSubscriptionPlan)
+	}
+}
+
+// RegisterProtectedRoutes registers protected subscription routes
+func RegisterProtectedRoutes(router *gin.RouterGroup, handler *Handler) {
+	// Admin/Protected plan routes
+	adminPlans := router.Group("/admin/subscription-plans")
+	{
+		adminPlans.POST("", handler.CreateSubscriptionPlan)
+		adminPlans.PUT("/:id", handler.UpdateSubscriptionPlan)
+		adminPlans.DELETE("/:id", handler.DeleteSubscriptionPlan)
 	}
 
-	// Subscription routes
+	// Plan modules management (separate group to avoid conflicts)
+	planModules := router.Group("/admin/plan-modules")
+	{
+		planModules.GET("/:plan_id", handler.GetPlanModules)
+		planModules.POST("/:plan_id", handler.AddModulesToPlan)
+		planModules.DELETE("/:plan_id/:module_id", handler.RemoveModuleFromPlan)
+	}
+
+	// Subscription routes (all protected)
 	subscriptions := router.Group("/subscriptions")
 	{
 		subscriptions.GET("", handler.GetAllSubscriptions)

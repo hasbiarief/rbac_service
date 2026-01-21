@@ -138,6 +138,31 @@ func (h *Handler) AssignUserRole(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgRoleAssigned, result)
 }
 
+func (h *Handler) BulkAssignUserRole(c *gin.Context) {
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
+		return
+	}
+
+	bulkAssignReq, ok := validatedBody.(*BulkAssignRoleRequest)
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	results, err := h.service.BulkAssignRoleToUsers(bulkAssignReq)
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to bulk assign user roles", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Roles successfully assigned to users", map[string]interface{}{
+		"assignments": results,
+		"total":       len(results),
+	})
+}
+
 func (h *Handler) UpdateRoleModules(c *gin.Context) {
 	roleID, err := strconv.ParseInt(c.Param("roleId"), 10, 64)
 	if err != nil {
@@ -251,41 +276,4 @@ func (h *Handler) GetUserAccessSummary(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "User access summary successfully retrieved", result)
-}
-
-// Debug endpoints
-func (h *Handler) GetAllUserRoleAssignments(c *gin.Context) {
-	result, err := h.service.GetAllUserRoleAssignments()
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get assignments", err.Error())
-		return
-	}
-
-	response.Success(c, http.StatusOK, "All user role assignments retrieved", result)
-}
-
-func (h *Handler) GetUserRolesByUserID(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, constants.MsgInvalidID, err.Error())
-		return
-	}
-
-	result, err := h.service.GetUserRolesByUserID(userID)
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get user roles", err.Error())
-		return
-	}
-
-	response.Success(c, http.StatusOK, "User role assignments retrieved", result)
-}
-
-func (h *Handler) GetRoleUsersMapping(c *gin.Context) {
-	result, err := h.service.GetRoleUsersMapping()
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to get role-users mapping", err.Error())
-		return
-	}
-
-	response.Success(c, http.StatusOK, "Role-users mapping retrieved", result)
 }

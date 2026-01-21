@@ -209,6 +209,10 @@ func (s *Service) CopyPermissions(req *CopyUnitPermissionsRequest) error {
 	return s.repo.CopyPermissions(req.SourceUnitID, req.TargetUnitID, req.RoleID, req.OverwriteExisting)
 }
 
+func (s *Service) CopyUnitRolePermissions(req *CopyUnitRolePermissionsRequest) error {
+	return s.repo.CopyUnitRolePermissions(req.SourceUnitRoleID, req.TargetUnitRoleID, req.OverwriteExisting)
+}
+
 func (s *Service) GetUserEffectivePermissions(userID int64) ([]*UnitRoleModuleResponse, error) {
 	permissions, err := s.repo.GetUserEffectivePermissions(userID)
 	if err != nil {
@@ -221,6 +225,10 @@ func (s *Service) GetUserEffectivePermissions(userID int64) ([]*UnitRoleModuleRe
 	}
 
 	return responses, nil
+}
+
+func (s *Service) GetUnitRoleInfo(unitID int64) ([]map[string]interface{}, error) {
+	return s.repo.GetUnitRoleInfo(unitID)
 }
 
 func toUnitResponse(unit *UnitWithBranch) *UnitResponse {

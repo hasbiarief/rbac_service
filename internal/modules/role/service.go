@@ -2,6 +2,7 @@ package role
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -103,6 +104,7 @@ func (s *Service) UpdateRole(id int64, req *UpdateRoleRequest) (*RoleResponse, e
 		return nil, err
 	}
 
+	// Only update fields that are provided (not empty)
 	if req.Name != "" {
 		role.Name = req.Name
 	}
@@ -126,7 +128,7 @@ func (s *Service) DeleteRole(id int64) error {
 
 func (s *Service) UpdateRolePermissions(roleID int64, req *UpdateRolePermissionsRequest) error {
 	var modules []*RoleModule
-	for _, perm := range req.Permissions {
+	for _, perm := range req.Modules {
 		modules = append(modules, &RoleModule{
 			RoleID:    roleID,
 			ModuleID:  perm.ModuleID,
@@ -155,6 +157,7 @@ func (s *Service) AssignRoleToUser(req *AssignRoleRequest) (*UserRoleAssignmentR
 		RoleID:    req.RoleID,
 		CompanyID: req.CompanyID,
 		BranchID:  req.BranchID,
+		UnitID:    req.UnitID,
 	}
 
 	if err := s.roleRepo.AssignUserRole(userRole); err != nil {
@@ -167,11 +170,66 @@ func (s *Service) AssignRoleToUser(req *AssignRoleRequest) (*UserRoleAssignmentR
 		RoleID:      role.ID,
 		CompanyID:   req.CompanyID,
 		BranchID:    req.BranchID,
+		UnitID:      req.UnitID,
 		RoleName:    role.Name,
 		CompanyName: "",
 		BranchName:  nil,
+		UnitName:    nil,
 		CreatedAt:   userRole.CreatedAt.Format(time.RFC3339),
 	}, nil
+}
+
+func (s *Service) BulkAssignRoleToUsers(req *BulkAssignRoleRequest) ([]UserRoleAssignmentResponse, error) {
+	// Verify role exists
+	role, err := s.roleRepo.GetByID(req.RoleID)
+	if err != nil {
+		return nil, fmt.Errorf("peran dengan ID %d tidak ditemukan", req.RoleID)
+	}
+
+	var results []UserRoleAssignmentResponse
+	var errors []string
+
+	for _, userID := range req.UserIDs {
+		// Verify user exists
+		userExists, err := s.roleRepo.CheckUserExists(userID)
+		if err != nil || !userExists {
+			errors = append(errors, fmt.Sprintf("pengguna dengan ID %d tidak ditemukan", userID))
+			continue
+		}
+
+		userRole := &UserRole{
+			UserID:    userID,
+			RoleID:    req.RoleID,
+			CompanyID: req.CompanyID,
+			BranchID:  req.BranchID,
+			UnitID:    req.UnitID,
+		}
+
+		if err := s.roleRepo.AssignUserRole(userRole); err != nil {
+			errors = append(errors, fmt.Sprintf("gagal assign role untuk user ID %d: %v", userID, err))
+			continue
+		}
+
+		results = append(results, UserRoleAssignmentResponse{
+			ID:          userRole.ID,
+			UserID:      userID,
+			RoleID:      role.ID,
+			CompanyID:   req.CompanyID,
+			BranchID:    req.BranchID,
+			UnitID:      req.UnitID,
+			RoleName:    role.Name,
+			CompanyName: "",
+			BranchName:  nil,
+			UnitName:    nil,
+			CreatedAt:   userRole.CreatedAt.Format(time.RFC3339),
+		})
+	}
+
+	if len(errors) > 0 && len(results) == 0 {
+		return nil, fmt.Errorf("semua assignment gagal: %s", strings.Join(errors, "; "))
+	}
+
+	return results, nil
 }
 
 func (s *Service) RemoveRoleFromUser(userID, roleID, companyID int64) error {
@@ -256,43 +314,6 @@ func (s *Service) GetUserAccessSummary(userID int64) (interface{}, error) {
 	}
 
 	return summary, nil
-}
-
-func (s *Service) GetAllUserRoleAssignments() (interface{}, error) {
-	assignments, err := s.roleRepo.GetAllUserRoleAssignments()
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"assignments": assignments,
-		"total":       len(assignments),
-	}, nil
-}
-
-func (s *Service) GetUserRolesByUserID(userID int64) (interface{}, error) {
-	assignments, err := s.roleRepo.GetUserRolesByUserID(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"user_id":     userID,
-		"assignments": assignments,
-		"total":       len(assignments),
-	}, nil
-}
-
-func (s *Service) GetRoleUsersMapping() (interface{}, error) {
-	mappings, err := s.roleRepo.GetRoleUsersMapping()
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]interface{}{
-		"role_mappings": mappings,
-		"total_roles":   len(mappings),
-	}, nil
 }
 
 // Helper function

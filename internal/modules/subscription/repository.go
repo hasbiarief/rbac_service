@@ -15,6 +15,13 @@ type Repository interface {
 	UpdatePlan(plan *SubscriptionPlan) error
 	DeletePlan(id int64) error
 
+	// Plan Modules methods
+	GetPlanModules(planID int64) ([]*PlanModuleResponse, error)
+	AddModulesToPlan(planID int64, moduleIDs []int64) error
+	RemoveModuleFromPlan(planID int64, moduleID int64) error
+	CheckPlanExists(planID int64) (bool, error)
+	CheckModuleExists(moduleID int64) (bool, error)
+
 	// Subscription methods
 	GetAll(limit, offset int, filters map[string]interface{}) ([]*Subscription, error)
 	Count(filters map[string]interface{}) (int64, error)
@@ -339,4 +346,113 @@ func (r *repository) MarkPaymentPaid(id int64) error {
 		last_payment_date = CURRENT_TIMESTAMP WHERE id = $1`
 	_, err := r.db.Exec(query, id)
 	return err
+}
+
+// Plan Modules Management Methods
+
+func (r *repository) GetPlanModules(planID int64) ([]*PlanModuleResponse, error) {
+	query := `
+		SELECT pm.id, pm.plan_id, pm.module_id, m.name as module_name, 
+			m.category, pm.is_included
+		FROM plan_modules pm
+		JOIN modules m ON pm.module_id = m.id
+		WHERE pm.plan_id = $1
+		ORDER BY m.category, m.name
+	`
+
+	rows, err := r.db.Query(query, planID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get plan modules: %w", err)
+	}
+	defer rows.Close()
+
+	var modules []*PlanModuleResponse
+	for rows.Next() {
+		module := &PlanModuleResponse{}
+		err := rows.Scan(
+			&module.ID, &module.PlanID, &module.ModuleID, &module.ModuleName,
+			&module.Category, &module.IsIncluded,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan plan module: %w", err)
+		}
+		// Set default created_at since column doesn't exist
+		module.CreatedAt = "2026-01-18T00:00:00Z"
+		modules = append(modules, module)
+	}
+
+	return modules, nil
+}
+
+func (r *repository) AddModulesToPlan(planID int64, moduleIDs []int64) error {
+	if len(moduleIDs) == 0 {
+		return fmt.Errorf("no modules provided")
+	}
+
+	// Build bulk insert query
+	valueStrings := make([]string, 0, len(moduleIDs))
+	valueArgs := make([]interface{}, 0, len(moduleIDs)*2)
+
+	for i, moduleID := range moduleIDs {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, true)", i*2+1, i*2+2))
+		valueArgs = append(valueArgs, planID, moduleID)
+	}
+
+	query := fmt.Sprintf(`
+		INSERT INTO plan_modules (plan_id, module_id, is_included)
+		VALUES %s
+		ON CONFLICT (plan_id, module_id) 
+		DO UPDATE SET is_included = true
+	`, strings.Join(valueStrings, ","))
+
+	_, err := r.db.Exec(query, valueArgs...)
+	if err != nil {
+		return fmt.Errorf("failed to add modules to plan: %w", err)
+	}
+
+	return nil
+}
+
+func (r *repository) RemoveModuleFromPlan(planID int64, moduleID int64) error {
+	query := `DELETE FROM plan_modules WHERE plan_id = $1 AND module_id = $2`
+
+	result, err := r.db.Exec(query, planID, moduleID)
+	if err != nil {
+		return fmt.Errorf("failed to remove module from plan: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("module not found in plan")
+	}
+
+	return nil
+}
+
+func (r *repository) CheckPlanExists(planID int64) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM subscription_plans WHERE id = $1 AND is_active = true)`
+
+	err := r.db.QueryRow(query, planID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check plan existence: %w", err)
+	}
+
+	return exists, nil
+}
+
+func (r *repository) CheckModuleExists(moduleID int64) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM modules WHERE id = $1 AND is_active = true)`
+
+	err := r.db.QueryRow(query, moduleID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check module existence: %w", err)
+	}
+
+	return exists, nil
 }

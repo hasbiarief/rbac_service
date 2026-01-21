@@ -25,6 +25,8 @@ type Repository interface {
 	GetUnitPermissions(unitID int64, roleID int64) ([]*UnitRoleModule, error)
 	UpdatePermissions(unitRoleID int64, modules []UpdateUnitRoleModulePermission) error
 	CopyPermissions(sourceUnitID int64, targetUnitID int64, roleID int64, overwrite bool) error
+	CopyUnitRolePermissions(sourceUnitRoleID int64, targetUnitRoleID int64, overwrite bool) error
+	GetUnitRoleInfo(unitID int64) ([]map[string]interface{}, error)
 	GetUserEffectivePermissions(userID int64) ([]*UnitRoleModule, error)
 }
 
@@ -377,14 +379,44 @@ func (r *repository) UpdatePermissions(unitRoleID int64, modules []UpdateUnitRol
 }
 
 func (r *repository) CopyPermissions(sourceUnitID int64, targetUnitID int64, roleID int64, overwrite bool) error {
+	// First, validate that source unit has the role and permissions
+	var sourceUnitRoleID int64
+	err := r.db.QueryRow("SELECT id FROM unit_roles WHERE unit_id = $1 AND role_id = $2", sourceUnitID, roleID).Scan(&sourceUnitRoleID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("source unit %d does not have role %d assigned", sourceUnitID, roleID)
+		}
+		return fmt.Errorf("failed to check source unit role: %w", err)
+	}
+
+	// Check if source has any permissions to copy
+	var permissionCount int
+	err = r.db.QueryRow("SELECT COUNT(*) FROM unit_role_modules WHERE unit_role_id = $1", sourceUnitRoleID).Scan(&permissionCount)
+	if err != nil {
+		return fmt.Errorf("failed to check source permissions: %w", err)
+	}
+	if permissionCount == 0 {
+		return fmt.Errorf("source unit %d role %d has no permissions to copy", sourceUnitID, roleID)
+	}
+
+	// Validate that target unit has the role assigned
+	var targetUnitRoleID int64
+	err = r.db.QueryRow("SELECT id FROM unit_roles WHERE unit_id = $1 AND role_id = $2", targetUnitID, roleID).Scan(&targetUnitRoleID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("target unit %d does not have role %d assigned", targetUnitID, roleID)
+		}
+		return fmt.Errorf("failed to check target unit role: %w", err)
+	}
+
+	// Now perform the copy operation
 	query := `
 		INSERT INTO unit_role_modules (unit_role_id, module_id, can_read, can_write, can_delete, can_approve)
 		SELECT 
-			(SELECT id FROM unit_roles WHERE unit_id = $2 AND role_id = $3),
+			$1 as unit_role_id,
 			urm.module_id, urm.can_read, urm.can_write, urm.can_delete, urm.can_approve
 		FROM unit_role_modules urm
-		JOIN unit_roles ur ON urm.unit_role_id = ur.id
-		WHERE ur.unit_id = $1 AND ur.role_id = $3
+		WHERE urm.unit_role_id = $2
 	`
 
 	if overwrite {
@@ -395,8 +427,21 @@ func (r *repository) CopyPermissions(sourceUnitID int64, targetUnitID int64, rol
 		query += ` ON CONFLICT (unit_role_id, module_id) DO NOTHING`
 	}
 
-	_, err := r.db.Exec(query, sourceUnitID, targetUnitID, roleID)
-	return err
+	result, err := r.db.Exec(query, targetUnitRoleID, sourceUnitRoleID)
+	if err != nil {
+		return fmt.Errorf("failed to copy permissions: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 && !overwrite {
+		return fmt.Errorf("no new permissions were copied (all permissions may already exist)")
+	}
+
+	return nil
 }
 
 func (r *repository) GetUserEffectivePermissions(userID int64) ([]*UnitRoleModule, error) {
@@ -427,4 +472,107 @@ func (r *repository) GetUserEffectivePermissions(userID int64) ([]*UnitRoleModul
 	}
 
 	return permissions, nil
+}
+
+func (r *repository) CopyUnitRolePermissions(sourceUnitRoleID int64, targetUnitRoleID int64, overwrite bool) error {
+	// Validate that source unit role exists and has permissions
+	var sourcePermCount int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM unit_role_modules WHERE unit_role_id = $1", sourceUnitRoleID).Scan(&sourcePermCount)
+	if err != nil {
+		return fmt.Errorf("failed to check source unit role permissions: %w", err)
+	}
+	if sourcePermCount == 0 {
+		return fmt.Errorf("source unit role %d has no permissions to copy", sourceUnitRoleID)
+	}
+
+	// Validate that target unit role exists
+	var targetExists bool
+	err = r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM unit_roles WHERE id = $1)", targetUnitRoleID).Scan(&targetExists)
+	if err != nil {
+		return fmt.Errorf("failed to check target unit role: %w", err)
+	}
+	if !targetExists {
+		return fmt.Errorf("target unit role %d does not exist", targetUnitRoleID)
+	}
+
+	// Perform the copy operation
+	query := `
+		INSERT INTO unit_role_modules (unit_role_id, module_id, can_read, can_write, can_delete, can_approve)
+		SELECT 
+			$1 as unit_role_id,
+			urm.module_id, urm.can_read, urm.can_write, urm.can_delete, urm.can_approve
+		FROM unit_role_modules urm
+		WHERE urm.unit_role_id = $2
+	`
+
+	if overwrite {
+		query += ` ON CONFLICT (unit_role_id, module_id) DO UPDATE SET 
+			can_read = EXCLUDED.can_read, can_write = EXCLUDED.can_write, 
+			can_delete = EXCLUDED.can_delete, can_approve = EXCLUDED.can_approve`
+	} else {
+		query += ` ON CONFLICT (unit_role_id, module_id) DO NOTHING`
+	}
+
+	result, err := r.db.Exec(query, targetUnitRoleID, sourceUnitRoleID)
+	if err != nil {
+		return fmt.Errorf("failed to copy permissions: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 && !overwrite {
+		return fmt.Errorf("no new permissions were copied (all permissions may already exist)")
+	}
+
+	return nil
+}
+func (r *repository) GetUnitRoleInfo(unitID int64) ([]map[string]interface{}, error) {
+	query := `
+		SELECT 
+			ur.id as unit_role_id,
+			ur.unit_id,
+			ur.role_id,
+			r.name as role_name,
+			u.name as unit_name,
+			COUNT(urm.id) as permissions_count
+		FROM unit_roles ur
+		JOIN roles r ON ur.role_id = r.id
+		JOIN units u ON ur.unit_id = u.id
+		LEFT JOIN unit_role_modules urm ON ur.id = urm.unit_role_id
+		WHERE ur.unit_id = $1
+		GROUP BY ur.id, ur.unit_id, ur.role_id, r.name, u.name
+		ORDER BY r.name
+	`
+
+	rows, err := r.db.Query(query, unitID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get unit role info: %w", err)
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var unitRoleID, unitIDResult, roleID int64
+		var roleName, unitName string
+		var permissionsCount int
+
+		err := rows.Scan(&unitRoleID, &unitIDResult, &roleID, &roleName, &unitName, &permissionsCount)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan unit role info: %w", err)
+		}
+
+		results = append(results, map[string]interface{}{
+			"unit_role_id":      unitRoleID,
+			"unit_id":           unitIDResult,
+			"role_id":           roleID,
+			"role_name":         roleName,
+			"unit_name":         unitName,
+			"permissions_count": permissionsCount,
+		})
+	}
+
+	return results, nil
 }

@@ -115,6 +115,20 @@ Content-Type: application/json
 }
 ```
 
+**Create User with Default Password:**
+```http
+POST /api/v1/users
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "name": "Jane Smith",
+  "email": "jane@example.com",
+  "user_identity": "100000011"
+}
+```
+*Note: Jika password tidak disediakan, sistem akan menggunakan default password "password123"*
+
 **Update User:**
 ```http
 PUT /api/v1/users/1
@@ -203,6 +217,92 @@ Content-Type: application/json
 }
 ```
 
+**Update Role:**
+```http
+PUT /api/v1/roles/13
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "name": "UPDATED_ROLE_NAME",
+  "description": "Updated role description",
+  "is_active": false
+}
+```
+*Note: Semua field bersifat opsional. Hanya field yang dikirim yang akan diupdate.*
+
+**Update Role (Partial):**
+```http
+PUT /api/v1/roles/13
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "name": "NEW_ROLE_NAME"
+}
+```
+*Note: Hanya mengupdate field name, field lain tetap tidak berubah.*
+
+**Delete Role:**
+```http
+DELETE /api/v1/roles/13
+Authorization: Bearer {token}
+```
+
+**Response Examples:**
+
+*Get Role Response:*
+```json
+{
+  "success": true,
+  "message": "Role successfully retrieved",
+  "data": {
+    "id": 13,
+    "name": "CONSOLE ADMIN",
+    "description": "Console admin role for manage system",
+    "is_active": true,
+    "created_at": "2026-01-17T13:23:44Z",
+    "updated_at": "2026-01-17T13:23:44Z"
+  }
+}
+```
+
+*Create/Update Role Response:*
+```json
+{
+  "success": true,
+  "message": "Role successfully updated",
+  "data": {
+    "id": 13,
+    "name": "UPDATED_ROLE_NAME",
+    "description": "Updated role description",
+    "is_active": false,
+    "created_at": "2026-01-17T13:23:44Z",
+    "updated_at": "2026-01-17T13:31:03Z"
+  }
+}
+```
+
+*Validation Error Response:*
+```json
+{
+  "success": false,
+  "message": "Invalid request format",
+  "error": "field 'name' must be at least 2 characters/value"
+}
+```
+
+### Role Field Validation
+
+**Create Role Request:**
+- `name`: Required, minimum 2 characters, maximum 100 characters
+- `description`: Optional
+
+**Update Role Request:**
+- `name`: Optional, minimum 2 characters, maximum 100 characters (jika disediakan)
+- `description`: Optional
+- `is_active`: Optional boolean
+
 ### Role Assignment System
 
 **Assign User Role (Company/Branch Level):**
@@ -234,11 +334,33 @@ Content-Type: application/json
 }
 ```
 
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Role successfully assigned",
+  "data": {
+    "id": 28,
+    "user_id": 16,
+    "role_id": 13,
+    "company_id": 1,
+    "branch_id": 1,
+    "unit_id": 16,
+    "role_name": "CONSOLE ADMIN",
+    "company_name": "",
+    "branch_name": null,
+    "unit_name": null,
+    "created_at": "2026-01-17T14:22:19Z"
+  }
+}
+```
+
 **Remove User Role:**
 ```http
-DELETE /api/v1/role-management/user/10/role/4
+DELETE /api/v1/role-management/user/10/role/4?company_id=1
 Authorization: Bearer {token}
 ```
+*Note: company_id adalah required query parameter*
 
 **Bulk Assign Roles:**
 ```http
@@ -255,6 +377,45 @@ Content-Type: application/json
 }
 ```
 
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Roles successfully assigned to users",
+  "data": {
+    "assignments": [
+      {
+        "id": 31,
+        "user_id": 10,
+        "role_id": 13,
+        "company_id": 1,
+        "branch_id": 1,
+        "unit_id": 16,
+        "role_name": "CONSOLE ADMIN",
+        "company_name": "",
+        "branch_name": null,
+        "unit_name": null,
+        "created_at": "2026-01-17T23:01:27Z"
+      },
+      {
+        "id": 32,
+        "user_id": 16,
+        "role_id": 13,
+        "company_id": 1,
+        "branch_id": 1,
+        "unit_id": 16,
+        "role_name": "CONSOLE ADMIN",
+        "company_name": "",
+        "branch_name": null,
+        "unit_name": null,
+        "created_at": "2026-01-17T23:01:27Z"
+      }
+    ],
+    "total": 2
+  }
+}
+```
+
 **Update Role Modules:**
 ```http
 PUT /api/v1/role-management/role/4/modules
@@ -262,11 +423,17 @@ Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "modules": [
+  "permissions": [
     {
       "module_id": 1,
       "can_read": true,
       "can_write": true,
+      "can_delete": false
+    },
+    {
+      "module_id": 2,
+      "can_read": true,
+      "can_write": false,
       "can_delete": false
     }
   ]
@@ -288,26 +455,6 @@ Authorization: Bearer {token}
 **Get User Access Summary:**
 ```http
 GET /api/v1/role-management/user/3/access-summary
-Authorization: Bearer {token}
-```
-
-### Debug Endpoints
-
-**Get All User Role Assignments:**
-```http
-GET /api/v1/role-management/debug/all-assignments
-Authorization: Bearer {token}
-```
-
-**Get User Role Assignments:**
-```http
-GET /api/v1/role-management/debug/user/3/roles
-Authorization: Bearer {token}
-```
-
-**Get Role-Users Mapping:**
-```http
-GET /api/v1/role-management/debug/role-users-mapping
 Authorization: Bearer {token}
 ```
 
@@ -568,6 +715,66 @@ GET /api/v1/units/1/roles/3/permissions
 Authorization: Bearer {token}
 ```
 
+**Copy Unit Permissions (Same Role):**
+```http
+POST /api/v1/units/copy-permissions
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "source_unit_id": 1,
+  "target_unit_id": 2,
+  "role_id": 3,
+  "overwrite_existing": false
+}
+```
+
+**Copy Unit Role Permissions (Flexible):**
+```http
+POST /api/v1/units/copy-unit-role-permissions
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "source_unit_role_id": 123,
+  "target_unit_role_id": 456,
+  "overwrite_existing": false
+}
+```
+
+**Get Unit Role Info (Helper):**
+```http
+GET /api/v1/units/unit-role-info?unit_id=1
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Unit role information retrieved",
+  "data": [
+    {
+      "unit_role_id": 123,
+      "unit_id": 1,
+      "role_id": 3,
+      "role_name": "Manager",
+      "unit_name": "HR Department",
+      "permissions_count": 15
+    }
+  ]
+}
+```
+
+**Copy Permissions Response:**
+```json
+{
+  "success": true,
+  "message": "Permissions successfully copied",
+  "data": null
+}
+```
+
 **Get User Effective Permissions:**
 ```http
 GET /api/v1/users/1/effective-permissions
@@ -685,6 +892,55 @@ Authorization: Bearer {token}
 **Get Expiring Subscriptions:**
 ```http
 GET /api/v1/subscription/expiring?days=30
+Authorization: Bearer {token}
+```
+
+### Plan Modules Management
+
+**Get Plan Modules:**
+```http
+GET /api/v1/admin/plan-modules/3
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Plan modules retrieved successfully",
+  "data": {
+    "data": [
+      {
+        "id": 469,
+        "plan_id": 3,
+        "module_id": 137,
+        "module_name": "Module Management",
+        "category": "Module Management",
+        "is_included": true,
+        "created_at": "2026-01-18T00:00:00Z"
+      }
+    ],
+    "total": 1,
+    "plan_id": 3,
+    "plan_name": "Plan 3"
+  }
+}
+```
+
+**Add Modules to Plan:**
+```http
+POST /api/v1/admin/plan-modules/3
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "module_ids": [137, 138]
+}
+```
+
+**Remove Module from Plan:**
+```http
+DELETE /api/v1/admin/plan-modules/3/137
 Authorization: Bearer {token}
 ```
 

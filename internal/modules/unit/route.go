@@ -34,6 +34,8 @@ func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
 
 	// Permission management
 	router.POST("/units/copy-permissions", handler.CopyPermissions)
+	router.POST("/units/copy-unit-role-permissions", handler.CopyUnitRolePermissions)
+	router.GET("/units/unit-role-info", handler.GetUnitRoleInfo)
 
 	// User effective permissions
 	users := router.Group("/users")
