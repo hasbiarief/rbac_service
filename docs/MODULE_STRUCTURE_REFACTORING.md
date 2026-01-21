@@ -36,12 +36,12 @@ modules/{module}/
 - [x] **Step 1.4**: Delete `validator.go` dan `handler.go`
 - [x] **Step 1.5**: Test module audit masih berfungsi normal
 
-### ✅ Module 2: /auth
-- [ ] **Step 2.1**: Merge `validator.go` content ke `dto.go`
-- [ ] **Step 2.2**: Merge `handler.go` content ke `route.go`
-- [ ] **Step 2.3**: Update imports di `route.go` jika diperlukan
-- [ ] **Step 2.4**: Delete `validator.go` dan `handler.go`
-- [ ] **Step 2.5**: Test module auth masih berfungsi normal
+### ✅ Module 2: /auth - COMPLETED ✅
+- [x] **Step 2.1**: Merge `validator.go` content ke `dto.go`
+- [x] **Step 2.2**: Merge `handler.go` content ke `route.go`
+- [x] **Step 2.3**: Update imports di `route.go` jika diperlukan
+- [x] **Step 2.4**: Delete `validator.go` dan `handler.go`
+- [x] **Step 2.5**: Test module auth masih berfungsi normal
 
 ### ✅ Module 3: /branch
 - [ ] **Step 3.1**: Merge `validator.go` content ke `dto.go`
