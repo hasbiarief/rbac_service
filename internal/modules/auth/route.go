@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Handler struct
 type Handler struct {
 	service *Service
 }
@@ -20,6 +21,7 @@ func NewHandler(service *Service) *Handler {
 	}
 }
 
+// Handler methods
 func (h *Handler) Login(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -216,35 +218,49 @@ func (h *Handler) CleanupExpiredTokens(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Expired tokens cleaned up successfully", nil)
 }
 
+// Route registration
 func RegisterRoutes(api *gin.RouterGroup, handler *Handler) {
 	auth := api.Group("/auth")
 	{
+		// POST /api/v1/auth/login - Login with user_identity
 		auth.POST("/login",
 			middleware.ValidateRequest(middleware.ValidationRules{
 				Body: &LoginRequest{},
 			}),
 			handler.Login,
 		)
+
+		// POST /api/v1/auth/login-email - Login with email
 		auth.POST("/login-email",
 			middleware.ValidateRequest(middleware.ValidationRules{
 				Body: &LoginEmailRequest{},
 			}),
 			handler.LoginWithEmail,
 		)
+
+		// POST /api/v1/auth/refresh - Refresh access token
 		auth.POST("/refresh",
 			middleware.ValidateRequest(middleware.ValidationRules{
 				Body: &RefreshTokenRequest{},
 			}),
 			handler.RefreshToken,
 		)
+
+		// POST /api/v1/auth/logout - Logout user
 		auth.POST("/logout",
 			middleware.ValidateRequest(middleware.ValidationRules{
 				Body: &LogoutRequest{},
 			}),
 			handler.Logout,
 		)
+
+		// GET /api/v1/auth/check-tokens - Check user tokens
 		auth.GET("/check-tokens", handler.CheckUserTokens)
+
+		// GET /api/v1/auth/session-count - Get user session count
 		auth.GET("/session-count", handler.GetUserSessionCount)
+
+		// POST /api/v1/auth/cleanup-expired - Cleanup expired tokens
 		auth.POST("/cleanup-expired", handler.CleanupExpiredTokens)
 	}
 }

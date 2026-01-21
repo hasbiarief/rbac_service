@@ -9,6 +9,9 @@ import (
 type QueryBuilder struct {
 	baseQuery  string
 	conditions []string
+	orderBy    string
+	limit      int
+	offset     int
 	args       []any
 	argIndex   int
 }
@@ -55,16 +58,14 @@ func (qb *QueryBuilder) AddLikeCondition(columns []string, searchValue string) *
 
 // AddOrderBy adds ORDER BY clause
 func (qb *QueryBuilder) AddOrderBy(orderBy string) *QueryBuilder {
-	qb.baseQuery += " ORDER BY " + orderBy
+	qb.orderBy = orderBy
 	return qb
 }
 
 // AddLimit adds LIMIT clause
 func (qb *QueryBuilder) AddLimit(limit int) *QueryBuilder {
 	if limit > 0 {
-		qb.baseQuery += fmt.Sprintf(" LIMIT $%d", qb.argIndex)
-		qb.args = append(qb.args, limit)
-		qb.argIndex++
+		qb.limit = limit
 	}
 	return qb
 }
@@ -72,9 +73,7 @@ func (qb *QueryBuilder) AddLimit(limit int) *QueryBuilder {
 // AddOffset adds OFFSET clause
 func (qb *QueryBuilder) AddOffset(offset int) *QueryBuilder {
 	if offset > 0 {
-		qb.baseQuery += fmt.Sprintf(" OFFSET $%d", qb.argIndex)
-		qb.args = append(qb.args, offset)
-		qb.argIndex++
+		qb.offset = offset
 	}
 	return qb
 }
@@ -82,8 +81,30 @@ func (qb *QueryBuilder) AddOffset(offset int) *QueryBuilder {
 // Build returns the final query and arguments
 func (qb *QueryBuilder) Build() (string, []any) {
 	query := qb.baseQuery
+
+	// Add WHERE clause
 	if len(qb.conditions) > 0 {
 		query += " WHERE " + strings.Join(qb.conditions, " AND ")
 	}
+
+	// Add ORDER BY clause
+	if qb.orderBy != "" {
+		query += " ORDER BY " + qb.orderBy
+	}
+
+	// Add LIMIT clause
+	if qb.limit > 0 {
+		query += fmt.Sprintf(" LIMIT $%d", qb.argIndex)
+		qb.args = append(qb.args, qb.limit)
+		qb.argIndex++
+	}
+
+	// Add OFFSET clause
+	if qb.offset > 0 {
+		query += fmt.Sprintf(" OFFSET $%d", qb.argIndex)
+		qb.args = append(qb.args, qb.offset)
+		qb.argIndex++
+	}
+
 	return query, qb.args
 }

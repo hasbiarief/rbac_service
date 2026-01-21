@@ -1,5 +1,7 @@
 package branch
 
+import "github.com/go-playground/validator/v10"
+
 type CreateBranchRequest struct {
 	CompanyID int64  `json:"company_id" validate:"required,min=1"`
 	Name      string `json:"name" validate:"required,min=2,max=100"`
@@ -55,4 +57,26 @@ type BranchListResponse struct {
 	Limit   int               `json:"limit"`
 	Offset  int               `json:"offset"`
 	HasMore bool              `json:"has_more"`
+}
+
+// Validation functions
+var validate *validator.Validate
+
+func init() {
+	validate = validator.New()
+}
+
+// ValidateCreateBranchRequest validates create branch request
+func ValidateCreateBranchRequest(req *CreateBranchRequest) error {
+	return validate.Struct(req)
+}
+
+// ValidateUpdateBranchRequest validates update branch request
+func ValidateUpdateBranchRequest(req *UpdateBranchRequest) error {
+	return validate.Struct(req)
+}
+
+// ValidateBranchListRequest validates branch list request
+func ValidateBranchListRequest(req *BranchListRequest) error {
+	return validate.Struct(req)
 }
