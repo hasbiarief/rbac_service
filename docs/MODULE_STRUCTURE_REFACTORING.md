@@ -71,12 +71,12 @@ modules/{module}/
 - [x] **Step 6.4**: Delete `validator.go` dan `handler.go`
 - [x] **Step 6.5**: Test module role masih berfungsi normal
 
-### ✅ Module 7: /subscription
-- [ ] **Step 7.1**: Merge `validator.go` content ke `dto.go`
-- [ ] **Step 7.2**: Merge `handler.go` content ke `route.go`
-- [ ] **Step 7.3**: Update imports di `route.go` jika diperlukan
-- [ ] **Step 7.4**: Delete `validator.go` dan `handler.go`
-- [ ] **Step 7.5**: Test module subscription masih berfungsi normal
+### ✅ Module 7: /subscription - COMPLETED ✅
+- [x] **Step 7.1**: Merge `validator.go` content ke `dto.go`
+- [x] **Step 7.2**: Merge `handler.go` content ke `route.go`
+- [x] **Step 7.3**: Update imports di `route.go` jika diperlukan
+- [x] **Step 7.4**: Delete `validator.go` dan `handler.go`
+- [x] **Step 7.5**: Test module subscription masih berfungsi normal
 
 ### ✅ Module 8: /unit
 - [ ] **Step 8.1**: Merge `validator.go` content ke `dto.go`
