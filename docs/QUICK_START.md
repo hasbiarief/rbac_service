@@ -1,4 +1,4 @@
-# Quick Start Guide - RBAC Service
+# Quick Start Guide - RBAC Service (5-File Module Structure)
 
 ## 🚀 Setup Development (5 menit)
 
@@ -23,6 +23,16 @@ air
 
 Server: `http://localhost:8081`
 
+## 🏗️ Architecture Overview
+
+**✅ REFACTORING COMPLETED**: Project telah berhasil direfactor dari 7-file menjadi 5-file per module.
+
+**Benefits:**
+- ✅ File count berkurang: 63 → 45 files (28% reduction)
+- ✅ Faster navigation: Less file switching untuk developer
+- ✅ Cleaner structure: Logical grouping of related code
+- ✅ Easier onboarding: New developers less overwhelmed
+
 ## 🐳 Setup dengan Docker (Production)
 
 ```bash
@@ -44,18 +54,22 @@ make prod-logs
 
 Server: `http://localhost:8081`
 
-## 📁 Module Structure (1 fitur = 1 folder)
+## 📁 Module Structure (1 fitur = 1 folder, 5 files)
 
 ```
 internal/modules/feature_name/
-├── route.go        # Routes
-├── handler.go      # HTTP handlers
-├── service.go      # Business logic
-├── repository.go   # Database queries (raw SQL)
+├── dto.go          # Request/Response structures + validation logic
 ├── model.go        # Database entities (local)
-├── dto.go          # Request/Response structures
-└── validator.go    # Custom validation
+├── repository.go   # Database queries (raw SQL)
+├── route.go        # Routes + HTTP handlers
+└── service.go      # Business logic
 ```
+
+**Refactoring Changes:**
+- ❌ `handler.go` → merged ke `route.go`
+- ❌ `validator.go` → merged ke `dto.go`
+- ✅ Validation menggunakan `middleware.ValidateRequest` dengan `ValidationRules`
+- ✅ Semua routes memiliki dokumentasi komentar yang lengkap
 
 ## 🔨 Membuat Module Baru
 
@@ -63,9 +77,9 @@ internal/modules/feature_name/
 # 1. Buat folder
 mkdir -p internal/modules/employee
 
-# 2. Buat 7 file
+# 2. Buat 5 file
 cd internal/modules/employee
-touch route.go handler.go service.go repository.go model.go dto.go validator.go
+touch dto.go model.go repository.go route.go service.go
 
 # 3. Implementasi (copy template dari module lain)
 
@@ -101,6 +115,11 @@ type EmployeeResponse struct {
     ID        int64  `json:"id"`
     Name      string `json:"name"`
     CreatedAt string `json:"created_at"`
+}
+
+// Validation logic (merged from validator.go)
+func ValidateEmployeeName(name string) bool {
+    return len(name) >= 2 && len(name) <= 100
 }
 ```
 
@@ -153,16 +172,18 @@ func (s *Service) CreateEmployee(req *CreateEmployeeRequest) (*EmployeeResponse,
 }
 ```
 
-### handler.go
+### route.go
 ```go
 package employee
 
 import (
+    "gin-scalable-api/middleware"
     "gin-scalable-api/pkg/response"
     "net/http"
     "github.com/gin-gonic/gin"
 )
 
+// Handler struct (merged from handler.go)
 type Handler struct {
     service *Service
 }
@@ -171,6 +192,7 @@ func NewHandler(service *Service) *Handler {
     return &Handler{service: service}
 }
 
+// Handler methods (merged from handler.go)
 func (h *Handler) CreateEmployee(c *gin.Context) {
     validatedBody, _ := c.Get("validated_body")
     req := validatedBody.(*CreateEmployeeRequest)
@@ -183,33 +205,20 @@ func (h *Handler) CreateEmployee(c *gin.Context) {
     
     response.Success(c, http.StatusCreated, "Employee created", result)
 }
-```
 
-### route.go
-```go
-package employee
-
-import (
-    "gin-scalable-api/middleware"
-    "github.com/gin-gonic/gin"
-)
-
+// Route registration
 func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
     employees := router.Group("/employees")
     {
+        // POST /api/v1/employees - Create new employee
         employees.POST("", 
-            middleware.ValidateJSON(&CreateEmployeeRequest{}),
+            middleware.ValidateRequest(middleware.ValidationRules{
+                Body: &CreateEmployeeRequest{},
+            }),
             handler.CreateEmployee,
         )
     }
 }
-```
-
-### validator.go
-```go
-package employee
-
-// Custom validation jika diperlukan
 ```
 
 ## 🔗 Register Module
@@ -255,9 +264,13 @@ curl -X POST http://localhost:8081/api/v1/employees \
 3. ✅ **BOLEH** query database langsung dengan minimal fields
 4. ❌ **TIDAK PERLU** interface + implementation pattern
 5. ❌ **TIDAK PERLU** mapper terpisah (konversi inline di service)
+6. ✅ **GUNAKAN** `middleware.ValidateRequest` dengan `ValidationRules` (bukan `ValidateJSON`)
+7. ✅ **TAMBAHKAN** komentar deskriptif untuk setiap route
+8. ✅ **MERGE** handler logic ke route.go dan validation logic ke dto.go
 
 ## 📚 Dokumentasi Lengkap
 
+- [Module Structure Refactoring](MODULE_STRUCTURE_REFACTORING.md) - Completed refactoring details
 - [Backend Engineer Rules](ENGINEER_RULES.md) - Panduan lengkap
 - [Project Structure](PROJECT_STRUCTURE.md) - Arsitektur detail
 - [API Overview](API_OVERVIEW.md) - API documentation

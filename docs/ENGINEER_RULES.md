@@ -1,12 +1,12 @@
 # Backend Engineer Rules - RBAC Service
 
-Panduan lengkap untuk bekerja dengan RBAC Service yang menggunakan **Module-Based Architecture** (Express.js style) dengan Unit-Based RBAC system.
+Panduan lengkap untuk bekerja dengan RBAC Service yang menggunakan **Module-Based Architecture** (Express.js style) dengan **5-file structure per module** setelah refactoring dari 7-file structure.
 
 ## 📋 Table of Contents
 1. [Quick Start](#quick-start)
 2. [Module-Based Architecture](#module-based-architecture)
 3. [Development Workflow](#development-workflow)
-4. [Module Structure](#module-structure)
+4. [Module Structure (5 Files)](#module-structure-5-files)
 5. [Database & Migrations](#database--migrations)
 6. [Testing](#testing)
 7. [Deployment](#deployment)
@@ -48,6 +48,8 @@ Project ini menggunakan **vertical module-based structure** (Express.js style), 
 
 **Prinsip: 1 fitur = 1 folder**
 
+**✅ REFACTORING COMPLETED**: Struktur telah berhasil direfactor dari 7-file menjadi 5-file per module untuk meningkatkan developer experience.
+
 ```
 rbac-service/
 ├── cmd/
@@ -59,15 +61,13 @@ rbac-service/
 │   │   ├── server.go        # Server initialization
 │   │   └── routes.go        # Route registration
 │   │
-│   ├── modules/             # 🔥 SEMUA FITUR DI SINI
+│   ├── modules/             # 🔥 SEMUA FITUR DI SINI (5 files per module)
 │   │   ├── auth/            # Authentication module
-│   │   │   ├── route.go     # Routes
-│   │   │   ├── handler.go   # HTTP handlers
-│   │   │   ├── service.go   # Business logic
-│   │   │   ├── repository.go # Database queries
+│   │   │   ├── dto.go       # Request/Response DTOs + validation logic
 │   │   │   ├── model.go     # Local models
-│   │   │   ├── dto.go       # Request/Response DTOs
-│   │   │   └── validator.go # Validation rules
+│   │   │   ├── repository.go # Database queries
+│   │   │   ├── route.go     # Routes + HTTP handlers
+│   │   │   └── service.go   # Business logic
 │   │   │
 │   │   ├── user/            # User management
 │   │   ├── role/            # Role management
@@ -91,12 +91,12 @@ rbac-service/
 └── docs/                    # Documentation
 ```
 
-**Key Differences dari Clean Architecture:**
-- ❌ Tidak ada folder `interfaces/`, `mapper/`, `dto/` global
-- ❌ Tidak ada separation `handlers/`, `service/`, `repository/` terpisah
-- ✅ Setiap module punya semua layer-nya sendiri
-- ✅ Model lokal per module (tidak shared)
-- ✅ Repository lokal per module (tidak shared)
+**Key Changes dari Refactoring:**
+- ❌ Tidak ada lagi `handler.go` terpisah → digabung ke `route.go`
+- ❌ Tidak ada lagi `validator.go` terpisah → digabung ke `dto.go`
+- ✅ File count berkurang: 63 → 45 files (28% reduction)
+- ✅ Validation menggunakan `middleware.ValidateRequest` dengan `ValidationRules`
+- ✅ Semua routes memiliki dokumentasi komentar yang lengkap
 
 ## 🔄 Development Workflow
 
@@ -107,10 +107,10 @@ Ketika mengembangkan fitur baru dalam **module-based architecture**:
 mkdir -p internal/modules/feature_name
 ```
 
-### 2. Buat File Structure (dalam 1 folder)
+### 2. Buat File Structure (5 files dalam 1 folder)
 ```bash
 cd internal/modules/feature_name
-touch route.go handler.go service.go repository.go model.go dto.go validator.go
+touch dto.go model.go repository.go route.go service.go
 ```
 
 ### 3. Implementasi (urutan yang disarankan)
@@ -128,7 +128,7 @@ type Feature struct {
 }
 ```
 
-**b. DTO (`dto.go`)** - Request/Response structures
+**b. DTO (`dto.go`)** - Request/Response structures + validation logic
 ```go
 package feature_name
 
@@ -141,6 +141,13 @@ type FeatureResponse struct {
     Name      string `json:"name"`
     IsActive  bool   `json:"is_active"`
     CreatedAt string `json:"created_at"`
+}
+
+// Validation rules (merged from validator.go)
+func (r *CreateFeatureRequest) ValidationRules() map[string]string {
+    return map[string]string{
+        "name": "required,min=2,max=100",
+    }
 }
 ```
 
@@ -178,10 +185,18 @@ func (s *Service) CreateFeature(req *CreateFeatureRequest) (*FeatureResponse, er
 }
 ```
 
-**e. Handler (`handler.go`)** - HTTP handlers
+**e. Route (`route.go`)** - Route registration + HTTP handlers
 ```go
 package feature_name
 
+import (
+    "gin-scalable-api/middleware"
+    "gin-scalable-api/pkg/response"
+    "net/http"
+    "github.com/gin-gonic/gin"
+)
+
+// Handler struct (merged from handler.go)
 type Handler struct {
     service *Service
 }
@@ -190,19 +205,42 @@ func NewHandler(service *Service) *Handler {
     return &Handler{service: service}
 }
 
+// Handler methods (merged from handler.go)
 func (h *Handler) CreateFeature(c *gin.Context) {
-    // Handle HTTP request
+    validatedBody, exists := c.Get("validated_body")
+    if !exists {
+        response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
+        return
+    }
+
+    req, ok := validatedBody.(*CreateFeatureRequest)
+    if !ok {
+        response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+        return
+    }
+
+    result, err := h.service.CreateFeature(req)
+    if err != nil {
+        response.ErrorWithAutoStatus(c, "Failed to create feature", err.Error())
+        return
+    }
+
+    response.Success(c, http.StatusCreated, "Feature created", result)
 }
-```
 
-**f. Route (`route.go`)** - Route registration
-```go
-package feature_name
-
+// Route registration
 func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
     features := router.Group("/features")
     {
-        features.POST("", middleware.ValidateJSON(&CreateFeatureRequest{}), handler.CreateFeature)
+        // POST /api/v1/features - Create new feature
+        features.POST("", 
+            middleware.ValidateRequest(middleware.ValidationRules{
+                Body: &CreateFeatureRequest{},
+            }),
+            handler.CreateFeature,
+        )
+        
+        // GET /api/v1/features/:id - Get feature by ID
         features.GET("/:id", handler.GetFeature)
     }
 }
@@ -220,9 +258,9 @@ featureModule.RegisterRoutes(protected, h.Feature)
 - Test dengan Postman collection
 - Verify dengan `go build ./cmd/api`
 
-## 🧩 Module Structure
+## 🧩 Module Structure (5 Files)
 
-Setiap module memiliki 7 file standar dalam 1 folder:
+Setiap module memiliki 5 file standar dalam 1 folder setelah refactoring:
 
 ### 📝 1. model.go - Database Entities
 **Lokasi**: `internal/modules/{module}/model.go`
@@ -256,10 +294,10 @@ func (User) TableName() string {
 - Tag `json:"-"` untuk field sensitif (password)
 - Method `TableName()` untuk explicit table name
 
-### 📦 2. dto.go - Request/Response DTOs
+### 📦 2. dto.go - Request/Response DTOs + Validation
 **Lokasi**: `internal/modules/{module}/dto.go`
 
-DTOs mendefinisikan struktur data untuk API request dan response.
+DTOs mendefinisikan struktur data untuk API request dan response, serta validation logic yang sebelumnya ada di `validator.go`.
 
 ```go
 package user
@@ -290,6 +328,12 @@ type UserListResponse struct {
     Limit   int             `json:"limit"`
     Offset  int             `json:"offset"`
     HasMore bool            `json:"has_more"`
+}
+
+// Validation logic (merged from validator.go)
+func ValidateUserIdentity(fl validator.FieldLevel) bool {
+    identity := fl.Field().String()
+    return len(identity) == 9 // Example: must be 9 digits
 }
 ```
 
@@ -371,7 +415,7 @@ func (r *Repository) GetByID(id int64) (*User, error) {
 - Gunakan soft delete dengan `deleted_at`
 - Return error yang descriptive
 
-### 🏢 4. service.go - Business Logic
+### 🏢 5. service.go - Business Logic
 **Lokasi**: `internal/modules/{module}/service.go`
 
 Service layer berisi business logic dan orchestrate repository calls.
@@ -432,23 +476,24 @@ func (s *Service) CreateUser(req *CreateUserRequest) (*UserResponse, error) {
 - Focus pada business logic
 - Konversi Model ↔ DTO dilakukan inline (tidak perlu mapper terpisah)
 
-### 🎮 5. handler.go - HTTP Handlers
-**Lokasi**: `internal/modules/{module}/handler.go`
+### 🛣️ 4. route.go - Route Registration + HTTP Handlers
+**Lokasi**: `internal/modules/{module}/route.go`
 
-Handlers menangani HTTP requests dan responses.
+Routes mendefinisikan endpoint, middleware, dan HTTP handlers (merged dari `handler.go`).
 
 ```go
 package user
 
 import (
     "gin-scalable-api/internal/constants"
+    "gin-scalable-api/middleware"
     "gin-scalable-api/pkg/response"
     "net/http"
     "strconv"
-    
     "github.com/gin-gonic/gin"
 )
 
+// Handler struct (merged from handler.go)
 type Handler struct {
     service *Service
 }
@@ -457,8 +502,8 @@ func NewHandler(service *Service) *Handler {
     return &Handler{service: service}
 }
 
+// Handler methods (merged from handler.go)
 func (h *Handler) CreateUser(c *gin.Context) {
-    // Get validated body from middleware
     validatedBody, exists := c.Get("validated_body")
     if !exists {
         response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
@@ -495,71 +540,44 @@ func (h *Handler) GetUserByID(c *gin.Context) {
     
     response.Success(c, http.StatusOK, constants.MsgUserRetrieved, result)
 }
-```
 
-**Best Practices:**
-- Gunakan validation middleware untuk request validation
-- Gunakan `response` package untuk consistent responses
-- Handle errors dengan appropriate HTTP status codes
-- Gunakan constants untuk messages
-
-### 🛣️ 6. route.go - Route Registration
-**Lokasi**: `internal/modules/{module}/route.go`
-
-Routes mendefinisikan endpoint dan middleware.
-
-```go
-package user
-
-import (
-    "gin-scalable-api/middleware"
-    "github.com/gin-gonic/gin"
-)
-
+// Route registration
 func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
     users := router.Group("/users")
     {
+        // GET /api/v1/users - Get all users with optional filters and pagination
         users.GET("", handler.GetUsers)
+        
+        // POST /api/v1/users - Create new user with role assignments
         users.POST("", 
-            middleware.ValidateJSON(&CreateUserRequest{}),
+            middleware.ValidateRequest(middleware.ValidationRules{
+                Body: &CreateUserRequest{},
+            }),
             handler.CreateUser,
         )
+        
+        // GET /api/v1/users/:id - Get user by ID with roles and permissions
         users.GET("/:id", handler.GetUserByID)
+        
+        // PUT /api/v1/users/:id - Update user information and role assignments
         users.PUT("/:id",
-            middleware.ValidateJSON(&UpdateUserRequest{}),
+            middleware.ValidateRequest(middleware.ValidationRules{
+                Body: &UpdateUserRequest{},
+            }),
             handler.UpdateUser,
         )
-        users.DELETE("/:id", handler.DeleteUser)
         
-        // User modules
-        users.GET("/:id/modules", handler.GetUserModules)
-        users.GET("/identity/:identity/modules", handler.GetUserModulesByIdentity)
-        users.POST("/check-access", 
-            middleware.ValidateJSON(&CheckAccessRequest{}),
-            handler.CheckUserAccess,
-        )
+        // DELETE /api/v1/users/:id - Delete user and remove all associations
+        users.DELETE("/:id", handler.DeleteUser)
     }
 }
 ```
 
-### ✅ 7. validator.go - Custom Validation
-**Lokasi**: `internal/modules/{module}/validator.go`
-
-Validation rules tambahan jika diperlukan.
-
-```go
-package user
-
-import (
-    "github.com/go-playground/validator/v10"
-)
-
-func ValidateUserIdentity(fl validator.FieldLevel) bool {
-    identity := fl.Field().String()
-    // Custom validation logic
-    return len(identity) == 9 // Example: must be 9 digits
-}
-```
+**Best Practices:**
+- Gunakan `middleware.ValidateRequest` dengan `ValidationRules` (bukan `ValidateJSON`)
+- Tambahkan komentar deskriptif untuk setiap route
+- Handle errors dengan appropriate HTTP status codes
+- Gunakan constants untuk messages
 
 ## 🗄️ Database & Migrations
 

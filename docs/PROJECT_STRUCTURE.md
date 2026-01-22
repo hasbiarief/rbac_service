@@ -1,4 +1,4 @@
-# Project Structure - Module-Based Architecture
+# Project Structure - Module-Based Architecture (5-File Structure)
 
 ## 🎯 Filosofi Desain
 
@@ -6,7 +6,9 @@ Project ini menggunakan **vertical module-based structure** (Express.js style), 
 
 **Prinsip Utama: 1 fitur = 1 folder**
 
-Setiap module berisi semua layer yang dibutuhkan (route, handler, service, repository, model, dto, validator) dalam satu folder.
+**✅ REFACTORING COMPLETED**: Struktur telah berhasil direfactor dari 7-file menjadi 5-file per module untuk meningkatkan developer experience dan mengurangi cognitive load.
+
+Setiap module berisi semua layer yang dibutuhkan (route + handler, service, repository, model, dto + validation) dalam satu folder.
 
 ## 📁 Struktur Folder
 
@@ -29,88 +31,70 @@ rbac-service/
 │   │   ├── server.go            # Server initialization
 │   │   └── routes.go            # Route registration
 │   │
-│   ├── modules/                 # 🔥 SEMUA FITUR DI SINI
+│   ├── modules/                 # 🔥 SEMUA FITUR DI SINI (5 files per module)
 │   │   │
 │   │   ├── auth/                # Authentication module
-│   │   │   ├── route.go         # Routes: /api/v1/auth/*
-│   │   │   ├── handler.go       # HTTP handlers
-│   │   │   ├── service.go       # Business logic
-│   │   │   ├── repository.go    # Database queries (user data)
+│   │   │   ├── dto.go           # Request/Response DTOs + validation logic
 │   │   │   ├── model.go         # Local User model
-│   │   │   ├── dto.go           # Request/Response DTOs
-│   │   │   └── validator.go    # Validation rules
+│   │   │   ├── repository.go    # Database queries (user data)
+│   │   │   ├── route.go         # Routes + HTTP handlers: /api/v1/auth/*
+│   │   │   └── service.go       # Business logic
 │   │   │
 │   │   ├── user/                # User management
-│   │   │   ├── route.go         # Routes: /api/v1/users/*
-│   │   │   ├── handler.go
-│   │   │   ├── service.go
-│   │   │   ├── repository.go
+│   │   │   ├── dto.go           # Request/Response DTOs + validation logic
 │   │   │   ├── model.go         # Local User model
-│   │   │   ├── dto.go
-│   │   │   └── validator.go
+│   │   │   ├── repository.go    # Database queries
+│   │   │   ├── route.go         # Routes + HTTP handlers: /api/v1/users/*
+│   │   │   └── service.go       # Business logic
 │   │   │
 │   │   ├── role/                # Role management
-│   │   │   ├── route.go         # Routes: /api/v1/roles/*, /api/v1/role-management/*
-│   │   │   ├── handler.go
-│   │   │   ├── service.go
-│   │   │   ├── repository.go
+│   │   │   ├── dto.go           # Request/Response DTOs + validation logic
 │   │   │   ├── model.go         # Local Role, UserRole models
-│   │   │   ├── dto.go
-│   │   │   └── validator.go
+│   │   │   ├── repository.go    # Database queries
+│   │   │   ├── route.go         # Routes + HTTP handlers: /api/v1/roles/*, /api/v1/role-management/*
+│   │   │   └── service.go       # Business logic
 │   │   │
 │   │   ├── company/             # Company management
-│   │   │   ├── route.go         # Routes: /api/v1/companies/*
-│   │   │   ├── handler.go
-│   │   │   ├── service.go
-│   │   │   ├── repository.go
+│   │   │   ├── dto.go           # Request/Response DTOs + validation logic
 │   │   │   ├── model.go         # Local Company model
-│   │   │   ├── dto.go
-│   │   │   └── validator.go
+│   │   │   ├── repository.go    # Database queries
+│   │   │   ├── route.go         # Routes + HTTP handlers: /api/v1/companies/*
+│   │   │   └── service.go       # Business logic
 │   │   │
 │   │   ├── branch/              # Branch management (hierarchical)
-│   │   │   ├── route.go         # Routes: /api/v1/branches/*
-│   │   │   ├── handler.go
-│   │   │   ├── service.go
-│   │   │   ├── repository.go
+│   │   │   ├── dto.go           # Request/Response DTOs + validation logic
 │   │   │   ├── model.go         # Local Branch model
-│   │   │   ├── dto.go
-│   │   │   └── validator.go
+│   │   │   ├── repository.go    # Database queries
+│   │   │   ├── route.go         # Routes + HTTP handlers: /api/v1/branches/*
+│   │   │   └── service.go       # Business logic
 │   │   │
 │   │   ├── module/              # Module system (menu/features)
-│   │   │   ├── route.go         # Routes: /api/v1/modules/*
-│   │   │   ├── handler.go
-│   │   │   ├── service.go
-│   │   │   ├── repository.go
+│   │   │   ├── dto.go           # Request/Response DTOs + validation logic
 │   │   │   ├── model.go         # Local Module, UserModule models
-│   │   │   ├── dto.go
-│   │   │   └── validator.go
+│   │   │   ├── repository.go    # Database queries
+│   │   │   ├── route.go         # Routes + HTTP handlers: /api/v1/modules/*
+│   │   │   └── service.go       # Business logic
 │   │   │
 │   │   ├── unit/                # Unit management (unit-based RBAC)
-│   │   │   ├── route.go         # Routes: /api/v1/units/*
-│   │   │   ├── handler.go
-│   │   │   ├── service.go
-│   │   │   ├── repository.go
+│   │   │   ├── dto.go           # Request/Response DTOs + validation logic
 │   │   │   ├── model.go         # Local Unit model
-│   │   │   ├── dto.go
-│   │   │   └── validator.go
+│   │   │   ├── repository.go    # Database queries
+│   │   │   ├── route.go         # Routes + HTTP handlers: /api/v1/units/*
+│   │   │   └── service.go       # Business logic
 │   │   │
 │   │   ├── subscription/        # Subscription system
-│   │   │   ├── route.go         # Routes: /api/v1/plans/*, /api/v1/subscription/*
-│   │   │   ├── handler.go
-│   │   │   ├── service.go
-│   │   │   ├── repository.go
+│   │   │   ├── dto.go           # Request/Response DTOs + validation logic
 │   │   │   ├── model.go         # Local Plan, Subscription models
-│   │   │   ├── dto.go
-│   │   │   └── validator.go
+│   │   │   ├── repository.go    # Database queries
+│   │   │   ├── route.go         # Routes + HTTP handlers: /api/v1/plans/*, /api/v1/subscription/*
+│   │   │   └── service.go       # Business logic
 │   │   │
 │   │   └── audit/               # Audit logging
-│   │       ├── route.go         # Routes: /api/v1/audit/*
-│   │       ├── handler.go
-│   │       ├── service.go
-│   │       ├── repository.go
+│   │       ├── dto.go           # Request/Response DTOs + validation logic
 │   │       ├── model.go         # Local AuditLog model
-│   │       ├── dto.go
-│   │       └── validator.go
+│   │       ├── repository.go    # Database queries
+│   │       ├── route.go         # Routes + HTTP handlers: /api/v1/audit/*
+│   │       └── service.go       # Business logic
 │   │
 │   └── constants/               # Shared constants
 │       └── constants.go         # API messages, status codes
@@ -211,26 +195,29 @@ Interface dibuat inline di file yang membutuhkan, bukan di folder terpisah.
 ### 5. No Mapper Folder
 Konversi Model ↔ DTO dilakukan inline di service, tidak perlu mapper terpisah.
 
-## 📦 Module Structure (7 Files)
+## 📦 Module Structure (5 Files)
 
-Setiap module memiliki 7 file standar:
+Setiap module memiliki 5 file standar setelah refactoring:
 
-1. **route.go** - Route registration
-2. **handler.go** - HTTP handlers
-3. **service.go** - Business logic
-4. **repository.go** - Database queries (raw SQL)
-5. **model.go** - Database entities (local)
-6. **dto.go** - Request/Response structures
-7. **validator.go** - Custom validation rules
+1. **dto.go** - Request/Response structures + validation logic (merged dari validator.go)
+2. **model.go** - Database entities (local)
+3. **repository.go** - Database queries (raw SQL)
+4. **route.go** - Route registration + HTTP handlers (merged dari handler.go)
+5. **service.go** - Business logic
+
+**Refactoring Benefits:**
+- ✅ File count berkurang: 63 → 45 files (28% reduction)
+- ✅ Faster navigation: Less file switching untuk developer
+- ✅ Cleaner structure: Logical grouping of related code
+- ✅ Easier onboarding: New developers less overwhelmed
+- ✅ Maintained modularity: Zero impact ke cross-module dependencies
 
 ## 🔄 Data Flow
 
 ```
 HTTP Request
     ↓
-route.go (+ validation middleware)
-    ↓
-handler.go (parse request)
+route.go (+ validation middleware + handler logic)
     ↓
 service.go (business logic)
     ↓
@@ -242,25 +229,27 @@ repository.go (return model)
     ↓
 service.go (convert to DTO)
     ↓
-handler.go (return response)
+route.go (return response)
     ↓
 HTTP Response
 ```
 
 ## 🚫 Folder yang TIDAK Ada
 
-Folder-folder ini **TIDAK ADA** karena sudah diganti dengan module-based structure:
+Folder-folder ini **TIDAK ADA** karena sudah diganti dengan module-based structure dan refactoring:
 
 - ❌ `internal/interfaces/` - Interface dibuat inline
 - ❌ `internal/mapper/` - Mapping dilakukan inline di service
 - ❌ `internal/dto/` (global) - DTO per module
-- ❌ `internal/handlers/` (global) - Handler per module
+- ❌ `internal/handlers/` (global) - Handler merged ke route.go per module
 - ❌ `internal/service/` (global) - Service per module
 - ❌ `internal/repository/` (global) - Repository per module
 - ❌ `internal/models/` (global) - Model per module
-- ❌ `internal/validation/` (global) - Validator per module
+- ❌ `internal/validation/` (global) - Validator merged ke dto.go per module
 - ❌ `internal/routes/` (global) - Route per module
 - ❌ `internal/shared/` - Tidak digunakan
+- ❌ `internal/modules/{module}/handler.go` - Merged ke route.go
+- ❌ `internal/modules/{module}/validator.go` - Merged ke dto.go
 
 ## 🎯 Kapan Membuat Module Baru?
 
@@ -279,6 +268,8 @@ Buat module baru ketika:
 
 ## 📚 Related Documentation
 
+- [Module Structure Refactoring](MODULE_STRUCTURE_REFACTORING.md) - Completed refactoring details
 - [Backend Engineer Rules](ENGINEER_RULES.md) - Panduan development
 - [API Overview](API_OVERVIEW.md) - API documentation
+- [Quick Start Guide](QUICK_START.md) - Setup and development guide
 - [README](../README.md) - Project overview

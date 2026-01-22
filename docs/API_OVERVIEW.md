@@ -5,7 +5,23 @@
 - **Base URL**: `http://localhost:8081/api/v1`
 - **Authentication**: JWT Bearer Token
 - **Content-Type**: `application/json`
+- **Architecture**: Module-Based (5-file structure per module)
 - **Postman Collection**: `docs/HUMINOR_RBAC_API_MODULE_BASED.postman_collection.json`
+
+## 🏗️ Architecture Overview
+
+This API follows a **module-based architecture** where each feature is contained in a single module folder with 5 files:
+- `dto.go` - Request/Response structures + validation logic
+- `model.go` - Database entities
+- `repository.go` - Database queries (raw SQL)
+- `route.go` - HTTP routes + handler logic
+- `service.go` - Business logic
+
+**Benefits:**
+- ✅ Reduced file count: 63 → 45 files (28% reduction)
+- ✅ Faster navigation: Less file switching for developers
+- ✅ Cleaner structure: Logical grouping of related code
+- ✅ Easier onboarding: New developers less overwhelmed
 
 ## 🔐 Authentication
 
@@ -1063,6 +1079,8 @@ Gunakan Postman collection untuk testing lengkap:
 
 ## 🔗 Related Documentation
 
+- [Module Structure Refactoring](MODULE_STRUCTURE_REFACTORING.md) - Completed refactoring details
 - [Backend Engineer Rules](ENGINEER_RULES.md) - Development guide
 - [Project Structure](PROJECT_STRUCTURE.md) - Architecture overview
+- [Quick Start Guide](QUICK_START.md) - Setup and development guide
 - [README](../README.md) - Project overview
