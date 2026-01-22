@@ -73,6 +73,24 @@ internal/modules/feature_name/
 
 ## 🔨 Membuat Module Baru
 
+### ⚡ Otomatis dengan Makefile (Recommended)
+```bash
+# 1. Generate module dengan boilerplate code
+make newmodule name=employee
+
+# 2. Lihat modules yang ada
+make listmodules
+
+# 3. Register di internal/app/routes.go dan internal/app/server.go
+
+# 4. Test build
+go build ./cmd/api
+
+# 5. Hapus module jika diperlukan
+make removemodule name=employee
+```
+
+### 🔧 Manual (jika diperlukan)
 ```bash
 # 1. Buat folder
 mkdir -p internal/modules/employee
@@ -288,6 +306,9 @@ make test           # Run tests
 make fmt            # Format code
 make lint           # Run linter
 make clean          # Clean build artifacts
+make newmodule      # Generate new module (Usage: make newmodule name=<name>)
+make removemodule   # Remove existing module (Usage: make removemodule name=<name>)
+make listmodules    # List all existing modules
 ```
 
 ### Database

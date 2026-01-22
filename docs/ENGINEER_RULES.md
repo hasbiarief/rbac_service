@@ -102,6 +102,30 @@ rbac-service/
 
 Ketika mengembangkan fitur baru dalam **module-based architecture**:
 
+### ⚡ Otomatis dengan Makefile (Recommended)
+
+```bash
+# 1. Generate module dengan boilerplate code
+make newmodule name=feature_name
+
+# 2. Lihat modules yang ada
+make listmodules
+
+# 3. Hapus module jika diperlukan
+make removemodule name=feature_name
+
+# 4. Hapus module tanpa konfirmasi (untuk automation)
+make removemodule-force name=feature_name
+```
+
+**Benefits:**
+- ✅ Generate 5 files sekaligus dengan boilerplate code
+- ✅ Consistent naming dan structure
+- ✅ Validation dan error handling
+- ✅ Easy rollback dengan confirmation
+
+### 🔧 Manual (jika diperlukan)
+
 ### 1. Buat Module Folder
 ```bash
 mkdir -p internal/modules/feature_name
