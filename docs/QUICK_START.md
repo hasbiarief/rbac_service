@@ -26,7 +26,8 @@ air
 Server: `http://localhost:8081`
 
 **🔑 Default Login (after seeding):**
-- Email: `admin@system.com`
+- Email: `naruto@company.com` or User ID: `100000001` (Super Admin)
+- Email: `hasbi@company.com` or User ID: `800000001` (Console Admin)
 - Password: `password123`
 
 ## 🗄️ Database Management

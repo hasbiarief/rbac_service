@@ -44,7 +44,7 @@ POST /api/v1/auth/login-email
 Content-Type: application/json
 
 {
-  "email": "admin@system.com",
+  "user_identity": "800000001",
   "password": "password123"
 }
 ```
@@ -60,10 +60,10 @@ Content-Type: application/json
     "token_type": "Bearer",
     "expires_in": 3600,
     "user": {
-      "id": 1,
-      "name": "Admin User",
-      "email": "admin@system.com",
-      "user_identity": "100000001"
+      "id": 16,
+      "name": "Hasbi Due",
+      "email": "hasbi@company.com",
+      "user_identity": "800000001"
     }
   }
 }
@@ -1073,9 +1073,11 @@ Gunakan Postman collection untuk testing lengkap:
 - `docs/HUMINOR_RBAC_Environment_Module_Based.postman_environment.json`
 
 ### Test Users (password: `password123`)
-- `admin@system.com` - System Admin
-- `hr@company.com` - HR Manager
-- `superadmin@company.com` - Super Admin
+- `naruto@company.com` (ID: 100000001) - Super Admin
+- `sakura@company.com` (ID: 100000002) - HR Admin
+- `sasuke@company.com` (ID: 100000003) - Recruiter
+- `ino@company.com` (ID: 100000006) - Employee
+- `hasbi@company.com` (ID: 800000001) - Console Admin
 
 ## 🔗 Related Documentation
 

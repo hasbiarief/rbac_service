@@ -165,9 +165,11 @@ make prod-status
 
 ### Test Users
 Default users untuk testing (password: `password123`):
-- `admin@system.com` - System Admin (akses penuh)
-- `hr@company.com` - HR Manager (modul HR)
-- `superadmin@company.com` - Super Admin (akses penuh)
+- `naruto@company.com` (ID: 100000001) - Super Admin (akses penuh)
+- `sakura@company.com` (ID: 100000002) - HR Admin (modul HR)
+- `sasuke@company.com` (ID: 100000003) - Recruiter (recruitment)
+- `ino@company.com` (ID: 100000006) - Employee (akses terbatas)
+- `hasbi@company.com` (ID: 800000001) - Console Admin (akses penuh)
 
 ### Key Endpoints
 
@@ -176,7 +178,7 @@ Default users untuk testing (password: `password123`):
 # Login
 POST /api/v1/auth/login
 {
-  "email": "admin@system.com",
+  "user_identity": "800000001",
   "password": "password123"
 }
 

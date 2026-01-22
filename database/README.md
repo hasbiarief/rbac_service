@@ -57,14 +57,16 @@ Current database contains:
 
 After seeding, you can login with these accounts:
 
-| Email | Role | Password |
-|-------|------|----------|
-| admin@system.com | Super Admin | password123 |
-| hr@company.com | HR Manager | password123 |
-| superadmin@company.com | Super Admin | password123 |
-| hrstaff@company.com | HR Staff | password123 |
-| manager@company.com | Manager | password123 |
-| employee@company.com | Employee | password123 |
+| Name | Email | User Identity | Role | Password |
+|------|-------|---------------|------|----------|
+| Uzumaki Naruto | naruto@company.com | 100000001 | Super Admin | password123 |
+| Haruno Sakura | sakura@company.com | 100000002 | HR Admin | password123 |
+| Sasuke Uchiha | sasuke@company.com | 100000003 | Recruiter | password123 |
+| Yamanaka Ino | ino@company.com | 100000006 | Employee | password123 |
+| Aburame Shino | shino@company.com | 100000009 | Test Copy | password123 |
+| Hasbi Due | hasbi@company.com | 800000001 | Console Admin | password123 |
+
+**Note:** All users can login with either email or user_identity
 
 ## 📦 What's Included in Template
 
@@ -76,9 +78,10 @@ The template seeder includes:
 - Unit-based organization (HR, Finance, IT, Sales, etc.)
 
 ### 👥 **User Management**
-- 11 sample users with different roles
+- 11 sample users with different roles (Naruto characters theme)
 - Proper role assignments at company/branch/unit levels
 - Password hashing with bcrypt
+- Both email and user_identity login supported
 
 ### 🎭 **RBAC System**
 - 12 predefined roles (Super Admin, HR Manager, etc.)
