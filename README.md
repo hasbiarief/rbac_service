@@ -1,6 +1,11 @@
-# RBAC API - Module-Based Architecture
+# RBAC API - Module-Based Architecture (5-File Structure)
+
+> **Made with ❤️ by Hasbi**  
+> 📧 hasbiarief7@gmail.com
 
 Sistem ERP dengan Role-Based Access Control (RBAC) menggunakan **Module-Based Architecture** (Express.js style), Go, PostgreSQL, dan Redis. Menggunakan raw SQL tanpa ORM untuk performa optimal.
+
+**✅ REFACTORING COMPLETED**: Struktur telah berhasil direfactor dari 7-file menjadi 5-file per module untuk meningkatkan developer experience dan mengurangi cognitive load.
 
 ## 🏗️ Arsitektur
 
@@ -9,8 +14,8 @@ Project ini menggunakan **vertical module-based structure** dengan prinsip: **1 
 ```
 internal/
 ├── app/           # Server initialization & route registration
-├── modules/       # 🔥 SEMUA FITUR DI SINI
-│   ├── auth/      # Authentication (7 files: route, handler, service, repository, model, dto, validator)
+├── modules/       # 🔥 SEMUA FITUR DI SINI (5 files per module)
+│   ├── auth/      # Authentication (dto, model, repository, route, service)
 │   ├── user/      # User management
 │   ├── role/      # Role management
 │   ├── company/   # Company management
@@ -26,16 +31,25 @@ pkg/              # Reusable utilities (generic only)
 migrations/       # SQL migrations
 ```
 
+**Refactoring Benefits:**
+- ✅ File count berkurang: 63 → 45 files (28% reduction)
+- ✅ Faster navigation: Less file switching untuk developer
+- ✅ Cleaner structure: Logical grouping of related code
+- ✅ Easier onboarding: New developers less overwhelmed
+- ✅ Maintained modularity: Zero impact ke cross-module dependencies
+
 **Key Differences:**
 - ❌ Tidak ada folder `interfaces/`, `mapper/`, `dto/` global
 - ❌ Tidak ada separation `handlers/`, `service/`, `repository/` terpisah
-- ✅ Setiap module punya semua layer-nya sendiri (route, handler, service, repository, model, dto, validator)
+- ❌ Tidak ada `handler.go` dan `validator.go` terpisah (merged ke route.go dan dto.go)
+- ✅ Setiap module punya semua layer-nya sendiri (5 files: dto, model, repository, route, service)
 - ✅ Model lokal per module (tidak shared)
 - ✅ No cross-module imports
 
 ## ✨ Fitur Utama
 
-- **Module-Based Architecture** - 1 fitur = 1 folder (Express.js style)
+- **Module-Based Architecture** - 1 fitur = 1 folder (5-file structure)
+- **Module Generator** - Otomatis generate module dengan Makefile commands
 - **Authentication** - JWT token system dengan Redis storage
 - **Unit-Based RBAC** - Hierarchical RBAC: Company → Branch → Unit → Role → User
 - **Multi-Company** - Company dan branch hierarchy dengan unit management
@@ -44,7 +58,7 @@ migrations/       # SQL migrations
 - **User Management** - User lifecycle dengan soft delete
 - **Module System** - Dynamic menu/feature management
 - **Raw SQL** - Tanpa ORM untuk performa optimal
-- **Validation Middleware** - Centralized input validation
+- **Validation Middleware** - Centralized input validation dengan `ValidateRequest`
 - **CORS & Rate Limiting** - Production-ready security
 
 ## 🛠️ Tech Stack
@@ -71,41 +85,59 @@ migrations/       # SQL migrations
 # 1. Clone dan setup
 git clone <repository>
 cd rbac-service
-go mod download
+make dev-setup  # Install dependencies + create .env
 
-# 2. Setup environment
-cp .env.example .env
+# 2. Edit environment variables
 # Edit .env dengan konfigurasi database dan Redis
 
 # 3. Setup database
-createdb huminor_rbac
+make db-create
 make migrate-up
 
 # 4. Start development server
 air  # dengan live reload
 # atau
-go run cmd/api/main.go
+make run
 ```
 
 Server akan berjalan di `http://localhost:8081`
+
+### Module Development
+
+```bash
+# Generate module baru dengan boilerplate code
+make newmodule name=employee
+
+# List semua modules
+make listmodules
+
+# Remove module jika diperlukan
+make removemodule name=employee
+
+# Build dan test
+make build
+go build ./cmd/api
+```
 
 ### Production Deployment
 
 ```bash
 # Build binary
-CGO_ENABLED=0 GOOS=linux go build -o server cmd/api/main.go
+make prod-build
 
 # Run migrations
-./server migrate
+./bin/migrate -action=up -dir=migrations
 
 # Start server
-GIN_MODE=release ./server
+GIN_MODE=release ./bin/server
 ```
 
 **Docker Compose (Recommended):**
 ```bash
 cp .env.production .env
-docker-compose -f docker-compose.prod.yml up -d
+make prod-start
+make prod-migrate
+make prod-status
 ```
 
 ## 📚 API Documentation
@@ -239,30 +271,51 @@ GET /api/v1/subscription/module-access/1/1
 
 ### Membuat Module Baru
 
+#### ⚡ Otomatis dengan Makefile (Recommended)
+```bash
+# 1. Generate module dengan boilerplate code
+make newmodule name=employee
+
+# 2. Register module di internal/app/routes.go dan internal/app/server.go
+
+# 3. Test build
+go build ./cmd/api
+
+# 4. Implement business logic sesuai kebutuhan
+```
+
+#### 🔧 Manual (jika diperlukan)
 1. **Buat folder module** di `internal/modules/feature_name/`
-2. **Buat 7 file standar:**
-   - `route.go` - Route registration
-   - `handler.go` - HTTP handlers
-   - `service.go` - Business logic
-   - `repository.go` - Database queries (raw SQL)
+2. **Buat 5 file standar:**
+   - `dto.go` - Request/Response structures + validation logic
    - `model.go` - Database entities (local)
-   - `dto.go` - Request/Response structures
-   - `validator.go` - Custom validation rules
+   - `repository.go` - Database queries (raw SQL)
+   - `route.go` - Route registration + HTTP handlers
+   - `service.go` - Business logic
 3. **Register module** di `internal/app/routes.go`
 
-### Contoh Implementasi
+### Module Structure (5 Files)
+
+Setiap module memiliki 5 file standar setelah refactoring:
 
 **Model:**
 ```go
 // internal/modules/employee/model.go
 package employee
 
-type Employee struct {
+import "time"
+
+type employee struct {
     ID        int64     `json:"id" db:"id"`
     Name      string    `json:"name" db:"name"`
     Email     string    `json:"email" db:"email"`
     IsActive  bool      `json:"is_active" db:"is_active"`
     CreatedAt time.Time `json:"created_at" db:"created_at"`
+    UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+func (employee) TableName() string {
+    return "employees"
 }
 ```
 
@@ -271,16 +324,24 @@ type Employee struct {
 // internal/modules/employee/dto.go
 package employee
 
-type CreateEmployeeRequest struct {
+type createemployeerequest struct {
     Name  string `json:"name" validate:"required,min=2,max=100"`
     Email string `json:"email" validate:"required,email"`
 }
 
-type EmployeeResponse struct {
+type employeeresponse struct {
     ID        int64  `json:"id"`
     Name      string `json:"name"`
     Email     string `json:"email"`
+    IsActive  bool   `json:"is_active"`
     CreatedAt string `json:"created_at"`
+    UpdatedAt string `json:"updated_at"`
+}
+
+// Validation logic (merged from validator.go)
+func ValidateEmployeeEmail(email string) bool {
+    // Custom validation logic
+    return len(email) > 0
 }
 ```
 
@@ -289,19 +350,28 @@ type EmployeeResponse struct {
 // internal/modules/employee/repository.go
 package employee
 
-type Repository struct {
+import (
+    "database/sql"
+    "gin-scalable-api/pkg/model"
+)
+
+type repository struct {
+    *model.Repository
     db *sql.DB
 }
 
-func NewRepository(db *sql.DB) *Repository {
-    return &Repository{db: db}
+func newrepository(db *sql.DB) *repository {
+    return &repository{
+        Repository: model.NewRepository(db),
+        db:         db,
+    }
 }
 
-func (r *Repository) Create(emp *Employee) error {
+func (r *repository) create(emp *employee) error {
     query := `INSERT INTO employees (name, email, is_active, created_at, updated_at)
               VALUES ($1, $2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-              RETURNING id, created_at`
-    return r.db.QueryRow(query, emp.Name, emp.Email).Scan(&emp.ID, &emp.CreatedAt)
+              RETURNING id, created_at, updated_at`
+    return r.db.QueryRow(query, emp.Name, emp.Email).Scan(&emp.ID, &emp.CreatedAt, &emp.UpdatedAt)
 }
 ```
 
@@ -310,46 +380,59 @@ func (r *Repository) Create(emp *Employee) error {
 // internal/modules/employee/service.go
 package employee
 
-type Service struct {
-    repo *Repository
+import "time"
+
+type service struct {
+    repo *repository
 }
 
-func NewService(repo *Repository) *Service {
-    return &Service{repo: repo}
+func newservice(repo *repository) *service {
+    return &service{repo: repo}
 }
 
-func (s *Service) CreateEmployee(req *CreateEmployeeRequest) (*EmployeeResponse, error) {
-    emp := &Employee{Name: req.Name, Email: req.Email}
-    if err := s.repo.Create(emp); err != nil {
+func (s *service) createemployee(req *createemployeerequest) (*employeeresponse, error) {
+    emp := &employee{Name: req.Name, Email: req.Email}
+    if err := s.repo.create(emp); err != nil {
         return nil, err
     }
-    return &EmployeeResponse{
+    return &employeeresponse{
         ID:        emp.ID,
         Name:      emp.Name,
         Email:     emp.Email,
+        IsActive:  emp.IsActive,
         CreatedAt: emp.CreatedAt.Format(time.RFC3339),
+        UpdatedAt: emp.UpdatedAt.Format(time.RFC3339),
     }, nil
 }
 ```
 
-**Handler:**
+**Route (with Handler):**
 ```go
-// internal/modules/employee/handler.go
+// internal/modules/employee/route.go
 package employee
 
-type Handler struct {
-    service *Service
+import (
+    "gin-scalable-api/middleware"
+    "gin-scalable-api/pkg/response"
+    "net/http"
+    "github.com/gin-gonic/gin"
+)
+
+// Handler struct (merged from handler.go)
+type handler struct {
+    service *service
 }
 
-func NewHandler(service *Service) *Handler {
-    return &Handler{service: service}
+func newhandler(service *service) *handler {
+    return &handler{service: service}
 }
 
-func (h *Handler) CreateEmployee(c *gin.Context) {
+// Handler methods (merged from handler.go)
+func (h *handler) createemployee(c *gin.Context) {
     validatedBody, _ := c.Get("validated_body")
-    req := validatedBody.(*CreateEmployeeRequest)
+    req := validatedBody.(*createemployeerequest)
     
-    result, err := h.service.CreateEmployee(req)
+    result, err := h.service.createemployee(req)
     if err != nil {
         response.ErrorWithAutoStatus(c, "Failed to create employee", err.Error())
         return
@@ -357,18 +440,21 @@ func (h *Handler) CreateEmployee(c *gin.Context) {
     
     response.Success(c, http.StatusCreated, "Employee created", result)
 }
-```
 
-**Route:**
-```go
-// internal/modules/employee/route.go
-package employee
-
-func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
+// Route registration
+func RegisterRoutes(router *gin.RouterGroup, handler *handler) {
     employees := router.Group("/employees")
     {
-        employees.POST("", middleware.ValidateJSON(&CreateEmployeeRequest{}), handler.CreateEmployee)
-        employees.GET("/:id", handler.GetEmployee)
+        // POST /api/v1/employees - Create new employee
+        employees.POST("", 
+            middleware.ValidateRequest(middleware.ValidationRules{
+                Body: &createemployeerequest{},
+            }),
+            handler.createemployee,
+        )
+        
+        // GET /api/v1/employees/:id - Get employee by ID
+        employees.GET("/:id", handler.getemployeebyid)
     }
 }
 ```
@@ -377,9 +463,10 @@ func RegisterRoutes(router *gin.RouterGroup, handler *Handler) {
 
 - **[📚 Documentation Index](docs/INDEX.md)** - Navigasi dokumentasi lengkap
 - **[🚀 Quick Start Guide](docs/QUICK_START.md)** - Setup cepat & Makefile commands
-- **[🏗️ Project Structure](docs/PROJECT_STRUCTURE.md)** - Module-based architecture
+- **[🏗️ Project Structure](docs/PROJECT_STRUCTURE.md)** - Module-based architecture (5-file structure)
 - **[👨‍💻 Backend Engineer Rules](docs/ENGINEER_RULES.md)** - Development guide
 - **[📡 API Overview](docs/API_OVERVIEW.md)** - API documentation
+- **[🔄 Module Structure Refactoring](docs/MODULE_STRUCTURE_REFACTORING.md)** - Refactoring details
 - **[🧪 Postman Collection](docs/HUMINOR_RBAC_API_MODULE_BASED.postman_collection.json)** - API testing
 
 ## ⚙️ Environment Variables
@@ -420,10 +507,43 @@ go test ./...
 go test -cover ./...
 
 # Run specific test
-go test ./internal/service -v
+go test ./internal/modules/user -v
 
 # Test dengan race detection
 go test -race ./...
+
+# Build validation
+go build ./cmd/api
+```
+
+### Makefile Commands
+
+```bash
+# Development
+make dev-setup      # Setup development environment
+make build          # Build application
+make run            # Build and run server
+make test           # Run tests
+make clean          # Clean build artifacts
+
+# Module Management
+make newmodule name=<name>     # Generate new module
+make removemodule name=<name>  # Remove existing module
+make listmodules               # List all modules
+
+# Database
+make db-create      # Create database
+make migrate-up     # Run migrations
+make migrate-status # Check migration status
+
+# Production
+make prod-build     # Build for production
+make prod-start     # Start production services
+make prod-stop      # Stop production services
+make prod-logs      # View production logs
+
+# Help
+make help           # Show all available commands
 ```
 
 ## 📊 Monitoring
@@ -486,4 +606,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with Clean Architecture + Go + PostgreSQL + Redis**
+**Built with Module-Based Architecture (5-File Structure) + Go + PostgreSQL + Redis**
+
+**Key Features:**
+- ✅ 28% file reduction (63 → 45 files)
+- ✅ Automated module generation with Makefile
+- ✅ Consistent 5-file structure per module
+- ✅ Production-ready with Docker support
