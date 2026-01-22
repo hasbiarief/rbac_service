@@ -92,7 +92,9 @@ make dev-setup  # Install dependencies + create .env
 
 # 3. Setup database
 make db-create
-make migrate-up
+make db-seed    # Seed with template data (recommended)
+# atau
+make migrate-up # Run migrations only
 
 # 4. Start development server
 air  # dengan live reload
@@ -101,6 +103,25 @@ make run
 ```
 
 Server akan berjalan di `http://localhost:8081`
+
+### Quick Database Setup (New Projects)
+
+```bash
+# One-command setup for new projects
+make db-seed-fresh  # Drop, create, and seed database
+
+# Or step by step
+make db-create      # Create database
+make db-seed        # Seed with template data
+```
+
+**Template includes:**
+- ✅ 11 sample users with different roles
+- ✅ 3 companies with hierarchical branches
+- ✅ 128+ modules across 12 categories
+- ✅ Complete RBAC with unit-based permissions
+- ✅ 3 subscription plans (Basic, Pro, Enterprise)
+- ✅ Ready-to-use data for testing
 
 ### Module Development
 
@@ -467,6 +488,7 @@ func RegisterRoutes(router *gin.RouterGroup, handler *handler) {
 - **[👨‍💻 Backend Engineer Rules](docs/ENGINEER_RULES.md)** - Development guide
 - **[📡 API Overview](docs/API_OVERVIEW.md)** - API documentation
 - **[🔄 Module Structure Refactoring](docs/MODULE_STRUCTURE_REFACTORING.md)** - Refactoring details
+- **[🗄️ Database Documentation](database/README.md)** - Database dumps and seeders
 - **[🧪 Postman Collection](docs/HUMINOR_RBAC_API_MODULE_BASED.postman_collection.json)** - API testing
 
 ## ⚙️ Environment Variables
@@ -533,6 +555,11 @@ make listmodules               # List all modules
 
 # Database
 make db-create      # Create database
+make db-drop        # Drop database
+make db-reset       # Reset database and run migrations
+make db-dump        # Create database dump and seeder files
+make db-seed        # Seed database with template data
+make db-seed-fresh  # Drop, create, and seed database
 make migrate-up     # Run migrations
 make migrate-status # Check migration status
 

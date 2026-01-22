@@ -11,9 +11,11 @@ cd rbac-service
 make dev-setup
 # Edit .env: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, REDIS_HOST, JWT_SECRET
 
-# 3. Create database & run migrations
+# 3. Create database & seed with template data
 make db-create
-make migrate-up
+make db-seed        # Recommended: includes sample data
+# atau
+make db-seed-fresh  # Drop, create, and seed in one command
 
 # 4. Build & run server
 make run
@@ -22,6 +24,35 @@ air
 ```
 
 Server: `http://localhost:8081`
+
+**🔑 Default Login (after seeding):**
+- Email: `admin@system.com`
+- Password: `password123`
+
+## 🗄️ Database Management
+
+```bash
+# Quick setup for new projects
+make db-seed-fresh  # One command: drop, create, seed
+
+# Individual commands
+make db-create      # Create database
+make db-drop        # Drop database
+make db-seed        # Seed with template data
+make db-dump        # Create dumps and seeders
+make migrate-up     # Run migrations only
+
+# Reset database
+make db-reset       # Drop, create, migrate (no seed data)
+```
+
+**Template Data Includes:**
+- ✅ 11 users with different roles
+- ✅ 3 companies with branch hierarchy
+- ✅ 128+ modules (complete HR system)
+- ✅ RBAC with unit-based permissions
+- ✅ 3 subscription plans
+- ✅ Ready for immediate testing
 
 ## 🏗️ Architecture Overview
 
@@ -313,9 +344,12 @@ make listmodules    # List all existing modules
 
 ### Database
 ```bash
-make db-create      # Create database (huminor_rbac)
+make db-create      # Create database
 make db-drop        # Drop database
 make db-reset       # Drop, create, and migrate
+make db-dump        # Create database dump and seeder files
+make db-seed        # Seed database with template data
+make db-seed-fresh  # Drop, create, and seed database
 make migrate-up     # Run migrations
 make migrate-status # Check migration status
 ```

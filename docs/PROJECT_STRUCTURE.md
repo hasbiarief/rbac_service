@@ -119,9 +119,11 @@ rbac-service/
 │       └── utils.go             # General utilities
 │
 ├── scripts/                     # Development scripts
-│   ├── dev.sh
-│   ├── prod.sh
-│   └── ...
+│   ├── db-dump.sh               # Database dump generator
+│   ├── db-seed.sh               # Database seeder
+│   ├── dev.sh                   # Development server with hot reload
+│   ├── docker-prod.sh           # Production Docker management
+│   └── cleanup-old-files.sh     # Cleanup outdated files
 │
 ├── docs/                        # Documentation
 │   ├── ENGINEER_RULES.md

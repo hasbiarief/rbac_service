@@ -1,6 +1,6 @@
 # Makefile for ERP RBAC System without GORM
 
-.PHONY: build run migrate-up migrate-status clean test newmodule removemodule listmodules
+.PHONY: build run migrate-up migrate-status clean test newmodule removemodule listmodules db-dump db-seed
 
 # Build the application
 build:
@@ -388,12 +388,23 @@ dev-setup: deps
 
 # Database operations
 db-create:
-	createdb huminor_rbac
+	createdb $(DB_NAME)
 
 db-drop:
-	dropdb huminor_rbac
+	dropdb $(DB_NAME)
 
 db-reset: db-drop db-create migrate-up
+
+# Database dump and seeding
+db-dump:
+	@chmod +x scripts/db-dump.sh
+	@./scripts/db-dump.sh
+
+db-seed:
+	@chmod +x scripts/db-seed.sh
+	@./scripts/db-seed.sh
+
+db-seed-fresh: db-drop db-create db-seed
 
 # Docker operations
 docker-build:
@@ -470,6 +481,9 @@ help:
 	@echo "  db-create    - Create database"
 	@echo "  db-drop      - Drop database"
 	@echo "  db-reset     - Reset database and run migrations"
+	@echo "  db-dump      - Create database dump and seeder files"
+	@echo "  db-seed      - Seed database with template data"
+	@echo "  db-seed-fresh - Drop, create, and seed database"
 	@echo ""
 	@echo "Production:"
 	@echo "  prod-build   - Build for production"
