@@ -18,10 +18,20 @@
 					"path": ["health"]
 				}
 			},
-			"response": []
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {},
+					"status": "OK",
+					"code": 200,
+					"header": [],
+					"body": "{\n  \"status\": \"ok\"\n}"
+				}
+			]
 		},
 		{
 			"name": "Authentication",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Login with user_identity",
@@ -218,6 +228,7 @@
 		},
 		{
 			"name": "Module System",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Get All Modules",
@@ -469,6 +480,7 @@
 		},
 		{
 			"name": "User Module Access",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Get User Modules by ID",
@@ -586,6 +598,7 @@
 		},
 		{
 			"name": "Role Management System",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Assign User Role",
@@ -753,6 +766,7 @@
 		},
 		{
 			"name": "Audit Logging",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Get Audit Logs",
@@ -926,6 +940,7 @@
 		},
 		{
 			"name": "Company Management",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Get All Companies",
@@ -1057,6 +1072,7 @@
 		},
 		{
 			"name": "Branch Management (Hierarchical)",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Get All Branches",
@@ -1280,6 +1296,7 @@
 		},
 		{
 			"name": "Unit Management (Unit-Based RBAC)",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Get All Units",
@@ -1496,6 +1513,7 @@
 		},
 		{
 			"name": "Unit Role Management",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Get Unit Roles",
@@ -1693,6 +1711,7 @@
 		},
 		{
 			"name": "Unit Context & Authentication",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Get My Unit Context",
@@ -1734,6 +1753,7 @@
 		},
 		{
 			"name": "Role Management (Basic)",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Get All Roles",
@@ -1904,6 +1924,7 @@
 		},
 		{
 			"name": "User Management",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Create User",
@@ -2071,6 +2092,7 @@
 		},
 		{
 			"name": "Password Management",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Change Password",
@@ -2102,6 +2124,7 @@
 		},
 		{
 			"name": "Subscription Management",
+			"_postman_isSubFolder": true,
 			"item": [
 				{
 					"name": "Get All Subscription Plans (Public)",
@@ -2615,6 +2638,1108 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "🆕 API Documentation System",
+			"_postman_isSubFolder": true,
+			"item": [
+				{
+					"name": "Collections",
+					"_postman_isSubFolder": true,
+					"item": [
+						{
+							"name": "Get All Collections",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections?limit=20&offset=0",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections"],
+									"query": [
+										{
+											"key": "limit",
+											"value": "20"
+										},
+										{
+											"key": "offset",
+											"value": "0"
+										},
+										{
+											"key": "search",
+											"value": "",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Collection",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    if (response.success && response.data) {",
+											"        pm.environment.set('collectionId', response.data.id);",
+											"        console.log('Collection created:', response.data.name);",
+											"        console.log('Collection ID:', response.data.id);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"My API Collection\",\n  \"description\": \"A comprehensive API collection for testing\",\n  \"version\": \"1.0.0\",\n  \"base_url\": \"https://api.example.com\",\n  \"schema_version\": \"2.1.0\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Collection by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Collection with Stats",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/stats",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "stats"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Collection",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Updated API Collection\",\n  \"description\": \"Updated description\",\n  \"version\": \"1.1.0\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Collection",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Folders",
+					"_postman_isSubFolder": true,
+					"item": [
+						{
+							"name": "Get Collection Folders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/folders",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "folders"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Folder",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    if (response.success && response.data) {",
+											"        pm.environment.set('folderId', response.data.id);",
+											"        console.log('Folder created:', response.data.name);",
+											"        console.log('Folder ID:', response.data.id);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Authentication\",\n  \"description\": \"Authentication related endpoints\",\n  \"sort_order\": 1\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/folders",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "folders"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Folder by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/folders/{{folderId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "folders", "{{folderId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Folder",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Updated Authentication\",\n  \"description\": \"Updated authentication endpoints\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/folders/{{folderId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "folders", "{{folderId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Folder",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/folders/{{folderId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "folders", "{{folderId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Reorder Folders",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "[\n  {\n    \"folder_id\": 1,\n    \"sort_order\": 1\n  },\n  {\n    \"folder_id\": 2,\n    \"sort_order\": 2\n  }\n]"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/folders/reorder",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "folders", "reorder"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Endpoints",
+					"_postman_isSubFolder": true,
+					"item": [
+						{
+							"name": "Get Collection Endpoints",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/endpoints?limit=20&offset=0",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "endpoints"],
+									"query": [
+										{
+											"key": "limit",
+											"value": "20"
+										},
+										{
+											"key": "offset",
+											"value": "0"
+										},
+										{
+											"key": "method",
+											"value": "GET",
+											"disabled": true
+										},
+										{
+											"key": "folder_id",
+											"value": "{{folderId}}",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Endpoint",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    if (response.success && response.data) {",
+											"        pm.environment.set('endpointId', response.data.id);",
+											"        console.log('Endpoint created:', response.data.name);",
+											"        console.log('Endpoint ID:', response.data.id);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Login User\",\n  \"description\": \"Authenticate user and return access token\",\n  \"method\": \"POST\",\n  \"url\": \"/api/v1/auth/login\",\n  \"folder_id\": {{folderId}},\n  \"headers\": [\n    {\n      \"key\": \"Content-Type\",\n      \"value\": \"application/json\",\n      \"description\": \"Request content type\"\n    }\n  ],\n  \"request_body\": {\n    \"content_type\": \"application/json\",\n    \"schema\": \"{\\\"type\\\": \\\"object\\\", \\\"properties\\\": {\\\"email\\\": {\\\"type\\\": \\\"string\\\"}, \\\"password\\\": {\\\"type\\\": \\\"string\\\"}}}\",\n    \"example\": \"{\\\"email\\\": \\\"user@example.com\\\", \\\"password\\\": \\\"password123\\\"}\"\n  }\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/endpoints",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "endpoints"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Endpoint by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/endpoints/{{endpointId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "endpoints", "{{endpointId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Endpoint with Details",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/endpoints/{{endpointId}}/details",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "endpoints", "{{endpointId}}", "details"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Endpoint",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Updated Login User\",\n  \"description\": \"Updated authentication endpoint\",\n  \"status\": \"active\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/endpoints/{{endpointId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "endpoints", "{{endpointId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Endpoint",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/endpoints/{{endpointId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "endpoints", "{{endpointId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Bulk Create Endpoints",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"endpoints\": [\n    {\n      \"name\": \"Get Users\",\n      \"method\": \"GET\",\n      \"url\": \"/api/v1/users\",\n      \"description\": \"Retrieve all users\"\n    },\n    {\n      \"name\": \"Create User\",\n      \"method\": \"POST\",\n      \"url\": \"/api/v1/users\",\n      \"description\": \"Create a new user\"\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/endpoints/bulk",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "endpoints", "bulk"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Bulk Update Endpoints",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"updates\": [\n    {\n      \"endpoint_id\": 1,\n      \"update_request\": {\n        \"status\": \"active\"\n      }\n    },\n    {\n      \"endpoint_id\": 2,\n      \"update_request\": {\n        \"status\": \"deprecated\"\n      }\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/endpoints/bulk",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "endpoints", "bulk"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Bulk Delete Endpoints",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"endpoint_ids\": [1, 2, 3]\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/endpoints/bulk",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "endpoints", "bulk"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Bulk Move Endpoints",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"endpoint_ids\": [1, 2, 3],\n  \"target_folder_id\": {{folderId}}\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/endpoints/bulk/move",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "endpoints", "bulk", "move"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Environments",
+					"_postman_isSubFolder": true,
+					"item": [
+						{
+							"name": "Get Collection Environments",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/environments",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "environments"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Environment",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    if (response.success && response.data) {",
+											"        pm.environment.set('environmentId', response.data.id);",
+											"        console.log('Environment created:', response.data.name);",
+											"        console.log('Environment ID:', response.data.id);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Development\",\n  \"description\": \"Development environment\",\n  \"base_url\": \"https://dev-api.example.com\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/environments",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "environments"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Environment by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/environments/{{environmentId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "environments", "{{environmentId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Environment with Variables",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/environments/{{environmentId}}/with-variables",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "environments", "{{environmentId}}", "with-variables"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Environment",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Updated Development\",\n  \"description\": \"Updated development environment\",\n  \"base_url\": \"https://dev-api-v2.example.com\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/environments/{{environmentId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "environments", "{{environmentId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Environment",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/environments/{{environmentId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "environments", "{{environmentId}}"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Environment Variables",
+					"_postman_isSubFolder": true,
+					"item": [
+						{
+							"name": "Get Environment Variables",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/environments/{{environmentId}}/variables",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "environments", "{{environmentId}}", "variables"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Environment Variable",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    if (response.success && response.data) {",
+											"        pm.environment.set('variableId', response.data.id);",
+											"        console.log('Variable created:', response.data.key_name);",
+											"        console.log('Variable ID:', response.data.id);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"key_name\": \"API_KEY\",\n  \"value\": \"dev-api-key-12345\",\n  \"description\": \"Development API key\",\n  \"is_secret\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/environments/{{environmentId}}/variables",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "environments", "{{environmentId}}", "variables"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Environment Variable",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"key_name\": \"API_KEY\",\n  \"value\": \"updated-dev-api-key-67890\",\n  \"description\": \"Updated development API key\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/environments/{{environmentId}}/variables/{{variableId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "environments", "{{environmentId}}", "variables", "{{variableId}}"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Environment Variable",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/environments/{{environmentId}}/variables/{{variableId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "environments", "{{environmentId}}", "variables", "{{variableId}}"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Export & Import",
+					"_postman_isSubFolder": true,
+					"item": [
+						{
+							"name": "Get Supported Export Formats",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/export/formats",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "export", "formats"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Export Collection as Postman",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/export?format=postman",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "export"],
+									"query": [
+										{
+											"key": "format",
+											"value": "postman"
+										},
+										{
+											"key": "environment_id",
+											"value": "{{environmentId}}",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Export Collection as OpenAPI",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/export?format=openapi",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "export"],
+									"query": [
+										{
+											"key": "format",
+											"value": "openapi"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Export Collection as Insomnia",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/export?format=insomnia",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "export"],
+									"query": [
+										{
+											"key": "format",
+											"value": "insomnia"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Export Collection as Swagger",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/export?format=swagger",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "export"],
+									"query": [
+										{
+											"key": "format",
+											"value": "swagger"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Export Collection as Apidog",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/export?format=apidog",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "export"],
+									"query": [
+										{
+											"key": "format",
+											"value": "apidog"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Invalidate Export Cache",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/collections/{{collectionId}}/export/cache/invalidate",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "collections", "{{collectionId}}", "export", "cache", "invalidate"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Monitoring & Analytics",
+					"_postman_isSubFolder": true,
+					"item": [
+						{
+							"name": "Get Export Cache Statistics",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/monitoring/cache/stats",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "monitoring", "cache", "stats"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Export Performance Statistics",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/monitoring/performance/stats",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "monitoring", "performance", "stats"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get All Export Progress",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/monitoring/progress",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "monitoring", "progress"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Specific Export Progress",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{accessToken}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/v1/api-docs/monitoring/progress/{{progressId}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "api-docs", "monitoring", "progress", "{{progressId}}"]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
 		}
 	],
 	"event": [
@@ -2710,6 +3835,36 @@
 		},
 		{
 			"key": "unitId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "collectionId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "folderId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "endpointId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "environmentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "variableId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "progressId",
 			"value": "",
 			"type": "string"
 		}

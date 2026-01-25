@@ -1,9 +1,11 @@
 package app
 
 import (
+	"database/sql"
 	"gin-scalable-api/middleware"
 
 	// Module imports
+	apidocModule "gin-scalable-api/internal/modules/apidoc"
 	auditModule "gin-scalable-api/internal/modules/audit"
 	authModule "gin-scalable-api/internal/modules/auth"
 	branchModule "gin-scalable-api/internal/modules/branch"
@@ -19,7 +21,7 @@ import (
 )
 
 // SetupNewModuleRoutes sets up routes using module-based structure
-func SetupNewModuleRoutes(r *gin.Engine, h *NewModuleHandlers, jwtSecret string, redis *redis.Client) {
+func SetupNewModuleRoutes(r *gin.Engine, h *NewModuleHandlers, jwtSecret string, redis *redis.Client, db *sql.DB) {
 	// Global middleware
 	r.Use(middleware.SmartRateLimit())
 
@@ -49,6 +51,7 @@ func SetupNewModuleRoutes(r *gin.Engine, h *NewModuleHandlers, jwtSecret string,
 		moduleModule.RegisterRoutes(protected, h.Module)
 		unitModule.RegisterRoutes(protected, h.Unit)
 		auditModule.RegisterRoutes(protected, h.Audit)
+		apidocModule.RegisterRoutes(protected, h.APIDoc, db)
 
 		// Subscription admin routes (protected)
 		subscriptionModule.RegisterProtectedRoutes(protected, h.Subscription)

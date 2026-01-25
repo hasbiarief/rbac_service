@@ -165,6 +165,17 @@ func (r *RBACService) getUserBasicPermissions(userID int64, permissions *UserPer
 
 // HasPermission checks if user has specific permission for a module
 func (r *RBACService) HasPermission(userID int64, moduleID int64, permission string) (bool, error) {
+	// Special case: CONSOLE ADMIN role has full access to API Documentation modules (139-143)
+	if moduleID >= 139 && moduleID <= 143 {
+		hasConsoleAdminRole, err := r.hasConsoleAdminRole(userID)
+		if err != nil {
+			return false, err
+		}
+		if hasConsoleAdminRole {
+			return true, nil // CONSOLE ADMIN has full access to all API Documentation modules
+		}
+	}
+
 	permissions, err := r.GetUserPermissions(userID)
 	if err != nil {
 		return false, err
@@ -187,6 +198,24 @@ func (r *RBACService) HasPermission(userID int64, moduleID int64, permission str
 	default:
 		return false, fmt.Errorf("invalid permission type: %s", permission)
 	}
+}
+
+// hasConsoleAdminRole checks if user has CONSOLE ADMIN role (role_id=13)
+func (r *RBACService) hasConsoleAdminRole(userID int64) (bool, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM user_roles ur
+		JOIN roles r ON ur.role_id = r.id
+		WHERE ur.user_id = $1 AND r.id = 13
+	`
+
+	var count int
+	err := r.db.QueryRow(query, userID).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("failed to check console admin role: %w", err)
+	}
+
+	return count > 0, nil
 }
 
 // HasRole checks if user has specific role

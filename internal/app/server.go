@@ -10,6 +10,7 @@ import (
 	"log"
 
 	// Module imports
+	apidocModule "gin-scalable-api/internal/modules/apidoc"
 	auditModule "gin-scalable-api/internal/modules/audit"
 	authModule "gin-scalable-api/internal/modules/auth"
 	branchModule "gin-scalable-api/internal/modules/branch"
@@ -64,7 +65,7 @@ func (s *Server) Initialize() error {
 	s.router.Use(middleware.CORSMiddleware())
 
 	// Setup NEW module routes
-	SetupNewModuleRoutes(s.router, newModuleHandlers, s.config.JWT.Secret, redis)
+	SetupNewModuleRoutes(s.router, newModuleHandlers, s.config.JWT.Secret, redis, db.DB)
 
 	return nil
 }
@@ -85,6 +86,7 @@ func (s *Server) initializeNewModuleHandlers(redis *redis.Client, db *sql.DB) *N
 	subscriptionRepo := subscriptionModule.NewRepository(db)
 	auditRepo := auditModule.NewRepository(db)
 	unitRepo := unitModule.NewRepository(db)
+	apidocRepo := apidocModule.NewRepository(db)
 
 	// Initialize module services
 	authRepo := authModule.NewRepository(db)
@@ -97,6 +99,7 @@ func (s *Server) initializeNewModuleHandlers(redis *redis.Client, db *sql.DB) *N
 	unitService := unitModule.NewService(unitRepo)
 	subscriptionService := subscriptionModule.NewService(subscriptionRepo)
 	auditService := auditModule.NewService(auditRepo)
+	apidocService := apidocModule.NewService(apidocRepo, rbacService, db)
 
 	// Initialize module handlers
 	return &NewModuleHandlers{
@@ -109,6 +112,7 @@ func (s *Server) initializeNewModuleHandlers(redis *redis.Client, db *sql.DB) *N
 		Unit:         unitModule.NewHandler(unitService),
 		Subscription: subscriptionModule.NewHandler(subscriptionService),
 		Audit:        auditModule.NewHandler(auditService),
+		APIDoc:       apidocModule.NewHandler(apidocService),
 	}
 }
 
@@ -128,4 +132,5 @@ type NewModuleHandlers struct {
 	Unit         *unitModule.Handler
 	Subscription *subscriptionModule.Handler
 	Audit        *auditModule.Handler
+	APIDoc       *apidocModule.Handler
 }

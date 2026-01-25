@@ -211,3 +211,48 @@ const (
 	AuditError   = "error"
 	AuditWarning = "warning"
 )
+
+// API Documentation Module IDs
+const (
+	ModuleAPIDocumentation   = 139 // Main API Documentation module
+	ModuleAPIDocCollections  = 140 // Collections Management sub-module
+	ModuleAPIDocEndpoints    = 141 // Endpoints Management sub-module
+	ModuleAPIDocEnvironments = 142 // Environments Management sub-module
+	ModuleAPIDocExport       = 143 // Export Documentation sub-module
+)
+
+// API Documentation Module Messages
+const (
+	MsgCollectionRetrieved     = "Collection successfully retrieved"
+	MsgCollectionsRetrieved    = "Collections list successfully retrieved"
+	MsgCollectionCreated       = "Collection successfully created"
+	MsgCollectionUpdated       = "Collection successfully updated"
+	MsgCollectionDeleted       = "Collection successfully deleted"
+	MsgCollectionNotFound      = "Collection not found"
+	MsgFolderRetrieved         = "Folder successfully retrieved"
+	MsgFoldersRetrieved        = "Folders list successfully retrieved"
+	MsgFolderCreated           = "Folder successfully created"
+	MsgFolderUpdated           = "Folder successfully updated"
+	MsgFolderDeleted           = "Folder successfully deleted"
+	MsgFolderNotFound          = "Folder not found"
+	MsgEndpointRetrieved       = "Endpoint successfully retrieved"
+	MsgEndpointsRetrieved      = "Endpoints list successfully retrieved"
+	MsgEndpointCreated         = "Endpoint successfully created"
+	MsgEndpointUpdated         = "Endpoint successfully updated"
+	MsgEndpointDeleted         = "Endpoint successfully deleted"
+	MsgEndpointNotFound        = "Endpoint not found"
+	MsgEnvironmentRetrieved    = "Environment successfully retrieved"
+	MsgEnvironmentsRetrieved   = "Environments list successfully retrieved"
+	MsgEnvironmentCreated      = "Environment successfully created"
+	MsgEnvironmentUpdated      = "Environment successfully updated"
+	MsgEnvironmentDeleted      = "Environment successfully deleted"
+	MsgEnvironmentNotFound     = "Environment not found"
+	MsgVariableRetrieved       = "Environment variable successfully retrieved"
+	MsgVariablesRetrieved      = "Environment variables list successfully retrieved"
+	MsgVariableCreated         = "Environment variable successfully created"
+	MsgVariableUpdated         = "Environment variable successfully updated"
+	MsgVariableDeleted         = "Environment variable successfully deleted"
+	MsgVariableNotFound        = "Environment variable not found"
+	MsgExportGenerated         = "Export successfully generated"
+	MsgInsufficientPermissions = "Insufficient permissions for this operation"
+)
