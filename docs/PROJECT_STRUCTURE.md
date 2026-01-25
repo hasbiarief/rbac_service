@@ -128,7 +128,10 @@ rbac-service/
 ├── docs/                        # Documentation
 │   ├── ENGINEER_RULES.md
 │   ├── PROJECT_STRUCTURE.md
-│   ├── API_OVERVIEW.md
+│   ├── apidoc/
+│   │   ├── API_OVERVIEW.md
+│   │   ├── API_DOCUMENTATION_SYSTEM.md
+│   │   └── API_DOC_*.md
 │   └── *.postman_collection.json
 │
 ├── .env                         # Environment variables
@@ -272,6 +275,6 @@ Buat module baru ketika:
 
 - [Module Structure Refactoring](MODULE_STRUCTURE_REFACTORING.md) - Completed refactoring details
 - [Backend Engineer Rules](ENGINEER_RULES.md) - Panduan development
-- [API Overview](API_OVERVIEW.md) - API documentation
+- [API Overview](apidoc/API_OVERVIEW.md) - API documentation
 - [Quick Start Guide](QUICK_START.md) - Setup and development guide
 - [README](../README.md) - Project overview

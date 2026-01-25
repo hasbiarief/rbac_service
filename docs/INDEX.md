@@ -11,8 +11,11 @@ Penjelasan lengkap tentang module-based architecture, struktur folder, dan prins
 ### 👨‍💻 [Backend Engineer Rules](ENGINEER_RULES.md)
 Panduan lengkap untuk backend engineer: development workflow, module structure, best practices.
 
-### 📡 [API Overview](API_OVERVIEW.md)
-Dokumentasi lengkap semua API endpoints dengan request/response examples.
+### 📡 [API Documentation Module](apidoc/)
+Dokumentasi lengkap API Documentation System dan semua API endpoints.
+
+### 🔗 [Integration Guides](integration/)
+Panduan integrasi authentication service untuk external applications.
 
 ## 🧪 Testing
 
@@ -31,7 +34,7 @@ Import ke Postman untuk testing lengkap semua endpoints.
 
 **Untuk testing API:**
 1. Import Postman collection
-2. Baca [API Overview](API_OVERVIEW.md)
+2. Baca [API Documentation](apidoc/)
 3. Test dengan Postman
 
 ## 📖 Urutan Belajar
@@ -39,7 +42,7 @@ Import ke Postman untuk testing lengkap semua endpoints.
 1. **Setup** → [Quick Start Guide](QUICK_START.md)
 2. **Arsitektur** → [Project Structure](PROJECT_STRUCTURE.md)
 3. **Development** → [Backend Engineer Rules](ENGINEER_RULES.md)
-4. **API** → [API Overview](API_OVERVIEW.md)
+4. **API** → [API Documentation Module](apidoc/)
 5. **Testing** → Postman Collection
 
 ## 🔑 Key Concepts

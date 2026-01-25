@@ -323,7 +323,7 @@ curl -X POST http://localhost:8081/api/v1/employees \
 - [Module Structure Refactoring](MODULE_STRUCTURE_REFACTORING.md) - Completed refactoring details
 - [Backend Engineer Rules](ENGINEER_RULES.md) - Panduan lengkap
 - [Project Structure](PROJECT_STRUCTURE.md) - Arsitektur detail
-- [API Overview](API_OVERVIEW.md) - API documentation
+- [API Overview](apidoc/API_OVERVIEW.md) - API documentation
 - [README](../README.md) - Project overview
 
 ## 🔧 Makefile Commands

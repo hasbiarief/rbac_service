@@ -674,7 +674,7 @@ docker run -p 8081:8081 rbac-service
 
 - [Clean Architecture Guide](docs/CLEAN_ARCHITECTURE.md)
 - [Unit-Based RBAC Documentation](docs/UNIT_BASED_RBAC.md)
-- [API Documentation](docs/API_OVERVIEW.md)
+- [API Documentation](docs/apidoc/API_OVERVIEW.md)
 - [Migration Guide](docs/MIGRATIONS.md)
 
 ## 🔧 Common Issues

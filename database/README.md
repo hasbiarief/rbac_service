@@ -186,7 +186,7 @@ This will create new timestamped dumps and update the template seeder.
 ## 📚 Related Documentation
 
 - [Quick Start Guide](../docs/QUICK_START.md) - Setup and development
-- [API Overview](../docs/API_OVERVIEW.md) - API documentation
+- [API Overview](../docs/apidoc/API_OVERVIEW.md) - API documentation
 - [Engineer Rules](../docs/ENGINEER_RULES.md) - Development guidelines
 - [Project Structure](../docs/PROJECT_STRUCTURE.md) - Architecture overview
 

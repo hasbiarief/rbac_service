@@ -488,7 +488,7 @@ func RegisterRoutes(router *gin.RouterGroup, handler *handler) {
 - **[🚀 Quick Start Guide](docs/QUICK_START.md)** - Setup cepat & Makefile commands
 - **[🏗️ Project Structure](docs/PROJECT_STRUCTURE.md)** - Module-based architecture (5-file structure)
 - **[👨‍💻 Backend Engineer Rules](docs/ENGINEER_RULES.md)** - Development guide
-- **[📡 API Overview](docs/API_OVERVIEW.md)** - API documentation
+- **[📡 API Overview](docs/apidoc/API_OVERVIEW.md)** - API documentation
 - **[🔄 Module Structure Refactoring](docs/MODULE_STRUCTURE_REFACTORING.md)** - Refactoring details
 - **[🗄️ Database Documentation](database/README.md)** - Database dumps and seeders
 - **[🧪 Postman Collection](docs/HUMINOR_RBAC_API_MODULE_BASED.postman_collection.json)** - API testing
