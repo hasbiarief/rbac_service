@@ -677,11 +677,11 @@ func (h *Handler) ExportCollection(c *gin.Context) {
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	c.Header("Content-Length", fmt.Sprintf("%d", result.Size))
 
-	// Return the content
-	if contentType == "application/x-yaml" {
-		c.String(http.StatusOK, result.Content.(string))
+	// Return the content as file download
+	if contentType == "application/x-yaml" || contentType == "text/yaml" {
+		c.Data(http.StatusOK, contentType, []byte(result.Content.(string)))
 	} else {
-		c.String(http.StatusOK, result.Content.(string))
+		c.Data(http.StatusOK, contentType, []byte(result.Content.(string)))
 	}
 }
 

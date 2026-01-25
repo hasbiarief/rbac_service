@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "87654321-4321-4321-4321-210987654321",
-		"name": "Huminor Console API - Unit-Based System",
-		"description": "Complete API Collection for ERP with Unit-Based Role Access Control (RBAC) - Updated with unit management, unit-aware permissions, hierarchical access control (Company → Branch → Unit → Role → User), and enhanced authentication system",
+		"name": "Huminor Console API - Unit-Based System with API Documentation",
+		"description": "Complete API Collection for ERP with Unit-Based Role Access Control (RBAC) and comprehensive API Documentation System. Updated with unit management, unit-aware permissions, hierarchical access control (Company → Branch → Unit → Role → User), enhanced authentication system, and multi-format API export capabilities.\n\n**🆕 New Features:**\n- API Documentation System with 5 export formats\n- Collection and endpoint management\n- Environment and variable management\n- Bulk operations support\n- Export caching system\n\n**Export Formats Supported:**\n- Postman Collection v2.1\n- OpenAPI 3.0 (JSON/YAML)\n- Insomnia REST Client\n- Swagger Specification\n- Apidog Platform Format\n\n**Authentication:** All endpoints require Bearer token authentication.\n**Base URL:** http://localhost:8081\n**API Version:** v1",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "87654321"
 	},
@@ -2642,7 +2642,22 @@
 		{
 			"name": "🆕 API Documentation System",
 			"_postman_isSubFolder": true,
+			"description": "Complete API Documentation System for managing, organizing, and exporting API collections. This system provides comprehensive tools for API documentation management with support for multiple export formats including Postman, OpenAPI, Insomnia, Swagger, and Apidog.\n\n**Key Features:**\n- Collection Management (CRUD operations)\n- Folder Organization (hierarchical structure)\n- Endpoint Documentation (detailed API specs)\n- Environment Management (variables and configurations)\n- Multi-format Export (5 different formats)\n- Bulk Operations (batch processing)\n- Caching System (performance optimization)\n\n**Export Formats Supported:**\n1. **Postman** - Native Postman Collection v2.1\n2. **OpenAPI** - OpenAPI 3.0 specification (JSON/YAML)\n3. **Insomnia** - Insomnia REST Client format\n4. **Swagger** - Swagger specification\n5. **Apidog** - Apidog platform format\n\n**Authentication Required:**\nAll endpoints require Bearer token authentication with appropriate permissions.",
 			"item": [
+				{
+					"name": "📖 API Documentation System Guide",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/api-docs/collections",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "api-docs", "collections"]
+						},
+						"description": "# 🚀 API Documentation System - Complete Guide\n\n## Overview\nThe API Documentation System provides comprehensive tools for managing, organizing, and exporting API documentation. This system supports multiple export formats and provides a complete solution for API documentation management.\n\n## 🔧 Quick Setup\n\n### 1. Authentication\nFirst, authenticate using the login endpoint to get your access token:\n```bash\nPOST /api/v1/auth/login\n{\n  \"user_identity\": \"800000001\",\n  \"password\": \"password123\"\n}\n```\n\n### 2. Create a Collection\n```bash\nPOST /api/v1/api-docs/collections\n{\n  \"name\": \"My API Collection\",\n  \"description\": \"Complete API documentation\",\n  \"version\": \"1.0.0\",\n  \"base_url\": \"http://localhost:8081\",\n  \"schema_version\": \"1.0.0\"\n}\n```\n\n### 3. Add Endpoints\n```bash\nPOST /api/v1/api-docs/collections/{collectionId}/endpoints\n{\n  \"name\": \"Login User\",\n  \"description\": \"Authenticate user and return access token\",\n  \"method\": \"POST\",\n  \"url\": \"/api/v1/auth/login\",\n  \"headers\": [\n    {\n      \"key_name\": \"Content-Type\",\n      \"value\": \"application/json\",\n      \"header_type\": \"request\"\n    }\n  ]\n}\n```\n\n### 4. Export Collection\n```bash\nGET /api/v1/api-docs/collections/{collectionId}/export?format=openapi\n```\n\n## 📁 Folder Structure\n```\nAPI Documentation System/\n├── Collections/          # Collection management\n├── Folders/             # Folder organization\n├── Endpoints/           # Endpoint documentation\n├── Environments/        # Environment management\n├── Environment Variables/ # Variable management\n└── Export & Import/     # Multi-format export\n    ├── Postman Export\n    ├── OpenAPI Export\n    ├── Insomnia Export\n    ├── Swagger Export\n    └── Apidog Export\n```\n\n## 🎯 Export Formats\n\n### 1. Postman Collection\n- **Format**: `format=postman`\n- **Usage**: Direct import to Postman\n- **Features**: Complete collection with tests, variables, and examples\n\n### 2. OpenAPI 3.0\n- **Format**: `format=openapi`\n- **Usage**: Industry standard API specification\n- **Features**: JSON/YAML output, complete schema definitions\n\n### 3. Insomnia REST Client\n- **Format**: `format=insomnia`\n- **Usage**: Direct import to Insomnia\n- **Features**: Collapsed folders, environment variables\n\n### 4. Swagger\n- **Format**: `format=swagger`\n- **Usage**: Swagger UI and compatible tools\n- **Features**: Complete API documentation\n\n### 5. Apidog\n- **Format**: `format=apidog`\n- **Usage**: Apidog platform integration\n- **Features**: Advanced API testing and documentation\n\n## 🔐 Permissions Required\n\n| Operation | Permission | Description |\n|-----------|------------|-------------|\n| Read Collections | `read` | View collections and endpoints |\n| Create/Update | `write` | Modify collections and endpoints |\n| Delete | `delete` | Remove collections and endpoints |\n| Export | `read` | Export collections in various formats |\n| Bulk Operations | `write` | Batch operations on endpoints |\n\n## 🚀 Advanced Features\n\n### Bulk Operations\n- Create multiple endpoints at once\n- Update multiple endpoints\n- Delete multiple endpoints\n- Move endpoints between folders\n\n### Environment Management\n- Create multiple environments\n- Manage environment variables\n- Include variables in exports\n\n### Caching System\n- Export caching for performance\n- Cache invalidation endpoints\n- Optimized response times\n\n## 📝 Example Workflows\n\n### Complete API Documentation Workflow\n1. Create collection\n2. Organize with folders\n3. Add endpoints with full documentation\n4. Set up environments and variables\n5. Export to desired format\n6. Import to API client\n\n### Team Collaboration Workflow\n1. Create shared collection\n2. Multiple team members add endpoints\n3. Use bulk operations for efficiency\n4. Export for different team tools\n5. Keep documentation synchronized\n\n## 🛠️ Environment Variables\n\nRequired variables for testing:\n- `collectionId`: Collection ID (default: 1)\n- `folderId`: Folder ID (default: 1)\n- `endpointId`: Endpoint ID (default: 1)\n- `environmentId`: Environment ID (default: 1)\n- `variableId`: Variable ID (default: 1)\n- `accessToken`: Authentication token\n\n## 📞 Support\n\nFor issues or questions:\n1. Check the endpoint documentation\n2. Verify authentication and permissions\n3. Test with provided examples\n4. Check response headers for file downloads\n\n---\n\n**Ready to start?** Begin with the Collections section below! 👇"
+					},
+					"response": []
+				},
 				{
 					"name": "Collections",
 					"_postman_isSubFolder": true,
@@ -3518,6 +3533,41 @@
 						},
 						{
 							"name": "Export Collection as Postman",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Test for successful export",
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"// Check response headers for file download",
+											"pm.test('Response has file download headers', function () {",
+											"    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+											"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment');",
+											"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('filename=');",
+											"});",
+											"",
+											"// Validate Postman Collection structure",
+											"pm.test('Response is valid Postman Collection JSON', function () {",
+											"    const responseJson = pm.response.json();",
+											"    pm.expect(responseJson).to.have.property('info');",
+											"    pm.expect(responseJson).to.have.property('item');",
+											"    pm.expect(responseJson.info).to.have.property('schema');",
+											"    pm.expect(responseJson.info.schema).to.include('postman');",
+											"});",
+											"",
+											"// Log export info",
+											"console.log('Postman Export completed successfully');",
+											"console.log('Content-Type:', pm.response.headers.get('Content-Type'));",
+											"console.log('Content-Disposition:', pm.response.headers.get('Content-Disposition'));"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
 							"request": {
 								"method": "GET",
 								"header": [
@@ -3533,20 +3583,107 @@
 									"query": [
 										{
 											"key": "format",
-											"value": "postman"
+											"value": "postman",
+											"description": "Export format: postman, openapi, insomnia, swagger, apidog"
 										},
 										{
 											"key": "environment_id",
 											"value": "{{environmentId}}",
-											"disabled": true
+											"disabled": true,
+											"description": "Optional: Include environment variables in export"
+										},
+										{
+											"key": "include_tests",
+											"value": "true",
+											"disabled": true,
+											"description": "Include test scripts in export"
 										}
 									]
-								}
+								},
+								"description": "Export collection as Postman Collection v2.1 format. The response will be a downloadable JSON file that can be imported directly into Postman.\n\n**Response Headers:**\n- `Content-Type`: application/json\n- `Content-Disposition`: attachment; filename=\"collection-postman.json\"\n- `Content-Length`: file size\n\n**Usage:**\n1. Send this request\n2. Save the response as a .json file\n3. Import the file into Postman (File → Import → Upload Files)\n\n**Features:**\n- Complete endpoint documentation\n- Request/response examples\n- Environment variables support\n- Test scripts included\n- Folder organization preserved"
 							},
-							"response": []
+							"response": [
+								{
+									"name": "Successful Postman Export",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{accessToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{base_url}}/api/v1/api-docs/collections/1/export?format=postman",
+											"host": ["{{base_url}}"],
+											"path": ["api", "v1", "api-docs", "collections", "1", "export"],
+											"query": [
+												{
+													"key": "format",
+													"value": "postman"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Disposition",
+											"value": "attachment; filename=\"collection-postman.json\""
+										},
+										{
+											"key": "Content-Length",
+											"value": "4096"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"info\": {\n    \"_postman_id\": \"12345678-1234-1234-1234-123456789012\",\n    \"name\": \"Exported API Collection\",\n    \"description\": \"API collection exported from Huminor RBAC System\",\n    \"schema\": \"https://schema.getpostman.com/json/collection/v2.1.0/collection.json\"\n  },\n  \"item\": [\n    {\n      \"name\": \"Authentication\",\n      \"item\": [\n        {\n          \"name\": \"Login User\",\n          \"request\": {\n            \"method\": \"POST\",\n            \"header\": [\n              {\n                \"key\": \"Content-Type\",\n                \"value\": \"application/json\"\n              }\n            ],\n            \"body\": {\n              \"mode\": \"raw\",\n              \"raw\": \"{\\n  \\\"email\\\": \\\"user@example.com\\\",\\n  \\\"password\\\": \\\"password123\\\"\\n}\"\n            },\n            \"url\": {\n              \"raw\": \"{{base_url}}/api/v1/auth/login\",\n              \"host\": [\"{{base_url}}\"],\n              \"path\": [\"api\", \"v1\", \"auth\", \"login\"]\n            }\n          }\n        }\n      ]\n    }\n  ],\n  \"variable\": [\n    {\n      \"key\": \"base_url\",\n      \"value\": \"http://localhost:8081\"\n    }\n  ]\n}"
+								}
+							]
 						},
 						{
 							"name": "Export Collection as OpenAPI",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Test for successful export",
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"// Check response headers for file download",
+											"pm.test('Response has file download headers', function () {",
+											"    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+											"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment');",
+											"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('filename=');",
+											"});",
+											"",
+											"// Validate OpenAPI structure",
+											"pm.test('Response is valid OpenAPI JSON', function () {",
+											"    const responseJson = pm.response.json();",
+											"    pm.expect(responseJson).to.have.property('openapi');",
+											"    pm.expect(responseJson).to.have.property('info');",
+											"    pm.expect(responseJson).to.have.property('paths');",
+											"    pm.expect(responseJson.openapi).to.equal('3.0.0');",
+											"});",
+											"",
+											"// Log export info",
+											"console.log('OpenAPI Export completed successfully');",
+											"console.log('Content-Type:', pm.response.headers.get('Content-Type'));",
+											"console.log('Content-Disposition:', pm.response.headers.get('Content-Disposition'));"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
 							"request": {
 								"method": "GET",
 								"header": [
@@ -3562,15 +3699,106 @@
 									"query": [
 										{
 											"key": "format",
-											"value": "openapi"
+											"value": "openapi",
+											"description": "Export format: openapi, postman, insomnia, swagger, apidog"
+										},
+										{
+											"key": "environment_id",
+											"value": "{{environmentId}}",
+											"disabled": true,
+											"description": "Optional: Include environment variables in export"
+										},
+										{
+											"key": "output_format",
+											"value": "json",
+											"disabled": true,
+											"description": "Output format: json or yaml (for OpenAPI)"
 										}
 									]
-								}
+								},
+								"description": "Export collection as OpenAPI 3.0 specification. The response will be a downloadable JSON file that can be imported into API clients that support OpenAPI format.\n\n**Response Headers:**\n- `Content-Type`: application/json\n- `Content-Disposition`: attachment; filename=\"collection-openapi.json\"\n- `Content-Length`: file size\n\n**Usage:**\n1. Send this request\n2. Save the response as a .json file\n3. Import the file into your API client (Postman, Insomnia, etc.)\n\n**Supported Query Parameters:**\n- `format`: Export format (required)\n- `environment_id`: Include specific environment variables\n- `output_format`: json or yaml (OpenAPI only)"
 							},
-							"response": []
+							"response": [
+								{
+									"name": "Successful OpenAPI Export",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{accessToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{base_url}}/api/v1/api-docs/collections/1/export?format=openapi",
+											"host": ["{{base_url}}"],
+											"path": ["api", "v1", "api-docs", "collections", "1", "export"],
+											"query": [
+												{
+													"key": "format",
+													"value": "openapi"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Disposition",
+											"value": "attachment; filename=\"collection-openapi.json\""
+										},
+										{
+											"key": "Content-Length",
+											"value": "2048"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"openapi\": \"3.0.0\",\n  \"info\": {\n    \"title\": \"Huminor RBAC API Documentation\",\n    \"description\": \"Complete API documentation for ERP with Unit-Based Role Access Control (RBAC)\",\n    \"version\": \"1.0.0\"\n  },\n  \"paths\": {\n    \"/api/v1/auth/login\": {\n      \"post\": {\n        \"tags\": [\"Authentication\"],\n        \"summary\": \"Login User\",\n        \"description\": \"Authenticate user and return access token\",\n        \"operationId\": \"postLoginUser\",\n        \"requestBody\": {\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"properties\": {\n                  \"email\": {\"type\": \"string\"},\n                  \"password\": {\"type\": \"string\"}\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Successful response\"\n          }\n        }\n      }\n    }\n  },\n  \"components\": {\n    \"securitySchemes\": {\n      \"BearerAuth\": {\n        \"type\": \"http\",\n        \"description\": \"JWT Authorization header using the Bearer scheme\",\n        \"scheme\": \"bearer\",\n        \"bearerFormat\": \"JWT\"\n      }\n    }\n  },\n  \"security\": [\n    {\"BearerAuth\": []}\n  ],\n  \"tags\": [\n    {\"name\": \"Authentication\"}\n  ]\n}"
+								}
+							]
 						},
 						{
 							"name": "Export Collection as Insomnia",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Test for successful export",
+											"pm.test('Status code is 200', function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"// Check response headers for file download",
+											"pm.test('Response has file download headers', function () {",
+											"    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+											"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment');",
+											"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('filename=');",
+											"});",
+											"",
+											"// Validate Insomnia format structure",
+											"pm.test('Response is valid Insomnia JSON', function () {",
+											"    const responseJson = pm.response.json();",
+											"    pm.expect(responseJson).to.have.property('_type');",
+											"    pm.expect(responseJson).to.have.property('resources');",
+											"    pm.expect(responseJson._type).to.equal('export');",
+											"});",
+											"",
+											"// Log export info",
+											"console.log('Insomnia Export completed successfully');",
+											"console.log('Content-Type:', pm.response.headers.get('Content-Type'));",
+											"console.log('Content-Disposition:', pm.response.headers.get('Content-Disposition'));"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
 							"request": {
 								"method": "GET",
 								"header": [
@@ -3586,12 +3814,63 @@
 									"query": [
 										{
 											"key": "format",
-											"value": "insomnia"
+											"value": "insomnia",
+											"description": "Export format: insomnia, postman, openapi, swagger, apidog"
+										},
+										{
+											"key": "environment_id",
+											"value": "{{environmentId}}",
+											"disabled": true,
+											"description": "Optional: Include environment variables in export"
 										}
 									]
-								}
+								},
+								"description": "Export collection as Insomnia REST Client format. The response will be a downloadable JSON file that can be imported directly into Insomnia.\n\n**Response Headers:**\n- `Content-Type`: application/json\n- `Content-Disposition`: attachment; filename=\"collection-insomnia.json\"\n- `Content-Length`: file size\n\n**Usage:**\n1. Send this request\n2. Save the response as a .json file\n3. Import the file into Insomnia (Application → Preferences → Data → Import Data)\n\n**Features:**\n- Complete endpoint documentation\n- Request/response examples\n- Environment variables support\n- Folder organization with collapsed state\n- Variable substitution support"
 							},
-							"response": []
+							"response": [
+								{
+									"name": "Successful Insomnia Export",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "Bearer {{accessToken}}"
+											}
+										],
+										"url": {
+											"raw": "{{base_url}}/api/v1/api-docs/collections/1/export?format=insomnia",
+											"host": ["{{base_url}}"],
+											"path": ["api", "v1", "api-docs", "collections", "1", "export"],
+											"query": [
+												{
+													"key": "format",
+													"value": "insomnia"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Content-Disposition",
+											"value": "attachment; filename=\"collection-insomnia.json\""
+										},
+										{
+											"key": "Content-Length",
+											"value": "3072"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"_type\": \"export\",\n  \"__export_format\": 4,\n  \"__export_date\": \"2026-01-25T21:30:00.000Z\",\n  \"__export_source\": \"huminor-rbac-api\",\n  \"resources\": [\n    {\n      \"_id\": \"wrk_12345678\",\n      \"_type\": \"workspace\",\n      \"name\": \"Exported API Collection\",\n      \"description\": \"API collection exported from Huminor RBAC System\"\n    },\n    {\n      \"_id\": \"fld_auth\",\n      \"_type\": \"request_group\",\n      \"name\": \"Authentication\",\n      \"parentId\": \"wrk_12345678\",\n      \"collapsed\": true\n    },\n    {\n      \"_id\": \"req_login\",\n      \"_type\": \"request\",\n      \"name\": \"Login User\",\n      \"parentId\": \"fld_auth\",\n      \"method\": \"POST\",\n      \"url\": \"{{ base_url }}/api/v1/auth/login\",\n      \"headers\": [\n        {\n          \"name\": \"Content-Type\",\n          \"value\": \"application/json\"\n        }\n      ],\n      \"body\": {\n        \"mimeType\": \"application/json\",\n        \"text\": \"{\\n  \\\"email\\\": \\\"user@example.com\\\",\\n  \\\"password\\\": \\\"password123\\\"\\n}\"\n      }\n    },\n    {\n      \"_id\": \"env_base\",\n      \"_type\": \"environment\",\n      \"name\": \"Base Environment\",\n      \"data\": {\n        \"base_url\": \"http://localhost:8081\"\n      }\n    }\n  ]\n}"
+								}
+							]
 						},
 						{
 							"name": "Export Collection as Swagger",

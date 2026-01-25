@@ -16,17 +16,17 @@ import (
 type CreateCollectionRequest struct {
 	Name          string  `json:"name" validate:"required,min=2,max=100"`
 	Description   *string `json:"description" validate:"omitempty,max=500"`
-	Version       string  `json:"version" validate:"required,version"`
+	Version       string  `json:"version" validate:"required"`
 	BaseURL       *string `json:"base_url" validate:"omitempty,url"`
-	SchemaVersion string  `json:"schema_version" validate:"required,version"`
+	SchemaVersion string  `json:"schema_version" validate:"required"`
 }
 
 type UpdateCollectionRequest struct {
 	Name          *string `json:"name" validate:"omitempty,min=2,max=100"`
 	Description   *string `json:"description" validate:"omitempty,max=500"`
-	Version       *string `json:"version" validate:"omitempty,version"`
+	Version       *string `json:"version" validate:"omitempty"`
 	BaseURL       *string `json:"base_url" validate:"omitempty,url"`
-	SchemaVersion *string `json:"schema_version" validate:"omitempty,version"`
+	SchemaVersion *string `json:"schema_version" validate:"omitempty"`
 	IsActive      *bool   `json:"is_active"`
 }
 
@@ -50,8 +50,8 @@ type CreateEndpointRequest struct {
 	FolderID    *int64  `json:"folder_id" validate:"omitempty,min=1"`
 	Name        string  `json:"name" validate:"required,min=1,max=100"`
 	Description *string `json:"description" validate:"omitempty,max=1000"`
-	Method      string  `json:"method" validate:"required,http_method"`
-	URL         string  `json:"url" validate:"required,min=1,max=500,api_path"`
+	Method      string  `json:"method" validate:"required,oneof=GET POST PUT DELETE PATCH HEAD OPTIONS"`
+	URL         string  `json:"url" validate:"required,min=1,max=500"`
 	SortOrder   *int    `json:"sort_order" validate:"omitempty,min=0"`
 	IsActive    *bool   `json:"is_active"`
 }
@@ -60,8 +60,8 @@ type UpdateEndpointRequest struct {
 	FolderID    *int64  `json:"folder_id" validate:"omitempty,min=1"`
 	Name        *string `json:"name" validate:"omitempty,min=1,max=100"`
 	Description *string `json:"description" validate:"omitempty,max=1000"`
-	Method      *string `json:"method" validate:"omitempty,http_method"`
-	URL         *string `json:"url" validate:"omitempty,min=1,max=500,api_path"`
+	Method      *string `json:"method" validate:"omitempty,oneof=GET POST PUT DELETE PATCH HEAD OPTIONS"`
+	URL         *string `json:"url" validate:"omitempty,min=1,max=500"`
 	SortOrder   *int    `json:"sort_order" validate:"omitempty,min=0"`
 	IsActive    *bool   `json:"is_active"`
 }
@@ -106,14 +106,14 @@ type UpdateParameterRequest struct {
 
 // Request Body Request DTOs
 type CreateRequestBodyRequest struct {
-	ContentType      string                 `json:"content_type" validate:"required,content_type"`
+	ContentType      string                 `json:"content_type" validate:"required"`
 	BodyContent      *string                `json:"body_content" validate:"omitempty"`
 	Description      *string                `json:"description" validate:"omitempty,max=500"`
 	SchemaDefinition map[string]interface{} `json:"schema_definition" validate:"omitempty"`
 }
 
 type UpdateRequestBodyRequest struct {
-	ContentType      *string                `json:"content_type" validate:"omitempty,content_type"`
+	ContentType      *string                `json:"content_type" validate:"omitempty"`
 	BodyContent      *string                `json:"body_content" validate:"omitempty"`
 	Description      *string                `json:"description" validate:"omitempty,max=500"`
 	SchemaDefinition map[string]interface{} `json:"schema_definition" validate:"omitempty"`
@@ -123,7 +123,7 @@ type UpdateRequestBodyRequest struct {
 type CreateResponseRequest struct {
 	StatusCode   int     `json:"status_code" validate:"required,min=100,max=599"`
 	StatusText   *string `json:"status_text" validate:"omitempty,max=100"`
-	ContentType  string  `json:"content_type" validate:"required,content_type"`
+	ContentType  string  `json:"content_type" validate:"required"`
 	ResponseBody *string `json:"response_body" validate:"omitempty"`
 	Description  *string `json:"description" validate:"omitempty,max=500"`
 	IsDefault    *bool   `json:"is_default"`
@@ -132,7 +132,7 @@ type CreateResponseRequest struct {
 type UpdateResponseRequest struct {
 	StatusCode   *int    `json:"status_code" validate:"omitempty,min=100,max=599"`
 	StatusText   *string `json:"status_text" validate:"omitempty,max=100"`
-	ContentType  *string `json:"content_type" validate:"omitempty,content_type"`
+	ContentType  *string `json:"content_type" validate:"omitempty"`
 	ResponseBody *string `json:"response_body" validate:"omitempty"`
 	Description  *string `json:"description" validate:"omitempty,max=500"`
 	IsDefault    *bool   `json:"is_default"`
@@ -153,14 +153,14 @@ type UpdateEnvironmentRequest struct {
 
 // Environment Variable Request DTOs
 type CreateEnvironmentVariableRequest struct {
-	KeyName     string  `json:"key_name" validate:"required,min=1,max=100,env_var_name"`
+	KeyName     string  `json:"key_name" validate:"required,min=1,max=100"`
 	Value       *string `json:"value" validate:"omitempty,max=1000"`
 	Description *string `json:"description" validate:"omitempty,max=500"`
 	IsSecret    *bool   `json:"is_secret"`
 }
 
 type UpdateEnvironmentVariableRequest struct {
-	KeyName     *string `json:"key_name" validate:"omitempty,min=1,max=100,env_var_name"`
+	KeyName     *string `json:"key_name" validate:"omitempty,min=1,max=100"`
 	Value       *string `json:"value" validate:"omitempty,max=1000"`
 	Description *string `json:"description" validate:"omitempty,max=500"`
 	IsSecret    *bool   `json:"is_secret"`
@@ -169,13 +169,13 @@ type UpdateEnvironmentVariableRequest struct {
 // Tag Request DTOs
 type CreateTagRequest struct {
 	Name        string  `json:"name" validate:"required,min=1,max=50"`
-	Color       string  `json:"color" validate:"required,hex_color"`
+	Color       string  `json:"color" validate:"required"`
 	Description *string `json:"description" validate:"omitempty,max=200"`
 }
 
 type UpdateTagRequest struct {
 	Name        *string `json:"name" validate:"omitempty,min=1,max=50"`
-	Color       *string `json:"color" validate:"omitempty,hex_color"`
+	Color       *string `json:"color" validate:"omitempty"`
 	Description *string `json:"description" validate:"omitempty,max=200"`
 }
 
@@ -191,7 +191,7 @@ type EndpointListRequest struct {
 	Limit    int     `form:"limit" validate:"omitempty,min=1,max=100"`
 	Offset   int     `form:"offset" validate:"omitempty,min=0"`
 	Search   *string `form:"search" validate:"omitempty,max=100"`
-	Method   *string `form:"method" validate:"omitempty,http_method"`
+	Method   *string `form:"method" validate:"omitempty,oneof=GET POST PUT DELETE PATCH HEAD OPTIONS"`
 	FolderID *int64  `form:"folder_id" validate:"omitempty,min=1"`
 	IsActive *bool   `form:"is_active"`
 }
@@ -458,7 +458,6 @@ func validateVersion(fl validator.FieldLevel) bool {
 	versionRegex := regexp.MustCompile(`^v?(\d+)(\.\d+)*(\.\d+)*(-[a-zA-Z0-9]+)*$`)
 	return versionRegex.MatchString(version)
 }
-
 func validateHTTPMethod(fl validator.FieldLevel) bool {
 	method := strings.ToUpper(fl.Field().String())
 	validMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
@@ -473,24 +472,21 @@ func validateHTTPMethod(fl validator.FieldLevel) bool {
 func validateAPIPath(fl validator.FieldLevel) bool {
 	path := fl.Field().String()
 	// API path should start with / and contain valid URL characters
-	pathRegex := regexp.MustCompile(`^/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%{}]*$`)
+	pathRegex := regexp.MustCompile(`^/[a-zA-Z0-9\-._~:/?#[\]@!'()*+,;=%{}]*$`)
 	return pathRegex.MatchString(path)
 }
-
 func validateContentType(fl validator.FieldLevel) bool {
 	contentType := fl.Field().String()
 	// Basic content type validation
-	contentTypeRegex := regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*(\s*;\s*[a-zA-Z0-9\-]+=([a-zA-Z0-9\-]+|"[^"]*"))*$`)
+	contentTypeRegex := regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*(\s*;\s*[a-zA-Z0-9\-]+=([a-zA-Z0-9\-]+|"[^"]*"))*$`)
 	return contentTypeRegex.MatchString(contentType)
 }
-
 func validateHexColor(fl validator.FieldLevel) bool {
 	color := fl.Field().String()
 	// Hex color validation (#RRGGBB or #RGB)
 	hexColorRegex := regexp.MustCompile(`^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$`)
 	return hexColorRegex.MatchString(color)
 }
-
 func validateEnvVarName(fl validator.FieldLevel) bool {
 	name := fl.Field().String()
 	// Environment variable name validation (uppercase letters, numbers, underscores)
