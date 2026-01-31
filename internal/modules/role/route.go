@@ -54,6 +54,22 @@ func (h *Handler) GetRoleByID(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgRoleRetrieved, result)
 }
 
+func (h *Handler) GetRoleWithPermissions(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid role ID")
+		return
+	}
+
+	result, err := h.service.GetRoleWithPermissions(id)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, constants.MsgRoleNotFound, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Role with permissions successfully retrieved", result)
+}
+
 func (h *Handler) CreateRole(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -301,12 +317,28 @@ func RegisterRoutes(api *gin.RouterGroup, handler *Handler) {
 			handler.BulkAssignUserRole,
 		)
 
-		// PUT /api/v1/role-management/role/:roleId/modules - Update role permissions
+		// PUT /api/v1/role-management/role/:roleId/modules - Update role permissions (REPLACE ALL)
 		roleManagement.PUT("/role/:roleId/modules",
 			middleware.ValidateRequest(middleware.ValidationRules{
 				Body: &UpdateRolePermissionsRequest{},
 			}),
 			handler.UpdateRoleModules,
+		)
+
+		// POST /api/v1/role-management/role/:roleId/modules - Add modules to role (APPEND)
+		roleManagement.POST("/role/:roleId/modules",
+			middleware.ValidateRequest(middleware.ValidationRules{
+				Body: &AddRoleModulesRequest{},
+			}),
+			handler.AddRoleModules,
+		)
+
+		// DELETE /api/v1/role-management/role/:roleId/modules - Remove modules from role
+		roleManagement.DELETE("/role/:roleId/modules",
+			middleware.ValidateRequest(middleware.ValidationRules{
+				Body: &RemoveRoleModulesRequest{},
+			}),
+			handler.RemoveRoleModules,
 		)
 
 		// DELETE /api/v1/role-management/user/:userId/role/:roleId - Remove role from user
@@ -330,6 +362,9 @@ func RegisterRoutes(api *gin.RouterGroup, handler *Handler) {
 		// GET /api/v1/roles/:id - Get role by ID
 		roles.GET("/:id", handler.GetRoleByID)
 
+		// GET /api/v1/roles/:id/permissions - Get role with permissions
+		roles.GET("/:id/permissions", handler.GetRoleWithPermissions)
+
 		// POST /api/v1/roles - Create new role
 		roles.POST("",
 			middleware.ValidateRequest(middleware.ValidationRules{
@@ -349,4 +384,57 @@ func RegisterRoutes(api *gin.RouterGroup, handler *Handler) {
 		// DELETE /api/v1/roles/:id - Delete role by ID
 		roles.DELETE("/:id", handler.DeleteRole)
 	}
+}
+func (h *Handler) AddRoleModules(c *gin.Context) {
+	roleID, err := strconv.ParseInt(c.Param("roleId"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid role ID")
+		return
+	}
+
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
+		return
+	}
+
+	addReq, ok := validatedBody.(*AddRoleModulesRequest)
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	if err := h.service.AddRoleModules(roleID, addReq); err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to add modules to role", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Modules successfully added to role", nil)
+}
+
+func (h *Handler) RemoveRoleModules(c *gin.Context) {
+	roleID, err := strconv.ParseInt(c.Param("roleId"), 10, 64)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Bad request", "Invalid role ID")
+		return
+	}
+
+	validatedBody, exists := c.Get("validated_body")
+	if !exists {
+		response.Error(c, http.StatusBadRequest, "Bad request", "validation failed")
+		return
+	}
+
+	removeReq, ok := validatedBody.(*RemoveRoleModulesRequest)
+	if !ok {
+		response.Error(c, http.StatusBadRequest, "Bad request", "invalid body structure")
+		return
+	}
+
+	if err := h.service.RemoveRoleModules(roleID, removeReq); err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to remove modules from role", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Modules successfully removed from role", nil)
 }

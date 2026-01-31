@@ -470,3 +470,86 @@ func (r *RoleRepository) Count(search string, isActive *bool) (int64, error) {
 
 	return count, nil
 }
+
+// AddRoleModules adds new modules to a role without affecting existing ones
+func (r *RoleRepository) AddRoleModules(roleID int64, modules []*RoleModule) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Insert new role modules (ignore duplicates)
+	for _, module := range modules {
+		// Check if module already exists for this role
+		var exists bool
+		checkQuery := "SELECT EXISTS(SELECT 1 FROM role_modules WHERE role_id = $1 AND module_id = $2)"
+		err = tx.QueryRow(checkQuery, roleID, module.ModuleID).Scan(&exists)
+		if err != nil {
+			return fmt.Errorf("failed to check existing module: %w", err)
+		}
+
+		if exists {
+			// Update existing permissions
+			_, err = tx.Exec(`
+				UPDATE role_modules 
+				SET can_read = $3, can_write = $4, can_delete = $5
+				WHERE role_id = $1 AND module_id = $2
+			`, roleID, module.ModuleID, module.CanRead, module.CanWrite, module.CanDelete)
+			if err != nil {
+				return fmt.Errorf("failed to update existing role module: %w", err)
+			}
+		} else {
+			// Insert new module
+			_, err = tx.Exec(`
+				INSERT INTO role_modules (role_id, module_id, can_read, can_write, can_delete)
+				VALUES ($1, $2, $3, $4, $5)
+			`, roleID, module.ModuleID, module.CanRead, module.CanWrite, module.CanDelete)
+			if err != nil {
+				return fmt.Errorf("failed to insert new role module: %w", err)
+			}
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// RemoveRoleModules removes specific modules from a role
+func (r *RoleRepository) RemoveRoleModules(roleID int64, moduleIDs []int64) error {
+	if len(moduleIDs) == 0 {
+		return fmt.Errorf("no module IDs provided")
+	}
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Remove specified modules
+	for _, moduleID := range moduleIDs {
+		result, err := tx.Exec("DELETE FROM role_modules WHERE role_id = $1 AND module_id = $2", roleID, moduleID)
+		if err != nil {
+			return fmt.Errorf("failed to remove role module %d: %w", moduleID, err)
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("failed to get affected rows for module %d: %w", moduleID, err)
+		}
+
+		if rowsAffected == 0 {
+			return fmt.Errorf("module %d not found in role %d", moduleID, roleID)
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}

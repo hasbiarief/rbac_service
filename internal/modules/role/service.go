@@ -331,3 +331,20 @@ func toRoleResponse(role *Role) *RoleResponse {
 		UpdatedAt:   role.UpdatedAt.Format(time.RFC3339),
 	}
 }
+func (s *Service) AddRoleModules(roleID int64, req *AddRoleModulesRequest) error {
+	var modules []*RoleModule
+	for _, perm := range req.Modules {
+		modules = append(modules, &RoleModule{
+			RoleID:    roleID,
+			ModuleID:  perm.ModuleID,
+			CanRead:   perm.CanRead,
+			CanWrite:  perm.CanWrite,
+			CanDelete: perm.CanDelete,
+		})
+	}
+	return s.roleRepo.AddRoleModules(roleID, modules)
+}
+
+func (s *Service) RemoveRoleModules(roleID int64, req *RemoveRoleModulesRequest) error {
+	return s.roleRepo.RemoveRoleModules(roleID, req.ModuleIDs)
+}

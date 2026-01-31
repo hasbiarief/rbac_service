@@ -8,6 +8,8 @@ Dokumentasi lengkap untuk API Documentation System dan semua API endpoints dalam
 - **[API Overview](API_OVERVIEW.md)** - Dokumentasi lengkap semua API endpoints dengan request/response examples
 - **[API Documentation System](API_DOCUMENTATION_SYSTEM.md)** - Sistem dokumentasi API terintegrasi
 - **[API Workflow Guide](API_WORKFLOW_GUIDE.md)** - Complete setup process dari user creation sampai module visibility
+- **[Module Mapping Guide](MODULE_MAPPING_GUIDE.md)** - **NEW** - Panduan lengkap mapping module ke user melalui role
+- **[Subscription Tiers Guide](SUBSCRIPTION_TIERS_GUIDE.md)** - Subscription system dan module access control
 
 ### 🔧 API Documentation Features
 - **[API Doc Authentication](API_DOC_AUTHENTICATION.md)** - Authentication untuk API Documentation
@@ -22,11 +24,14 @@ Dokumentasi lengkap untuk API Documentation System dan semua API endpoints dalam
 2. **Pahami sistem** → [API Documentation System](API_DOCUMENTATION_SYSTEM.md)
 3. **Setup authentication** → [API Doc Authentication](API_DOC_AUTHENTICATION.md)
 4. **Complete workflow** → [API Workflow Guide](API_WORKFLOW_GUIDE.md)
-5. **Export collections** → [API Doc Export Formats](API_DOC_EXPORT_FORMATS.md)
+5. **Module mapping** → [Module Mapping Guide](MODULE_MAPPING_GUIDE.md) ← **NEW**
+6. **Subscription system** → [Subscription Tiers Guide](SUBSCRIPTION_TIERS_GUIDE.md)
+7. **Export collections** → [API Doc Export Formats](API_DOC_EXPORT_FORMATS.md)
 
 ### Untuk DevOps/Admin
 1. **Migration setup** → [API Doc Migration Plan](API_DOC_MIGRATION_PLAN.md)
 2. **Auto discovery** → [API Doc Auto Discovery](API_DOC_AUTO_DISCOVERY.md)
+3. **Subscription management** → [Subscription Tiers Guide](SUBSCRIPTION_TIERS_GUIDE.md)
 3. **Authentication config** → [API Doc Authentication](API_DOC_AUTHENTICATION.md)
 
 ## 📡 API Endpoints Overview

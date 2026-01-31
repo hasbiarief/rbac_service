@@ -214,7 +214,8 @@ func (r *Repository) GetUserModulesGroupedWithSubscription(userID int64) (map[st
 	var companyID int64
 	err := r.db.QueryRow("SELECT company_id FROM user_roles WHERE user_id = $1 LIMIT 1", userID).Scan(&companyID)
 	if err != nil {
-		return r.getUserBasicModulesGrouped(userID)
+		// If no company found, return empty modules (no fallback)
+		return make(map[string][][]string), nil
 	}
 
 	// Query modules with subscription filtering
@@ -231,13 +232,14 @@ func (r *Repository) GetUserModulesGroupedWithSubscription(userID int64) (map[st
 			AND m.is_active = true
 			AND s.company_id = $2
 			AND s.status = 'active'
-			AND s.end_date > CURRENT_DATE
+			AND (s.billing_cycle = 'lifetime' OR s.end_date >= CURRENT_DATE)
 		ORDER BY m.category, sort_order, m.name
 	`
 
 	rows, err := r.db.Query(query, userID, companyID)
 	if err != nil {
-		return r.getUserBasicModulesGrouped(userID)
+		// If subscription query fails, return empty modules (no fallback)
+		return make(map[string][][]string), nil
 	}
 	defer rows.Close()
 
@@ -253,8 +255,9 @@ func (r *Repository) GetUserModulesGroupedWithSubscription(userID int64) (map[st
 		modules[category] = append(modules[category], []string{moduleName, moduleURL, moduleIcon, moduleDescription})
 	}
 
+	// If no modules found (expired subscription), return empty instead of fallback
 	if len(modules) == 0 {
-		return r.getUserBasicModulesGrouped(userID)
+		return make(map[string][][]string), nil
 	}
 
 	return modules, nil
@@ -266,7 +269,8 @@ func (r *Repository) GetUserModulesWithSubscription(userID int64) ([]string, err
 	var companyID int64
 	err := r.db.QueryRow("SELECT company_id FROM user_roles WHERE user_id = $1 LIMIT 1", userID).Scan(&companyID)
 	if err != nil {
-		return r.getUserBasicModules(userID)
+		// If no company found, return empty modules (no fallback)
+		return []string{}, nil
 	}
 
 	// Query modules with subscription filtering
@@ -282,13 +286,14 @@ func (r *Repository) GetUserModulesWithSubscription(userID int64) ([]string, err
 			AND m.is_active = true
 			AND s.company_id = $2
 			AND s.status = 'active'
-			AND s.end_date > CURRENT_DATE
+			AND (s.billing_cycle = 'lifetime' OR s.end_date >= CURRENT_DATE)
 		ORDER BY m.url
 	`
 
 	rows, err := r.db.Query(query, userID, companyID)
 	if err != nil {
-		return r.getUserBasicModules(userID)
+		// If subscription query fails, return empty modules (no fallback)
+		return []string{}, nil
 	}
 	defer rows.Close()
 
@@ -301,10 +306,7 @@ func (r *Repository) GetUserModulesWithSubscription(userID int64) ([]string, err
 		modules = append(modules, moduleURL)
 	}
 
-	if len(modules) == 0 {
-		return r.getUserBasicModules(userID)
-	}
-
+	// If no modules found (expired subscription), return empty instead of fallback
 	return modules, nil
 }
 
@@ -422,4 +424,116 @@ func (r *Repository) getUserBasicModulesGrouped(userID int64) (map[string][][]st
 	}
 
 	return modules, nil
+}
+
+// GetUserSubscriptionInfo retrieves user's company subscription information
+func (r *Repository) GetUserSubscriptionInfo(userID int64) (map[string]interface{}, error) {
+	// Get user's company ID first
+	var companyID int64
+	err := r.db.QueryRow("SELECT company_id FROM user_roles WHERE user_id = $1 LIMIT 1", userID).Scan(&companyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user company: %w", err)
+	}
+
+	// Get subscription information with plan details
+	query := `
+		SELECT 
+			s.id as subscription_id,
+			s.company_id,
+			c.name as company_name,
+			s.plan_id,
+			sp.name as plan_name,
+			sp.description as plan_description,
+			s.price,
+			s.billing_cycle,
+			sp.max_users,
+			sp.max_branches,
+			s.status,
+			s.start_date,
+			s.end_date,
+			s.created_at as subscription_created_at,
+			s.updated_at as subscription_updated_at,
+			CASE 
+				WHEN s.billing_cycle = 'lifetime' THEN 'lifetime'
+				WHEN s.end_date < CURRENT_DATE THEN 'expired'
+				WHEN s.end_date = CURRENT_DATE THEN 'expiring_today'
+				WHEN s.end_date <= CURRENT_DATE + INTERVAL '7 days' THEN 'expiring_soon'
+				ELSE 'active'
+			END as computed_status,
+			CASE 
+				WHEN s.billing_cycle = 'lifetime' THEN NULL
+				ELSE (s.end_date - CURRENT_DATE)
+			END as days_remaining
+		FROM subscriptions s
+		JOIN subscription_plans sp ON s.plan_id = sp.id
+		JOIN companies c ON s.company_id = c.id
+		WHERE s.company_id = $1 
+			AND s.status = 'active'
+		ORDER BY s.created_at DESC
+		LIMIT 1
+	`
+
+	var subscriptionID, planID int64
+	var companyName, planName, planDescription, billingCycle, status, computedStatus string
+	var price float64
+	var maxUsers, maxBranches, daysRemaining *int64
+	var startDate, endDate, subscriptionCreatedAt, subscriptionUpdatedAt string
+
+	err = r.db.QueryRow(query, companyID).Scan(
+		&subscriptionID, &companyID, &companyName, &planID, &planName, &planDescription,
+		&price, &billingCycle, &maxUsers, &maxBranches,
+		&status, &startDate, &endDate, &subscriptionCreatedAt, &subscriptionUpdatedAt,
+		&computedStatus, &daysRemaining,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Get company name even if no subscription
+			var companyNameOnly string
+			companyQuery := "SELECT name FROM companies WHERE id = $1"
+			if err := r.db.QueryRow(companyQuery, companyID).Scan(&companyNameOnly); err != nil {
+				companyNameOnly = "Unknown Company"
+			}
+
+			return map[string]interface{}{
+				"has_subscription": false,
+				"company_id":       companyID,
+				"company_name":     companyNameOnly,
+				"message":          "No active subscription found",
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to get subscription info: %w", err)
+	}
+
+	subscriptionInfo := map[string]interface{}{
+		"has_subscription": true,
+		"subscription": map[string]interface{}{
+			"id":           subscriptionID,
+			"company_id":   companyID,
+			"company_name": companyName,
+			"plan": map[string]interface{}{
+				"id":            planID,
+				"name":          planName,
+				"description":   planDescription,
+				"price":         price,
+				"billing_cycle": billingCycle,
+			},
+			"limits": map[string]interface{}{
+				"max_users":    maxUsers,
+				"max_branches": maxBranches,
+			},
+			"status":          status,
+			"computed_status": computedStatus,
+			"start_date":      startDate,
+			"end_date":        endDate,
+			"created_at":      subscriptionCreatedAt,
+			"updated_at":      subscriptionUpdatedAt,
+		},
+	}
+
+	// Add days remaining if not null
+	if daysRemaining != nil {
+		subscriptionInfo["subscription"].(map[string]interface{})["days_remaining"] = *daysRemaining
+	}
+
+	return subscriptionInfo, nil
 }

@@ -21,10 +21,10 @@ Branch → Unit → Role → User → Login Response
 ### **Subscription System Architecture**
 
 ```
-┌─────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────┐
 │                    SUBSCRIPTION SYSTEM                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
 │  ┌─────────────────┐    ┌─────────────────┐                │
 │  │ Subscription    │    │ Plan            │                │
 │  │ Plans           │───▶│ Modules         │                │
@@ -55,10 +55,10 @@ Branch → Unit → Role → User → Login Response
 └───────────────────────────────────┼────────────────────────┘
                                     │
                                     ▼
-┌─────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────┐
 │                      RBAC SYSTEM                           │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
 │  ┌─────────────────┐    ┌─────────────────┐                │
 │  │ Role Module     │    │ User Role       │                │
 │  │ Assignment      │    │ Assignment      │                │
@@ -151,9 +151,7 @@ Content-Type: application/json
 
 {
   "name": "PT. Example Company",
-  "address": "Jl. Example No. 123",
-  "phone": "021-12345678",
-  "email": "info@example.com"
+  "code": "EXAMPLE"
 }
 ```
 
@@ -238,6 +236,8 @@ Authorization: Bearer {access_token}
 **📝 Action:** Choose appropriate plan based on required modules.
 
 #### **2.3 Create Subscription for Company**
+
+**Option A: Regular Subscription (Monthly/Yearly)**
 ```http
 POST /api/v1/subscriptions
 Authorization: Bearer {access_token}
@@ -254,7 +254,25 @@ Content-Type: application/json
 }
 ```
 
-**📝 Action:** Company sekarang memiliki subscription yang menentukan modules yang tersedia.
+**Option B: Lifetime Subscription** ⭐ **NEW**
+```http
+POST /api/v1/subscriptions
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "company_id": 1,
+  "plan_id": 4,
+  "billing_cycle": "lifetime",
+  "start_date": "2026-01-31",
+  "end_date": "2099-12-31",
+  "status": "active",
+  "payment_status": "paid",
+  "price": 0.00
+}
+```
+
+**📝 Action:** Company sekarang memiliki subscription yang menentukan modules yang tersedia. Lifetime subscription tidak pernah expire.
 
 #### **2.4 Create Branch**
 ```http
@@ -265,8 +283,7 @@ Content-Type: application/json
 {
   "company_id": 1,
   "name": "Cabang Jakarta",
-  "address": "Jl. Jakarta No. 456",
-  "phone": "021-87654321"
+  "code": "JKT"
 }
 ```
 
@@ -283,9 +300,9 @@ Authorization: Bearer {access_token}
 Content-Type: application/json
 
 {
-  "company_id": 1,
   "branch_id": 1,
   "name": "IT Department",
+  "code": "IT",
   "description": "Information Technology Department"
 }
 ```
@@ -408,8 +425,10 @@ Content-Type: application/json
 **📝 Action:** Save `role_id` dari response.
 
 #### **5.2 Assign Modules to Role (Only Subscription-Included Modules)**
+
+**Option A: Replace All Modules (REPLACE)**
 ```http
-POST /api/v1/roles/{role_id}/modules
+PUT /api/v1/role-management/role/{role_id}/modules
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -419,21 +438,57 @@ Content-Type: application/json
       "module_id": 1,
       "can_read": true,
       "can_write": true,
-      "can_update": true,
-      "can_delete": false,
-      "can_approve": false
+      "can_delete": false
     },
     {
       "module_id": 2,
       "can_read": true,
       "can_write": false,
-      "can_update": false,
-      "can_delete": false,
-      "can_approve": false
+      "can_delete": false
     }
   ]
 }
 ```
+⚠️ **Warning:** Ini akan **mengganti semua** module. Module yang tidak disebutkan akan dihapus.
+
+**Option B: Add New Modules (APPEND) - Recommended**
+```http
+POST /api/v1/role-management/role/{role_id}/modules
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "modules": [
+    {
+      "module_id": 139,
+      "can_read": true,
+      "can_write": true,
+      "can_delete": true
+    },
+    {
+      "module_id": 140,
+      "can_read": true,
+      "can_write": false,
+      "can_delete": false
+    }
+  ]
+}
+```
+✅ **Recommended:** Menambahkan module baru tanpa menghapus yang sudah ada.
+
+**Option C: Remove Specific Modules**
+```http
+DELETE /api/v1/role-management/role/{role_id}/modules
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "module_ids": [140, 141]
+}
+```
+✅ Menghapus module tertentu saja, module lain tetap ada.
+
+**📝 Action:** Gunakan **POST** untuk menambah module baru, **DELETE** untuk hapus module tertentu, **PUT** hanya jika ingin replace semua.
 
 **⚠️ Important:** Hanya assign modules yang sudah included dalam subscription plan company. Modules yang tidak included tidak akan muncul di login response meskipun di-assign ke role.
 
@@ -451,10 +506,7 @@ Content-Type: application/json
   "name": "John Doe",
   "email": "john.doe@example.com",
   "user_identity": "100000001",
-  "password": "password123",
-  "company_id": 1,
-  "branch_id": 1,
-  "is_active": true
+  "password": "password123"
 }
 ```
 
@@ -475,18 +527,16 @@ Content-Type: application/json
 
 #### **6.2 Assign Role to User**
 ```http
-POST /api/v1/users/{user_id}/roles
+POST /api/v1/role-management/assign-user-role
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
 {
-  "role_assignments": [
-    {
-      "role_id": 15,
-      "unit_id": 1,
-      "assignment_level": "unit"
-    }
-  ]
+  "user_id": 17,
+  "role_id": 15,
+  "company_id": 1,
+  "branch_id": 1,
+  "unit_id": 1
 }
 ```
 
@@ -543,11 +593,108 @@ Content-Type: application/json
           "company_name": "PT. Example Company"
         }
       ],
-      "total_roles": 1
+      "total_roles": 1,
+      "subscription": {
+        "has_subscription": true,
+        "subscription": {
+          "id": 1,
+          "company_id": 1,
+          "company_name": "PT. Example Company",
+          "plan": {
+            "id": 2,
+            "name": "professional",
+            "description": "Professional HR solution for growing companies",
+            "price": 2990000,
+            "billing_cycle": "yearly"
+          },
+          "limits": {
+            "max_users": 100,
+            "max_branches": 10
+          },
+          "status": "active",
+          "computed_status": "active",
+          "start_date": "2026-01-01T00:00:00Z",
+          "end_date": "2027-01-01T00:00:00Z",
+          "days_remaining": 335,
+          "created_at": "2026-01-01T10:00:00Z",
+          "updated_at": "2026-01-01T10:00:00Z"
+        }
+      }
     }
   }
 }
 ```
+
+**Lifetime Subscription Response Example** ⭐:
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "subscription": {
+        "has_subscription": true,
+        "subscription": {
+          "id": 12,
+          "company_id": 1,
+          "company_name": "PT. Example Company",
+          "plan": {
+            "id": 4,
+            "name": "lifetime",
+            "description": "Complete HR solution with lifetime access - no expiration",
+            "price": 0,
+            "billing_cycle": "lifetime"
+          },
+          "limits": {
+            "max_users": null,
+            "max_branches": null
+          },
+          "status": "active",
+          "computed_status": "lifetime",
+          "start_date": "2026-01-31T00:00:00Z",
+          "end_date": "2099-12-31T00:00:00Z",
+          "days_remaining": null,
+          "created_at": "2026-01-31T23:11:15Z",
+          "updated_at": "2026-01-31T23:11:15Z"
+        }
+      }
+    }
+  }
+}
+```
+
+#### **7.2.1 Understanding Subscription Information in Login Response**
+
+The login response now includes comprehensive subscription information under the `subscription` field:
+
+**Subscription Fields Explained:**
+- `has_subscription`: Boolean indicating if company has active subscription
+- `subscription.id`: Unique subscription identifier
+- `subscription.company_id`: Company associated with subscription
+- `subscription.company_name`: Company name
+- `subscription.plan`: Subscription plan details
+  - `id`: Plan identifier
+  - `name`: Plan name (basic, professional, enterprise)
+  - `description`: Plan description
+  - `price`: Subscription price
+  - `billing_cycle`: monthly or yearly
+- `subscription.limits`: Plan limitations
+  - `max_users`: Maximum users allowed (null = unlimited)
+  - `max_branches`: Maximum branches allowed (null = unlimited)
+- `subscription.status`: Subscription status (active, expired, cancelled, etc.)
+- `subscription.computed_status`: Real-time status
+  - `active`: Subscription is active
+  - `expiring_soon`: Expires within 7 days
+  - `expiring_today`: Expires today
+  - `expired`: Already expired
+  - `lifetime`: ⭐ **NEW** - Never expires
+- `subscription.days_remaining`: Days until expiration (null for lifetime)
+- `subscription.start_date`: Subscription start date
+- `subscription.end_date`: Subscription end date
+
+**Important Notes:**
+- If `has_subscription: false`, user will only get basic tier modules
+- Expired subscriptions automatically fall back to basic tier
+- Only modules included in the subscription plan will appear in `modules` array
 
 #### **7.2 Test User Permissions**
 ```http
@@ -584,7 +731,7 @@ echo "2. Creating company..."
 COMPANY_RESPONSE=$(curl -s -X POST "$BASE_URL/companies" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name": "PT. Example Company", "address": "Jl. Example No. 123"}')
+  -d '{"name": "PT. Example Company", "code": "EXAMPLE"}')
 
 COMPANY_ID=$(echo $COMPANY_RESPONSE | jq -r '.data.id')
 echo "Company ID: $COMPANY_ID"
@@ -604,7 +751,7 @@ echo "4. Creating branch..."
 BRANCH_RESPONSE=$(curl -s -X POST "$BASE_URL/branches" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"company_id\": $COMPANY_ID, \"name\": \"Cabang Jakarta\"}")
+  -d "{\"company_id\": $COMPANY_ID, \"name\": \"Cabang Jakarta\", \"code\": \"JKT\"}")
 
 BRANCH_ID=$(echo $BRANCH_RESPONSE | jq -r '.data.id')
 echo "Branch ID: $BRANCH_ID"
@@ -614,7 +761,7 @@ echo "5. Creating unit..."
 UNIT_RESPONSE=$(curl -s -X POST "$BASE_URL/units" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"company_id\": $COMPANY_ID, \"branch_id\": $BRANCH_ID, \"name\": \"IT Department\"}")
+  -d "{\"branch_id\": $BRANCH_ID, \"name\": \"IT Department\", \"code\": \"IT\", \"description\": \"Information Technology Department\"}")
 
 UNIT_ID=$(echo $UNIT_RESPONSE | jq -r '.data.id')
 echo "Unit ID: $UNIT_ID"
@@ -636,27 +783,27 @@ curl -s -X GET "$BASE_URL/admin/plan-modules/2" \
 
 # 8. Assign modules to role (only subscription-included modules)
 echo "8. Assigning modules to role..."
-curl -s -X POST "$BASE_URL/roles/$ROLE_ID/modules" \
+curl -s -X PUT "$BASE_URL/role-management/role/$ROLE_ID/modules" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"modules": [{"module_id": 1, "can_read": true, "can_write": true}, {"module_id": 2, "can_read": true, "can_write": false}]}'
+  -d '{"modules": [{"module_id": 1, "can_read": true, "can_write": true, "can_delete": false}, {"module_id": 2, "can_read": true, "can_write": false, "can_delete": false}]}'
 
 # 9. Create user
 echo "9. Creating user..."
 USER_RESPONSE=$(curl -s -X POST "$BASE_URL/users" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"name\": \"John Doe\", \"email\": \"john@example.com\", \"user_identity\": \"100000001\", \"password\": \"password123\", \"company_id\": $COMPANY_ID, \"branch_id\": $BRANCH_ID}")
+  -d "{\"name\": \"John Doe\", \"email\": \"john@example.com\", \"user_identity\": \"100000001\", \"password\": \"password123\"}")
 
 USER_ID=$(echo $USER_RESPONSE | jq -r '.data.id')
 echo "User ID: $USER_ID"
 
 # 10. Assign role to user
 echo "10. Assigning role to user..."
-curl -s -X POST "$BASE_URL/users/$USER_ID/roles" \
+curl -s -X POST "$BASE_URL/role-management/assign-user-role" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"role_assignments\": [{\"role_id\": $ROLE_ID, \"unit_id\": $UNIT_ID, \"assignment_level\": \"unit\"}]}"
+  -d "{\"user_id\": $USER_ID, \"role_id\": $ROLE_ID, \"company_id\": $COMPANY_ID, \"branch_id\": $BRANCH_ID, \"unit_id\": $UNIT_ID}"
 
 # 11. Test login as new user
 echo "11. Testing login as new user..."
@@ -669,6 +816,77 @@ echo $USER_LOGIN_RESPONSE | jq '.'
 
 echo "Setup complete!"
 ```
+
+---
+
+## 🔧 **How to Map New Modules to Existing Users**
+
+### **Scenario:** Anda sudah memiliki user dan role, tapi ingin menambahkan module baru
+
+#### **Step 1: Check Current Role Modules**
+```bash
+# Get current modules for role
+curl -X GET "$BASE_URL/roles/{role_id}/permissions" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+#### **Step 2: Add New Modules (Recommended)**
+```bash
+# Add modules without removing existing ones
+curl -X POST "$BASE_URL/role-management/role/{role_id}/modules" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "modules": [
+      {
+        "module_id": 139,
+        "can_read": true,
+        "can_write": true,
+        "can_delete": true
+      },
+      {
+        "module_id": 140,
+        "can_read": true,
+        "can_write": false,
+        "can_delete": false
+      }
+    ]
+  }'
+```
+
+#### **Step 3: Remove Specific Modules (If Needed)**
+```bash
+# Remove specific modules only
+curl -X DELETE "$BASE_URL/role-management/role/{role_id}/modules" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "module_ids": [140, 141]
+  }'
+```
+
+#### **Step 4: Verify User Access**
+```bash
+# Login as user to check new modules
+curl -X POST "$BASE_URL/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"user_identity": "800000001", "password": "password123"}' | jq '.data.user.modules'
+```
+
+### **⚠️ Important Notes:**
+
+1. **Module harus included di subscription plan** - Check dengan:
+   ```bash
+   curl -X GET "$BASE_URL/admin/plan-modules/{plan_id}" \
+     -H "Authorization: Bearer $TOKEN"
+   ```
+
+2. **Gunakan POST untuk ADD, bukan PUT** - PUT akan replace semua module
+
+3. **Module mapping flow:**
+   ```
+   Module → Plan Modules (is_included=true) → Role Modules → User Roles → Login Response
+   ```
 
 ---
 
@@ -807,10 +1025,19 @@ All System Modules (1-150+)
 - User mendapat akses module melalui: Subscription → Role → User
 
 ### **4. Login Response Structure**
-- `modules`: Grouped modules yang bisa diakses user
+- `access_token`: JWT token for API authentication
+- `refresh_token`: Token for refreshing access token
+- `user.modules`: Grouped modules yang bisa diakses user
 - **Modules shown = Subscription Plan ∩ Role Assignment ∩ User Permission**
-- `role_assignments`: Detail role dan unit assignment
-- `total_roles`: Jumlah role yang dimiliki user
+- `user.role_assignments`: Detail role dan unit assignment
+- `user.total_roles`: Jumlah role yang dimiliki user
+- `user.subscription`: **NEW** - Comprehensive subscription information
+  - `has_subscription`: Boolean indicating active subscription
+  - `subscription.plan`: Plan details (name, price, billing_cycle)
+  - `subscription.limits`: Plan limitations (max_users, max_branches)
+  - `subscription.computed_status`: Real-time status (active, expiring_soon, expired)
+  - `subscription.days_remaining`: Days until expiration
+  - `subscription.start_date` & `subscription.end_date`: Subscription period
 
 ### **5. Permission Checking**
 - Setiap API call akan check permission berdasarkan role
@@ -891,7 +1118,13 @@ WHERE s.company_id = ? AND s.status = 'active'
 #### **5. Subscription-related issues**
 - ✅ **Check subscription status**:
   ```sql
-  SELECT s.*, sp.name as plan_name, sp.display_name
+  SELECT s.*, sp.name as plan_name, sp.display_name,
+    CASE 
+      WHEN s.end_date >= CURRENT_DATE AND s.status = 'active' THEN 'ACTIVE'
+      WHEN s.end_date < CURRENT_DATE THEN 'EXPIRED'
+      WHEN s.status != 'active' THEN 'INACTIVE'
+      ELSE 'UNKNOWN'
+    END as computed_status
   FROM subscriptions s
   JOIN subscription_plans sp ON s.plan_id = sp.id
   WHERE s.company_id = ?;
@@ -915,6 +1148,18 @@ WHERE s.company_id = ? AND s.status = 'active'
     END as subscription_status
   FROM subscriptions WHERE company_id = ?;
   ```
+
+#### **6. Subscription Expiry Behavior**
+- ✅ **Active Subscription**: User gets all modules included in their subscription plan
+- ✅ **Expired Subscription**: User only gets modules with `subscription_tier = 'basic'` or `subscription_tier IS NULL`
+- ✅ **No Subscription**: User gets no modules (empty response)
+
+**Example Behavior**:
+```
+Enterprise Plan (Active) → All modules (basic + pro + enterprise)
+Enterprise Plan (Expired) → Only basic tier modules
+No Subscription → No modules
+```
 
 #### **6. Module assignment issues**
 - ✅ **Cannot assign module to role if not in subscription**:

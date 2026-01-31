@@ -67,7 +67,7 @@
         <mxCell id="phase2_label" value="Phase 2: Company &amp; Subscription Setup" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" parent="1" vertex="1">
           <mxGeometry x="750" y="320" width="200" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="create_company" value="POST /api/v1/companies&#xa;{name, address, phone}" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" parent="1" edge="1">
+        <mxCell id="create_company" value="POST /api/v1/companies&#xa;{name, code}" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" parent="1" edge="1">
           <mxGeometry width="80" relative="1" as="geometry">
             <mxPoint x="70" y="360" as="sourcePoint" />
             <mxPoint x="235" y="360" as="targetPoint" />
@@ -226,7 +226,7 @@
             <mxPoint x="385" y="1100" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="assign_role" value="POST /api/v1/users/{id}/roles&#xa;{role_id, unit_id}" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" parent="1" edge="1">
+        <mxCell id="assign_role" value="POST /api/v1/role-management/assign-user-role&#xa;{user_id, role_id, company_id, branch_id, unit_id}" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" parent="1" edge="1">
           <mxGeometry width="80" relative="1" as="geometry">
             <mxPoint x="70" y="1140" as="sourcePoint" />
             <mxPoint x="235" y="1140" as="targetPoint" />

@@ -84,6 +84,16 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 		moduleURLs = []string{}
 	}
 
+	// Get subscription information
+	subscriptionInfo, err := s.repo.GetUserSubscriptionInfo(user.ID)
+	if err != nil {
+		// If subscription info fails, provide basic info
+		subscriptionInfo = map[string]interface{}{
+			"has_subscription": false,
+			"message":          "Unable to retrieve subscription information",
+		}
+	}
+
 	accessToken, err := s.tokenService.GenerateToken()
 	if err != nil {
 		return nil, err
@@ -142,6 +152,7 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 		"modules":          modules,
 		"role_assignments": roleAssignments,
 		"total_roles":      totalRoles,
+		"subscription":     subscriptionInfo,
 	}
 
 	return &LoginResponse{

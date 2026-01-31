@@ -72,7 +72,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "login"]
 						},
-"description": "Authenticate user and return access token. Returns JWT tokens for API access along with user information.\n\n**Available Test Users:**\n\n| Name | Email | User Identity | Role | Password |\n|------|-------|---------------|------|-----------|\n| Uzumaki Naruto | naruto@company.com | 100000001 | Super Admin | password123 |\n| Haruno Sakura | sakura@company.com | 100000002 | HR Admin | password123 |\n| Sasuke Uchiha | sasuke@company.com | 100000003 | Recruiter | password123 |\n| Yamanaka Ino | ino@company.com | 100000006 | Employee | password123 |\n| Aburame Shino | shino@company.com | 100000009 | Test Copy | password123 |\n| Hasbi Due | hasbi@company.com | 800000001 | Console Admin | password123 |\n\n**Usage:**\n- Use either `user_identity` or `email` with `password`\n- Successful login returns `access_token` and `refresh_token`\n- Access token is automatically saved to environment variables"
+						"description": "Authenticate user and return access token. Returns JWT tokens for API access along with user information and subscription details.\n\n**Available Test Users:**\n\n| Name | Email | User Identity | Role | Password |\n|------|-------|---------------|------|-----------|\n| Uzumaki Naruto | naruto@company.com | 100000001 | Super Admin | password123 |\n| Haruno Sakura | sakura@company.com | 100000002 | HR Admin | password123 |\n| Sasuke Uchiha | sasuke@company.com | 100000003 | Recruiter | password123 |\n| Yamanaka Ino | ino@company.com | 100000006 | Employee | password123 |\n| Aburame Shino | shino@company.com | 100000009 | Test Copy | password123 |\n| Hasbi Due | hasbi@company.com | 800000001 | Console Admin | password123 |\n\n**Response includes:**\n- `access_token` & `refresh_token`: JWT tokens for authentication\n- `user.modules`: Available modules based on subscription and role\n- `user.role_assignments`: User's role assignments with company/branch/unit details\n- `user.subscription`: **NEW** - Comprehensive subscription information including:\n  - Plan details (name, price, billing cycle)\n  - Subscription status and expiration\n  - Plan limitations (max users, branches)\n  - Real-time computed status (active, expiring_soon, expired)\n\n**Usage:**\n- Use either `user_identity` or `email` with `password`\n- Successful login returns `access_token` and `refresh_token`\n- Access token is automatically saved to environment variables\n- Subscription information helps frontend show plan status and limitations"
 					},
 					"response": []
 				},
@@ -694,13 +694,68 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"permissions\": [\n    {\n      \"module_id\": 1,\n      \"can_read\": true,\n      \"can_write\": true,\n      \"can_delete\": false\n    },\n    {\n      \"module_id\": 2,\n      \"can_read\": true,\n      \"can_write\": false,\n      \"can_delete\": false\n    }\n  ]\n}"
+							"raw": "{\n  \"modules\": [\n    {\n      \"module_id\": 1,\n      \"can_read\": true,\n      \"can_write\": true,\n      \"can_delete\": false\n    },\n    {\n      \"module_id\": 2,\n      \"can_read\": true,\n      \"can_write\": false,\n      \"can_delete\": false\n    }\n  ]\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/role-management/role/4/modules",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "role-management", "role", "4", "modules"]
-						}
+						},
+						"description": "Update (REPLACE) all modules for a role. ⚠️ WARNING: This will remove all existing modules and replace with new ones. Use 'Add Modules to Role' (POST) instead for safer operation.\n\n**Behavior:**\n- ⚠️ REPLACES all existing modules\n- ⚠️ Modules not listed will be REMOVED\n- ⚠️ Use with caution\n\n**Recommended:** Use POST method to add modules instead"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Modules to Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"modules\": [\n    {\n      \"module_id\": 139,\n      \"can_read\": true,\n      \"can_write\": true,\n      \"can_delete\": true\n    },\n    {\n      \"module_id\": 140,\n      \"can_read\": true,\n      \"can_write\": false,\n      \"can_delete\": false\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/role/{{roleId}}/modules",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "role", "{{roleId}}", "modules"]
+						},
+						"description": "Add new modules to a role without removing existing ones. This is the RECOMMENDED way to add modules as it preserves existing module assignments.\n\n**Behavior:**\n- ✅ Adds new modules without removing existing ones\n- ✅ Updates permissions if module already exists\n- ✅ Safe operation - no data loss\n\n**Use Case:** Adding new modules to existing roles"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Modules from Role",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"module_ids\": [140, 141]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/role-management/role/{{roleId}}/modules",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "role-management", "role", "{{roleId}}", "modules"]
+						},
+						"description": "Remove specific modules from a role. Other modules remain unchanged.\n\n**Behavior:**\n- ✅ Removes only specified modules\n- ✅ Other modules remain intact\n- ✅ Safe selective removal\n\n**Use Case:** Removing specific modules while keeping others"
 					},
 					"response": []
 				},
@@ -1805,6 +1860,25 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "roles", "1"]
 						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Role with Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/roles/{{roleId}}/permissions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "roles", "{{roleId}}", "permissions"]
+						},
+						"description": "Get role details along with all assigned modules and their permissions.\n\n**Response includes:**\n- Role basic information (id, name, description)\n- All assigned modules with permissions (can_read, can_write, can_delete)\n- Module details (name, URL)\n\n**Use Case:** Check what modules are currently assigned to a role before adding/removing modules"
 					},
 					"response": []
 				},

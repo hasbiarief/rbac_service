@@ -46,6 +46,16 @@ type UpdateRolePermissionsRequest struct {
 	Modules []RolePermissionRequest `json:"modules" validate:"required,dive"`
 }
 
+// AddRoleModulesRequest DTO - untuk menambahkan module ke role
+type AddRoleModulesRequest struct {
+	Modules []RolePermissionRequest `json:"modules" validate:"required,dive"`
+}
+
+// RemoveRoleModulesRequest DTO - untuk menghapus module dari role
+type RemoveRoleModulesRequest struct {
+	ModuleIDs []int64 `json:"module_ids" validate:"required,min=1"`
+}
+
 // RoleListRequest DTO
 type RoleListRequest struct {
 	Limit    int    `form:"limit"`
@@ -128,6 +138,16 @@ func ValidateAssignRoleRequest(req *AssignRoleRequest) error {
 
 // ValidateUpdateRolePermissionsRequest validates update role permissions request
 func ValidateUpdateRolePermissionsRequest(req *UpdateRolePermissionsRequest) error {
+	return validate.Struct(req)
+}
+
+// ValidateAddRoleModulesRequest validates add role modules request
+func ValidateAddRoleModulesRequest(req *AddRoleModulesRequest) error {
+	return validate.Struct(req)
+}
+
+// ValidateRemoveRoleModulesRequest validates remove role modules request
+func ValidateRemoveRoleModulesRequest(req *RemoveRoleModulesRequest) error {
 	return validate.Struct(req)
 }
 
