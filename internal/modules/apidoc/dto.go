@@ -442,11 +442,8 @@ func init() {
 		return name
 	})
 
-	// Register custom validators
+	// Register custom validators (only if actually used in struct tags)
 	validate.RegisterValidation("version", validateVersion)
-	validate.RegisterValidation("http_method", validateHTTPMethod)
-	validate.RegisterValidation("api_path", validateAPIPath)
-	validate.RegisterValidation("content_type", validateContentType)
 	validate.RegisterValidation("hex_color", validateHexColor)
 	validate.RegisterValidation("env_var_name", validateEnvVarName)
 }
@@ -458,35 +455,14 @@ func validateVersion(fl validator.FieldLevel) bool {
 	versionRegex := regexp.MustCompile(`^v?(\d+)(\.\d+)*(\.\d+)*(-[a-zA-Z0-9]+)*$`)
 	return versionRegex.MatchString(version)
 }
-func validateHTTPMethod(fl validator.FieldLevel) bool {
-	method := strings.ToUpper(fl.Field().String())
-	validMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
-	for _, validMethod := range validMethods {
-		if method == validMethod {
-			return true
-		}
-	}
-	return false
-}
 
-func validateAPIPath(fl validator.FieldLevel) bool {
-	path := fl.Field().String()
-	// API path should start with / and contain valid URL characters
-	pathRegex := regexp.MustCompile(`^/[a-zA-Z0-9\-._~:/?#[\]@!'()*+,;=%{}]*$`)
-	return pathRegex.MatchString(path)
-}
-func validateContentType(fl validator.FieldLevel) bool {
-	contentType := fl.Field().String()
-	// Basic content type validation
-	contentTypeRegex := regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*(\s*;\s*[a-zA-Z0-9\-]+=([a-zA-Z0-9\-]+|"[^"]*"))*$`)
-	return contentTypeRegex.MatchString(contentType)
-}
 func validateHexColor(fl validator.FieldLevel) bool {
 	color := fl.Field().String()
 	// Hex color validation (#RRGGBB or #RGB)
 	hexColorRegex := regexp.MustCompile(`^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$`)
 	return hexColorRegex.MatchString(color)
 }
+
 func validateEnvVarName(fl validator.FieldLevel) bool {
 	name := fl.Field().String()
 	// Environment variable name validation (uppercase letters, numbers, underscores)

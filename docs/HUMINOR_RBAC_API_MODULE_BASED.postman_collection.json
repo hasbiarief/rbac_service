@@ -16,7 +16,8 @@
 					"raw": "{{base_url}}/health",
 					"host": ["{{base_url}}"],
 					"path": ["health"]
-				}
+				},
+				"description": "Health check endpoint to verify API service status and availability. Returns a simple status response to confirm the service is running properly."
 			},
 			"response": [
 				{
@@ -70,7 +71,8 @@
 							"raw": "{{base_url}}/api/v1/auth/login",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "login"]
-						}
+						},
+"description": "Authenticate user and return access token. Returns JWT tokens for API access along with user information.\n\n**Available Test Users:**\n\n| Name | Email | User Identity | Role | Password |\n|------|-------|---------------|------|-----------|\n| Uzumaki Naruto | naruto@company.com | 100000001 | Super Admin | password123 |\n| Haruno Sakura | sakura@company.com | 100000002 | HR Admin | password123 |\n| Sasuke Uchiha | sasuke@company.com | 100000003 | Recruiter | password123 |\n| Yamanaka Ino | ino@company.com | 100000006 | Employee | password123 |\n| Aburame Shino | shino@company.com | 100000009 | Test Copy | password123 |\n| Hasbi Due | hasbi@company.com | 800000001 | Console Admin | password123 |\n\n**Usage:**\n- Use either `user_identity` or `email` with `password`\n- Successful login returns `access_token` and `refresh_token`\n- Access token is automatically saved to environment variables"
 					},
 					"response": []
 				},

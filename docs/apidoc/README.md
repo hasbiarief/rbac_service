@@ -7,6 +7,7 @@ Dokumentasi lengkap untuk API Documentation System dan semua API endpoints dalam
 ### 🏗️ Core API Documentation
 - **[API Overview](API_OVERVIEW.md)** - Dokumentasi lengkap semua API endpoints dengan request/response examples
 - **[API Documentation System](API_DOCUMENTATION_SYSTEM.md)** - Sistem dokumentasi API terintegrasi
+- **[API Workflow Guide](API_WORKFLOW_GUIDE.md)** - Complete setup process dari user creation sampai module visibility
 
 ### 🔧 API Documentation Features
 - **[API Doc Authentication](API_DOC_AUTHENTICATION.md)** - Authentication untuk API Documentation
@@ -20,7 +21,8 @@ Dokumentasi lengkap untuk API Documentation System dan semua API endpoints dalam
 1. **Mulai dengan** → [API Overview](API_OVERVIEW.md)
 2. **Pahami sistem** → [API Documentation System](API_DOCUMENTATION_SYSTEM.md)
 3. **Setup authentication** → [API Doc Authentication](API_DOC_AUTHENTICATION.md)
-4. **Export collections** → [API Doc Export Formats](API_DOC_EXPORT_FORMATS.md)
+4. **Complete workflow** → [API Workflow Guide](API_WORKFLOW_GUIDE.md)
+5. **Export collections** → [API Doc Export Formats](API_DOC_EXPORT_FORMATS.md)
 
 ### Untuk DevOps/Admin
 1. **Migration setup** → [API Doc Migration Plan](API_DOC_MIGRATION_PLAN.md)
