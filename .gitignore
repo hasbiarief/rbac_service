@@ -54,5 +54,7 @@ Thumbs.db
 # kiro
 .kiro
 
-# migrations
+# migrations & database
 migrations
+database/dumps
+database/seeder
