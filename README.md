@@ -261,10 +261,6 @@ go test ./internal/modules/auth/...
 5. Update documentation
 6. Submit pull request
 
-## 📄 License
-
-[Your License]
-
 ## 👥 Team
 
-[Your Team Info]
+[hasbiarief@gmail.com]
