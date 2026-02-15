@@ -28,6 +28,7 @@ tmp/
 build-errors.log
 
 # Environment variables
+.env
 .env.local
 .env.production
 
@@ -52,6 +53,3 @@ Thumbs.db
 
 # kiro
 .kiro
-
-# Environment Variable
-.env
