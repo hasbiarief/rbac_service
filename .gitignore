@@ -53,3 +53,6 @@ Thumbs.db
 
 # kiro
 .kiro
+
+# migrations
+migrations
