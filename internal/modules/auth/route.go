@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"gin-scalable-api/internal/constants"
 	"gin-scalable-api/middleware"
 	"gin-scalable-api/pkg/response"
@@ -22,6 +21,17 @@ func NewHandler(service *Service) *Handler {
 }
 
 // Handler methods
+
+// @Summary      Login dengan user identity
+// @Description  Autentikasi pengguna menggunakan user_identity atau email dan mengembalikan access token dan refresh token
+// @Tags         🔐 Authentication
+// @Accept       json
+// @Produce      json
+// @Param        credentials  body      auth.LoginRequest  true  "Login credentials (user_identity atau email dengan password)"
+// @Success      200          {object}  response.Response{data=auth.LoginResponse}  "Login berhasil"
+// @Failure      400          {object}  response.Response  "Bad request - format request tidak valid"
+// @Failure      401          {object}  response.Response  "Unauthorized - kredensial tidak valid"
+// @Router       /api/v1/auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -35,22 +45,11 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	if req.UserIdentity == "" {
-		response.Error(c, http.StatusBadRequest, "Invalid request", "user_identity must be provided")
-		return
-	}
-
+	// Get UserAgent and IP from request context
 	userAgent := c.GetHeader("User-Agent")
 	ip := c.ClientIP()
 
-	if req.UserAgent == nil {
-		req.UserAgent = &userAgent
-	}
-	if req.IP == nil {
-		req.IP = &ip
-	}
-
-	authResponse, err := h.service.Login(req)
+	authResponse, err := h.service.Login(req, userAgent, ip)
 	if err != nil {
 		response.Error(c, http.StatusUnauthorized, "Login failed", err.Error())
 		return
@@ -59,6 +58,16 @@ func (h *Handler) Login(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgLoginSuccess, authResponse)
 }
 
+// @Summary      Login dengan email
+// @Description  Autentikasi pengguna menggunakan email dan password, mengembalikan access token dan refresh token
+// @Tags         🔐 Authentication
+// @Accept       json
+// @Produce      json
+// @Param        credentials  body      auth.LoginEmailRequest  true  "Login credentials dengan email"
+// @Success      200          {object}  response.Response{data=auth.LoginResponse}  "Login berhasil"
+// @Failure      400          {object}  response.Response  "Bad request - format request tidak valid"
+// @Failure      401          {object}  response.Response  "Unauthorized - kredensial tidak valid"
+// @Router       /api/v1/auth/login-email [post]
 func (h *Handler) LoginWithEmail(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -72,24 +81,11 @@ func (h *Handler) LoginWithEmail(c *gin.Context) {
 		return
 	}
 
+	// Get UserAgent and IP from request context
 	userAgent := c.GetHeader("User-Agent")
 	ip := c.ClientIP()
 
-	if req.UserAgent == nil {
-		req.UserAgent = &userAgent
-	}
-	if req.IP == nil {
-		req.IP = &ip
-	}
-
-	loginReq := &LoginRequest{
-		Email:     req.Email,
-		Password:  req.Password,
-		UserAgent: req.UserAgent,
-		IP:        req.IP,
-	}
-
-	authResponse, err := h.service.Login(loginReq)
+	authResponse, err := h.service.LoginWithEmail(req, userAgent, ip)
 	if err != nil {
 		response.Error(c, http.StatusUnauthorized, "Login failed", err.Error())
 		return
@@ -98,6 +94,16 @@ func (h *Handler) LoginWithEmail(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgLoginSuccess, authResponse)
 }
 
+// @Summary      Refresh access token
+// @Description  Memperbarui access token menggunakan refresh token yang valid
+// @Tags         🔐 Authentication
+// @Accept       json
+// @Produce      json
+// @Param        token  body      auth.RefreshTokenRequest  true  "Refresh token"
+// @Success      200    {object}  response.Response{data=auth.RefreshTokenResponse}  "Token berhasil diperbarui"
+// @Failure      400    {object}  response.Response  "Bad request - format request tidak valid"
+// @Failure      401    {object}  response.Response  "Unauthorized - refresh token tidak valid atau expired"
+// @Router       /api/v1/auth/refresh [post]
 func (h *Handler) RefreshToken(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -120,6 +126,15 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgTokenRefreshed, authResponse)
 }
 
+// @Summary      Logout user
+// @Description  Menghapus session pengguna berdasarkan token atau user_id
+// @Tags         🔐 Authentication
+// @Accept       json
+// @Produce      json
+// @Param        logout  body      auth.LogoutRequest  true  "Logout request (token atau user_id)"
+// @Success      200     {object}  response.Response  "Logout berhasil"
+// @Failure      400     {object}  response.Response  "Bad request - token atau user_id harus disediakan"
+// @Router       /api/v1/auth/logout [post]
 func (h *Handler) Logout(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -153,20 +168,32 @@ func (h *Handler) Logout(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgLogoutSuccess, nil)
 }
 
+// @Summary      Check user tokens
+// @Description  Memeriksa status token pengguna berdasarkan user_identity
+// @Tags         🔐 Authentication
+// @Accept       json
+// @Produce      json
+// @Param        user_identity  query     string  true  "User identity"
+// @Success      200            {object}  response.Response  "Token check berhasil"
+// @Failure      400            {object}  response.Response  "Bad request - user_identity diperlukan"
+// @Failure      404            {object}  response.Response  "User tidak ditemukan"
+// @Failure      500            {object}  response.Response  "Internal server error"
+// @Router       /api/v1/auth/check-tokens [get]
 func (h *Handler) CheckUserTokens(c *gin.Context) {
-	userIDStr := c.Query("user_id")
-	if userIDStr == "" {
-		response.Error(c, http.StatusBadRequest, "Bad request", "user_id is required")
+	userIdentity := c.Query("user_identity")
+	if userIdentity == "" {
+		response.Error(c, http.StatusBadRequest, "Bad request", "user_identity is required")
 		return
 	}
 
-	var userID int64
-	if _, err := fmt.Sscanf(userIDStr, "%d", &userID); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", "invalid user_id format")
+	// Get user by user_identity to get the user ID
+	user, err := h.service.repo.GetByUserIdentity(userIdentity)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, "User not found", err.Error())
 		return
 	}
 
-	tokensResponse, err := h.service.CheckUserTokens(userID)
+	tokensResponse, err := h.service.CheckUserTokens(user.ID)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Operation failed", err.Error())
 		return
@@ -175,39 +202,60 @@ func (h *Handler) CheckUserTokens(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Token check completed", tokensResponse)
 }
 
+// @Summary      Get user session count
+// @Description  Mendapatkan jumlah session aktif pengguna berdasarkan user_identity
+// @Tags         🔐 Authentication
+// @Accept       json
+// @Produce      json
+// @Param        user_identity  query     string  true  "User identity"
+// @Success      200            {object}  response.Response{data=map[string]interface{}}  "Session count berhasil diambil"
+// @Failure      400            {object}  response.Response  "Bad request - user_identity diperlukan"
+// @Failure      404            {object}  response.Response  "User tidak ditemukan"
+// @Failure      500            {object}  response.Response  "Internal server error"
+// @Router       /api/v1/auth/session-count [get]
 func (h *Handler) GetUserSessionCount(c *gin.Context) {
-	userIDStr := c.Query("user_id")
-	if userIDStr == "" {
-		response.Error(c, http.StatusBadRequest, "Bad request", "user_id is required")
+	userIdentity := c.Query("user_identity")
+	if userIdentity == "" {
+		response.Error(c, http.StatusBadRequest, "Bad request", "user_identity is required")
 		return
 	}
 
-	var userID int64
-	if _, err := fmt.Sscanf(userIDStr, "%d", &userID); err != nil {
-		response.Error(c, http.StatusBadRequest, "Bad request", "invalid user_id format")
+	// Get user by user_identity to get the user ID
+	user, err := h.service.repo.GetByUserIdentity(userIdentity)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, "User not found", err.Error())
 		return
 	}
 
-	accessCount, err := h.service.GetUserSessionCount(userID)
+	accessCount, err := h.service.GetUserSessionCount(user.ID)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Operation failed", err.Error())
 		return
 	}
 
-	refreshCount, err := h.service.GetUserRefreshTokenCount(userID)
+	refreshCount, err := h.service.GetUserRefreshTokenCount(user.ID)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Operation failed", err.Error())
 		return
 	}
 
 	response.Success(c, http.StatusOK, "Session count retrieved", map[string]interface{}{
-		"user_id":             userID,
+		"user_identity":       userIdentity,
+		"user_id":             user.ID,
 		"access_token_count":  accessCount,
 		"refresh_token_count": refreshCount,
 		"total_sessions":      accessCount,
 	})
 }
 
+// @Summary      Cleanup expired tokens
+// @Description  Membersihkan token yang sudah expired dari database
+// @Tags         🔐 Authentication
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  response.Response  "Cleanup berhasil"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/auth/cleanup-expired [post]
 func (h *Handler) CleanupExpiredTokens(c *gin.Context) {
 	err := h.service.CleanupExpiredTokens()
 	if err != nil {
@@ -216,6 +264,50 @@ func (h *Handler) CleanupExpiredTokens(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Expired tokens cleaned up successfully", nil)
+}
+
+// @Summary      Get user profile
+// @Description  Mendapatkan profil pengguna berdasarkan user_identity dan application_code
+// @Tags         🔐 Authentication
+// @Accept       json
+// @Produce      json
+// @Param        user_identity     query     string  true  "User identity"
+// @Param        application_code  query     string  true  "Application code"
+// @Success      200               {object}  response.Response{data=auth.ProfileResponse}  "Profile berhasil diambil"
+// @Failure      400               {object}  response.Response  "Bad request - parameter diperlukan"
+// @Failure      404               {object}  response.Response  "User atau application tidak ditemukan"
+// @Router       /api/v1/auth/profile [get]
+func (h *Handler) GetProfile(c *gin.Context) {
+	userIdentity := c.Query("user_identity")
+	applicationCode := c.Query("application_code")
+
+	if userIdentity == "" {
+		response.Error(c, http.StatusBadRequest, "Bad request", "user_identity is required")
+		return
+	}
+
+	if applicationCode == "" {
+		response.Error(c, http.StatusBadRequest, "Bad request", "application_code is required")
+		return
+	}
+
+	req := &ProfileRequest{
+		UserIdentity:    userIdentity,
+		ApplicationCode: applicationCode,
+	}
+
+	if err := ValidateProfileRequest(req); err != nil {
+		response.Error(c, http.StatusBadRequest, "Validation failed", err.Error())
+		return
+	}
+
+	profileResponse, err := h.service.GetUserProfile(req)
+	if err != nil {
+		response.ErrorWithAutoStatus(c, "Failed to get profile", err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Profile successfully retrieved", profileResponse)
 }
 
 // Route registration
@@ -262,5 +354,8 @@ func RegisterRoutes(api *gin.RouterGroup, handler *Handler) {
 
 		// POST /api/v1/auth/cleanup-expired - Cleanup expired tokens
 		auth.POST("/cleanup-expired", handler.CleanupExpiredTokens)
+
+		// GET /api/v1/auth/profile - Get user profile by application
+		auth.GET("/profile", handler.GetProfile)
 	}
 }

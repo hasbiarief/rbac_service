@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"gin-scalable-api/pkg/model"
+	"time"
 )
 
 type Repository struct {
@@ -261,6 +262,82 @@ func (r *Repository) GetUserModulesGroupedWithSubscription(userID int64) (map[st
 	}
 
 	return modules, nil
+}
+
+// GetUserApplicationsWithModules retrieves user applications with modules grouped by category
+func (r *Repository) GetUserApplicationsWithModules(userID int64) (map[string]interface{}, error) {
+	// Get user's company ID
+	var companyID int64
+	err := r.db.QueryRow("SELECT company_id FROM user_roles WHERE user_id = $1 LIMIT 1", userID).Scan(&companyID)
+	if err != nil {
+		return make(map[string]interface{}), nil
+	}
+
+	// Query applications with modules and subscription filtering
+	query := `
+		SELECT DISTINCT 
+			a.id as app_id, a.name as app_name, a.code as app_code, 
+			a.icon as app_icon, a.url as app_url, a.sort_order as app_sort_order,
+			m.name as module_name, m.url as module_url, m.icon as module_icon, 
+			m.description as module_description, m.category as module_category
+		FROM user_roles ur
+		JOIN role_modules rm ON ur.role_id = rm.role_id
+		JOIN modules m ON rm.module_id = m.id
+		JOIN applications a ON m.application_id = a.id
+		JOIN plan_modules pm ON m.id = pm.module_id AND pm.is_included = true
+		JOIN plan_applications pa ON a.id = pa.application_id AND pa.is_included = true
+		JOIN subscriptions s ON pm.plan_id = s.plan_id AND pa.plan_id = s.plan_id
+		WHERE ur.user_id = $1 
+			AND rm.can_read = true
+			AND m.is_active = true
+			AND a.is_active = true
+			AND s.company_id = $2
+			AND s.status = 'active'
+			AND (s.billing_cycle = 'lifetime' OR s.end_date >= CURRENT_DATE)
+		ORDER BY a.sort_order, a.name, m.category, m.name
+	`
+
+	rows, err := r.db.Query(query, userID, companyID)
+	if err != nil {
+		return make(map[string]interface{}), nil
+	}
+	defer rows.Close()
+
+	applications := make(map[string]interface{})
+
+	for rows.Next() {
+		var appID int64
+		var appName, appCode, appIcon, appURL string
+		var appSortOrder int
+		var moduleName, moduleURL, moduleIcon, moduleDescription, moduleCategory string
+
+		if err := rows.Scan(&appID, &appName, &appCode, &appIcon, &appURL, &appSortOrder,
+			&moduleName, &moduleURL, &moduleIcon, &moduleDescription, &moduleCategory); err != nil {
+			continue
+		}
+
+		// Initialize application if not exists
+		if applications[appName] == nil {
+			applications[appName] = map[string]interface{}{
+				"id":         appID,
+				"name":       appName,
+				"code":       appCode,
+				"icon":       appIcon,
+				"url":        appURL,
+				"sort_order": appSortOrder,
+				"modules":    make(map[string][][]string),
+			}
+		}
+
+		// Add module to application
+		app := applications[appName].(map[string]interface{})
+		modules := app["modules"].(map[string][][]string)
+		modules[moduleCategory] = append(modules[moduleCategory],
+			[]string{moduleName, moduleURL, moduleIcon, moduleDescription})
+		app["modules"] = modules
+	}
+
+	return applications, nil
 }
 
 // GetUserModulesWithSubscription retrieves user module URLs
@@ -536,4 +613,202 @@ func (r *Repository) GetUserSubscriptionInfo(userID int64) (map[string]interface
 	}
 
 	return subscriptionInfo, nil
+}
+
+// GetUserProfileByApplication retrieves user profile with modules for specific application
+func (r *Repository) GetUserProfileByApplication(userIdentity, applicationCode string) (map[string]interface{}, error) {
+	// First get user by user_identity
+	user, err := r.GetByUserIdentity(userIdentity)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	// Get application by code
+	var applicationID int64
+	var applicationName, applicationIcon, applicationURL string
+	var applicationSortOrder int
+
+	appQuery := `
+		SELECT id, name, icon, url, sort_order
+		FROM applications 
+		WHERE code = $1 AND is_active = true
+	`
+	err = r.db.QueryRow(appQuery, applicationCode).Scan(
+		&applicationID, &applicationName, &applicationIcon, &applicationURL, &applicationSortOrder,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("application not found")
+		}
+		return nil, fmt.Errorf("failed to get application: %w", err)
+	}
+
+	// Get user's company ID for subscription check
+	var companyID int64
+	companyQuery := `
+		SELECT COALESCE(ur.company_id, 0) as company_id
+		FROM users u
+		LEFT JOIN user_roles ur ON u.id = ur.user_id
+		WHERE u.id = $1
+		LIMIT 1
+	`
+	err = r.db.QueryRow(companyQuery, user.ID).Scan(&companyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user company: %w", err)
+	}
+
+	// Get user role assignments for this application
+	// Filter roles based on their assigned application_id
+	roleQuery := `
+		SELECT DISTINCT
+			ur.id as assignment_id,
+			ur.role_id,
+			ro.name as role_name,
+			ro.description as role_description,
+			CASE 
+				WHEN ur.unit_id IS NOT NULL THEN 'unit'
+				WHEN ur.branch_id IS NOT NULL THEN 'branch'
+				ELSE 'company'
+			END as assignment_level,
+			ur.company_id,
+			c.name as company_name,
+			ur.branch_id,
+			b.name as branch_name,
+			ur.unit_id,
+			u.name as unit_name
+		FROM user_roles ur
+		JOIN roles ro ON ur.role_id = ro.id
+		LEFT JOIN companies c ON ur.company_id = c.id
+		LEFT JOIN branches b ON ur.branch_id = b.id
+		LEFT JOIN units u ON ur.unit_id = u.id
+		WHERE ur.user_id = $1 
+		AND ro.is_active = true
+		AND ro.application_id = $2
+		ORDER BY ur.id
+	`
+
+	rows, err := r.db.Query(roleQuery, user.ID, applicationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user roles: %w", err)
+	}
+	defer rows.Close()
+
+	var roleAssignments []map[string]interface{}
+	roleMap := make(map[int64]bool) // To avoid duplicates
+
+	for rows.Next() {
+		var assignmentID, roleID, companyID, branchID, unitID sql.NullInt64
+		var roleName, roleDescription, assignmentLevel, companyName, branchName, unitName sql.NullString
+
+		err := rows.Scan(
+			&assignmentID, &roleID, &roleName, &roleDescription, &assignmentLevel,
+			&companyID, &companyName, &branchID, &branchName, &unitID, &unitName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan role assignment: %w", err)
+		}
+
+		// Skip if we already processed this role assignment
+		if assignmentID.Valid && roleMap[assignmentID.Int64] {
+			continue
+		}
+		if assignmentID.Valid {
+			roleMap[assignmentID.Int64] = true
+		}
+
+		assignment := map[string]interface{}{
+			"assignment_id":    assignmentID.Int64,
+			"role_id":          roleID.Int64,
+			"role_name":        roleName.String,
+			"role_description": roleDescription.String,
+			"assignment_level": assignmentLevel.String,
+		}
+
+		if companyID.Valid {
+			assignment["company_id"] = companyID.Int64
+			assignment["company_name"] = companyName.String
+		}
+		if branchID.Valid {
+			assignment["branch_id"] = branchID.Int64
+			assignment["branch_name"] = branchName.String
+		}
+		if unitID.Valid {
+			assignment["unit_id"] = unitID.Int64
+			assignment["unit_name"] = unitName.String
+		}
+
+		roleAssignments = append(roleAssignments, assignment)
+	}
+
+	// Get modules for this application with subscription filtering
+	modulesQuery := `
+		SELECT DISTINCT
+			m.id, m.name, m.url, m.icon, m.description, m.category
+		FROM modules m
+		JOIN role_modules rm ON m.id = rm.module_id
+		JOIN user_roles ur ON rm.role_id = ur.role_id
+		JOIN plan_modules pm ON m.id = pm.module_id
+		JOIN subscriptions s ON pm.plan_id = s.plan_id
+		WHERE ur.user_id = $1 
+		AND m.application_id = $2
+		AND s.company_id = $3
+		AND s.status = 'active'
+		AND (s.end_date >= CURRENT_DATE OR s.end_date IS NULL)
+		AND pm.is_included = true
+		AND m.is_active = true
+		AND rm.can_read = true
+		ORDER BY m.category, m.name
+	`
+
+	moduleRows, err := r.db.Query(modulesQuery, user.ID, applicationID, companyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user modules: %w", err)
+	}
+	defer moduleRows.Close()
+
+	// Group modules by category
+	modulesByCategory := make(map[string][][]string)
+
+	for moduleRows.Next() {
+		var moduleID int64
+		var moduleName, moduleURL, moduleIcon, moduleDescription, moduleCategory string
+
+		err := moduleRows.Scan(
+			&moduleID, &moduleName, &moduleURL, &moduleIcon, &moduleDescription, &moduleCategory,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan module: %w", err)
+		}
+
+		moduleInfo := []string{moduleName, moduleURL, moduleIcon, moduleDescription}
+		modulesByCategory[moduleCategory] = append(modulesByCategory[moduleCategory], moduleInfo)
+	}
+
+	// Build application structure
+	applicationData := map[string]interface{}{
+		"id":               applicationID,
+		"name":             applicationName,
+		"code":             applicationCode,
+		"icon":             applicationIcon,
+		"url":              applicationURL,
+		"sort_order":       applicationSortOrder,
+		"role_assignments": roleAssignments,
+		"modules":          modulesByCategory,
+	}
+
+	// Build user profile response
+	userProfile := map[string]interface{}{
+		"name":          user.Name,
+		"user_identity": user.UserIdentity,
+		"email":         user.Email,
+		"is_active":     user.IsActive,
+		"total_roles":   len(roleAssignments),
+		"created_at":    user.CreatedAt.Format(time.RFC3339),
+		"updated_at":    user.UpdatedAt.Format(time.RFC3339),
+		"applications": map[string]interface{}{
+			applicationCode: applicationData,
+		},
+	}
+
+	return userProfile, nil
 }

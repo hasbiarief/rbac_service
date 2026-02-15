@@ -1,0 +1,5179 @@
+basePath: /
+definitions:
+  gin-scalable-api_pkg_response.Response:
+    properties:
+      data: {}
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  internal_modules_application.ApplicationListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_modules_application.ApplicationResponse'
+        type: array
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_modules_application.ApplicationResponse:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      sort_order:
+        type: integer
+      updated_at:
+        type: string
+      url:
+        type: string
+    type: object
+  internal_modules_application.CreateApplicationRequest:
+    properties:
+      code:
+        maxLength: 50
+        minLength: 2
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      sort_order:
+        type: integer
+      url:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  internal_modules_application.PlanApplicationRequest:
+    properties:
+      application_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+      is_included:
+        type: boolean
+    required:
+    - application_ids
+    type: object
+  internal_modules_application.UpdateApplicationRequest:
+    properties:
+      code:
+        maxLength: 50
+        minLength: 2
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      sort_order:
+        type: integer
+      url:
+        type: string
+    type: object
+  internal_modules_audit.ActionCountResponse:
+    properties:
+      action:
+        type: string
+      count:
+        type: integer
+    type: object
+  internal_modules_audit.AuditListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_modules_audit.AuditLogResponse'
+        type: array
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_modules_audit.AuditLogResponse:
+    properties:
+      action:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      message:
+        type: string
+      method:
+        type: string
+      resource:
+        type: string
+      resource_id:
+        type: string
+      status:
+        type: string
+      status_code:
+        type: integer
+      url:
+        type: string
+      user_email:
+        type: string
+      user_id:
+        type: integer
+      user_identity:
+        type: string
+      user_name:
+        type: string
+    type: object
+  internal_modules_audit.AuditStatsResponse:
+    properties:
+      activity_by_hour:
+        items:
+          $ref: '#/definitions/internal_modules_audit.HourlyActivityResponse'
+        type: array
+      error_logs:
+        type: integer
+      status_breakdown:
+        items:
+          $ref: '#/definitions/internal_modules_audit.StatusCountResponse'
+        type: array
+      success_logs:
+        type: integer
+      today_logs:
+        type: integer
+      top_actions:
+        items:
+          $ref: '#/definitions/internal_modules_audit.ActionCountResponse'
+        type: array
+      top_users:
+        items:
+          $ref: '#/definitions/internal_modules_audit.UserActivityCountResponse'
+        type: array
+      total_logs:
+        type: integer
+    type: object
+  internal_modules_audit.CreateAuditLogRequest:
+    properties:
+      action:
+        type: string
+      message:
+        type: string
+      method:
+        type: string
+      resource:
+        type: string
+      resource_id:
+        type: string
+      status:
+        type: string
+      status_code:
+        type: integer
+      url:
+        type: string
+      user_id:
+        type: integer
+      user_identity:
+        type: string
+    required:
+    - action
+    - method
+    - resource
+    - status
+    - status_code
+    - url
+    type: object
+  internal_modules_audit.HourlyActivityResponse:
+    properties:
+      count:
+        type: integer
+      hour:
+        type: integer
+    type: object
+  internal_modules_audit.StatusCountResponse:
+    properties:
+      count:
+        type: integer
+      status:
+        type: string
+    type: object
+  internal_modules_audit.UserActivityCountResponse:
+    properties:
+      count:
+        type: integer
+      user_id:
+        type: integer
+      user_identity:
+        type: string
+      user_name:
+        type: string
+    type: object
+  internal_modules_auth.LoginEmailRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  internal_modules_auth.LoginRequest:
+    properties:
+      password:
+        minLength: 6
+        type: string
+      user_identity:
+        type: string
+    required:
+    - password
+    - user_identity
+    type: object
+  internal_modules_auth.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+      user: {}
+    type: object
+  internal_modules_auth.LogoutRequest:
+    properties:
+      token:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  internal_modules_auth.ProfileResponse:
+    properties:
+      user: {}
+    type: object
+  internal_modules_auth.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  internal_modules_auth.RefreshTokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  internal_modules_branch.BranchListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_modules_branch.BranchResponse'
+        type: array
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_modules_branch.BranchResponse:
+    properties:
+      code:
+        type: string
+      company_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      level:
+        type: integer
+      name:
+        type: string
+      parent_id:
+        type: integer
+      path:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_modules_branch.CreateBranchRequest:
+    properties:
+      code:
+        maxLength: 20
+        minLength: 2
+        type: string
+      company_id:
+        minimum: 1
+        type: integer
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      parent_id:
+        type: integer
+    required:
+    - code
+    - company_id
+    - name
+    type: object
+  internal_modules_branch.UpdateBranchRequest:
+    properties:
+      code:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      parent_id:
+        type: integer
+    type: object
+  internal_modules_company.CompanyListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_modules_company.CompanyResponse'
+        type: array
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_modules_company.CompanyResponse:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_modules_company.CreateCompanyRequest:
+    properties:
+      code:
+        maxLength: 20
+        minLength: 2
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  internal_modules_company.UpdateCompanyRequest:
+    properties:
+      code:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+    type: object
+  internal_modules_module.CreateModuleRequest:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      parent_id:
+        type: integer
+      subscription_tier:
+        type: string
+      url:
+        type: string
+    required:
+    - category
+    - name
+    - subscription_tier
+    - url
+    type: object
+  internal_modules_module.ModuleListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_modules_module.ModuleResponse'
+        type: array
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_modules_module.ModuleResponse:
+    properties:
+      category:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      parent_id:
+        type: integer
+      subscription_tier:
+        type: string
+      updated_at:
+        type: string
+      url:
+        type: string
+    type: object
+  internal_modules_module.ModuleTreeResponse:
+    properties:
+      category:
+        type: string
+      children:
+        items:
+          $ref: '#/definitions/internal_modules_module.ModuleTreeResponse'
+        type: array
+      created_at:
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      level:
+        type: integer
+      name:
+        type: string
+      parent_id:
+        type: integer
+      path:
+        type: string
+      subscription_tier:
+        type: string
+      updated_at:
+        type: string
+      url:
+        type: string
+    type: object
+  internal_modules_module.UpdateModuleRequest:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      parent_id:
+        type: integer
+      subscription_tier:
+        type: string
+      url:
+        type: string
+    type: object
+  internal_modules_role.AddRoleModulesRequest:
+    properties:
+      modules:
+        items:
+          $ref: '#/definitions/internal_modules_role.RolePermissionRequest'
+        type: array
+    required:
+    - modules
+    type: object
+  internal_modules_role.AssignRoleRequest:
+    properties:
+      branch_id:
+        type: integer
+      company_id:
+        type: integer
+      role_id:
+        type: integer
+      unit_id:
+        type: integer
+      user_id:
+        type: integer
+    required:
+    - company_id
+    - role_id
+    - user_id
+    type: object
+  internal_modules_role.BulkAssignRoleRequest:
+    properties:
+      branch_id:
+        type: integer
+      company_id:
+        type: integer
+      role_id:
+        type: integer
+      unit_id:
+        type: integer
+      user_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+    required:
+    - company_id
+    - role_id
+    - user_ids
+    type: object
+  internal_modules_role.CreateRoleRequest:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - name
+    type: object
+  internal_modules_role.RemoveRoleModulesRequest:
+    properties:
+      module_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+    required:
+    - module_ids
+    type: object
+  internal_modules_role.RoleListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_modules_role.RoleResponse'
+        type: array
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_modules_role.RoleModulePermissionResponse:
+    properties:
+      can_delete:
+        type: boolean
+      can_read:
+        type: boolean
+      can_write:
+        type: boolean
+      module_id:
+        type: integer
+      module_name:
+        type: string
+      module_url:
+        type: string
+    type: object
+  internal_modules_role.RolePermissionRequest:
+    properties:
+      can_delete:
+        type: boolean
+      can_read:
+        type: boolean
+      can_write:
+        type: boolean
+      module_id:
+        type: integer
+    required:
+    - module_id
+    type: object
+  internal_modules_role.RoleResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_modules_role.RoleWithPermissionsResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      modules:
+        items:
+          $ref: '#/definitions/internal_modules_role.RoleModulePermissionResponse'
+        type: array
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_modules_role.UpdateRolePermissionsRequest:
+    properties:
+      modules:
+        items:
+          $ref: '#/definitions/internal_modules_role.RolePermissionRequest'
+        type: array
+    required:
+    - modules
+    type: object
+  internal_modules_role.UpdateRoleRequest:
+    properties:
+      description:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+    type: object
+  internal_modules_role.UserRoleAssignmentResponse:
+    properties:
+      branch_id:
+        type: integer
+      branch_name:
+        type: string
+      company_id:
+        type: integer
+      company_name:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      role_id:
+        type: integer
+      role_name:
+        type: string
+      unit_id:
+        type: integer
+      unit_name:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  internal_modules_subscription.AddModulesToPlanRequest:
+    properties:
+      module_ids:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+    required:
+    - module_ids
+    type: object
+  internal_modules_subscription.CreateSubscriptionPlanRequest:
+    properties:
+      description:
+        type: string
+      display_name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      features:
+        additionalProperties: true
+        type: object
+      max_branches:
+        type: integer
+      max_users:
+        type: integer
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      price_monthly:
+        minimum: 0
+        type: number
+      price_yearly:
+        minimum: 0
+        type: number
+    required:
+    - display_name
+    - name
+    type: object
+  internal_modules_subscription.CreateSubscriptionRequest:
+    properties:
+      auto_renew:
+        type: boolean
+      billing_cycle:
+        enum:
+        - monthly
+        - yearly
+        type: string
+      company_id:
+        type: integer
+      currency:
+        type: string
+      end_date:
+        type: string
+      plan_id:
+        type: integer
+      price:
+        minimum: 0
+        type: number
+      start_date:
+        type: string
+    required:
+    - billing_cycle
+    - company_id
+    - currency
+    - end_date
+    - plan_id
+    - start_date
+    type: object
+  internal_modules_subscription.SubscriptionListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_modules_subscription.SubscriptionResponse'
+        type: array
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_modules_subscription.SubscriptionPlanResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      display_name:
+        type: string
+      features:
+        additionalProperties: true
+        type: object
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      max_branches:
+        type: integer
+      max_users:
+        type: integer
+      name:
+        type: string
+      price_monthly:
+        type: number
+      price_yearly:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  internal_modules_subscription.SubscriptionResponse:
+    properties:
+      auto_renew:
+        type: boolean
+      billing_cycle:
+        type: string
+      company_id:
+        type: integer
+      company_name:
+        type: string
+      created_at:
+        type: string
+      currency:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      last_payment_date:
+        type: string
+      next_payment_date:
+        type: string
+      payment_status:
+        type: string
+      plan_display_name:
+        type: string
+      plan_id:
+        type: integer
+      price:
+        type: number
+      start_date:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_modules_subscription.UpdateSubscriptionPlanRequest:
+    properties:
+      description:
+        type: string
+      display_name:
+        type: string
+      features:
+        additionalProperties: true
+        type: object
+      is_active:
+        type: boolean
+      max_branches:
+        type: integer
+      max_users:
+        type: integer
+      name:
+        type: string
+      price_monthly:
+        minimum: 0
+        type: number
+      price_yearly:
+        minimum: 0
+        type: number
+    type: object
+  internal_modules_subscription.UpdateSubscriptionRequest:
+    properties:
+      auto_renew:
+        type: boolean
+      billing_cycle:
+        enum:
+        - monthly
+        - yearly
+        type: string
+      end_date:
+        type: string
+      next_payment_date:
+        type: string
+      payment_status:
+        enum:
+        - pending
+        - paid
+        - failed
+        type: string
+      plan_id:
+        type: integer
+      price:
+        minimum: 0
+        type: number
+      status:
+        enum:
+        - active
+        - inactive
+        - cancelled
+        - expired
+        type: string
+    type: object
+  internal_modules_unit.BulkUpdateUnitRoleModulesRequest:
+    properties:
+      modules:
+        items:
+          $ref: '#/definitions/internal_modules_unit.UpdateUnitRoleModulePermission'
+        type: array
+      unit_role_id:
+        type: integer
+    required:
+    - modules
+    - unit_role_id
+    type: object
+  internal_modules_unit.CopyUnitPermissionsRequest:
+    properties:
+      overwrite_existing:
+        type: boolean
+      role_id:
+        type: integer
+      source_unit_id:
+        type: integer
+      target_unit_id:
+        type: integer
+    required:
+    - role_id
+    - source_unit_id
+    - target_unit_id
+    type: object
+  internal_modules_unit.CopyUnitRolePermissionsRequest:
+    properties:
+      overwrite_existing:
+        type: boolean
+      source_unit_role_id:
+        type: integer
+      target_unit_role_id:
+        type: integer
+    required:
+    - source_unit_role_id
+    - target_unit_role_id
+    type: object
+  internal_modules_unit.CreateUnitRequest:
+    properties:
+      branch_id:
+        type: integer
+      code:
+        maxLength: 50
+        minLength: 2
+        type: string
+      description:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      parent_id:
+        type: integer
+    required:
+    - branch_id
+    - code
+    - name
+    type: object
+  internal_modules_unit.UnitHierarchyResponse:
+    properties:
+      branch_code:
+        type: string
+      branch_id:
+        type: integer
+      branch_name:
+        type: string
+      children:
+        items:
+          $ref: '#/definitions/internal_modules_unit.UnitHierarchyResponse'
+        type: array
+      code:
+        type: string
+      company_code:
+        type: string
+      company_name:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      level:
+        type: integer
+      name:
+        type: string
+      parent_id:
+        type: integer
+      path:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_modules_unit.UnitListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_modules_unit.UnitResponse'
+        type: array
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_modules_unit.UnitResponse:
+    properties:
+      branch_code:
+        type: string
+      branch_id:
+        type: integer
+      branch_name:
+        type: string
+      code:
+        type: string
+      company_code:
+        type: string
+      company_name:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      level:
+        type: integer
+      name:
+        type: string
+      parent_id:
+        type: integer
+      path:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_modules_unit.UnitRoleResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      role_id:
+        type: integer
+      role_name:
+        type: string
+      unit_id:
+        type: integer
+      unit_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_modules_unit.UnitWithStatsResponse:
+    properties:
+      branch_code:
+        type: string
+      branch_id:
+        type: integer
+      branch_name:
+        type: string
+      code:
+        type: string
+      company_code:
+        type: string
+      company_name:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      level:
+        type: integer
+      name:
+        type: string
+      parent_id:
+        type: integer
+      path:
+        type: string
+      total_roles:
+        type: integer
+      total_sub_units:
+        type: integer
+      total_users:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  internal_modules_unit.UpdateUnitRequest:
+    properties:
+      code:
+        maxLength: 50
+        minLength: 2
+        type: string
+      description:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      parent_id:
+        type: integer
+    required:
+    - code
+    - name
+    type: object
+  internal_modules_unit.UpdateUnitRoleModulePermission:
+    properties:
+      can_approve:
+        type: boolean
+      can_delete:
+        type: boolean
+      can_read:
+        type: boolean
+      can_write:
+        type: boolean
+      module_id:
+        type: integer
+    required:
+    - module_id
+    type: object
+  internal_modules_user.AccessCheckRequest:
+    properties:
+      module_url:
+        type: string
+      user_identity:
+        type: string
+    required:
+    - module_url
+    - user_identity
+    type: object
+  internal_modules_user.ChangePasswordRequest:
+    properties:
+      confirm_password:
+        type: string
+      current_password:
+        type: string
+      new_password:
+        minLength: 6
+        type: string
+    required:
+    - confirm_password
+    - current_password
+    - new_password
+    type: object
+  internal_modules_user.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        minLength: 6
+        type: string
+      user_identity:
+        type: string
+    required:
+    - email
+    - name
+    type: object
+  internal_modules_user.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      user_identity:
+        type: string
+    type: object
+  internal_modules_user.UserListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/internal_modules_user.UserResponse'
+        type: array
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_modules_user.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      modules:
+        additionalProperties:
+          items:
+            items:
+              type: string
+            type: array
+          type: array
+        type: object
+      name:
+        type: string
+      role_assignments:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      roles:
+        items:
+          type: string
+        type: array
+      total_roles:
+        type: integer
+      updated_at:
+        type: string
+      user_identity:
+        type: string
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8081
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: |-
+    Complete API for ERP with RBAC and API Documentation System. This API provides comprehensive endpoints for managing users, companies, branches, roles, modules, subscriptions, units, applications, and authentication with JWT-based security.
+
+    ## Environments
+    - **Development**: http://localhost:8081
+    - **Staging**: https://staging-api.huminor.com
+    - **Production**: https://api.huminor.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Huminor Console API
+  version: "1.0"
+paths:
+  /api/v1/admin/plan-applications/{planId}:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar applications yang termasuk dalam subscription
+        plan (admin only)
+      parameters:
+      - description: Subscription Plan ID
+        in: path
+        name: planId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Plan applications berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_application.ApplicationResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request - Invalid plan ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get plan applications (Admin)
+      tags:
+      - Applications (Admin)
+    post:
+      consumes:
+      - application/json
+      description: Menambahkan applications ke subscription plan (admin only)
+      parameters:
+      - description: Subscription Plan ID
+        in: path
+        name: planId
+        required: true
+        type: integer
+      - description: Applications to add
+        in: body
+        name: applications
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_application.PlanApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Applications berhasil ditambahkan ke plan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid plan ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Subscription plan tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Add applications to plan (Admin)
+      tags:
+      - Applications (Admin)
+  /api/v1/admin/plan-applications/{planId}/{applicationId}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus application dari subscription plan (admin only)
+      parameters:
+      - description: Subscription Plan ID
+        in: path
+        name: planId
+        required: true
+        type: integer
+      - description: Application ID
+        in: path
+        name: applicationId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Application berhasil dihapus dari plan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Plan atau application tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove application from plan (Admin)
+      tags:
+      - Applications (Admin)
+  /api/v1/admin/plan-modules/{plan_id}:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar modules yang termasuk dalam subscription plan
+        (admin only)
+      parameters:
+      - description: Subscription Plan ID
+        in: path
+        name: plan_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Plan modules berhasil diambil
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid plan ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get plan modules (Admin)
+      tags:
+      - Subscription Plans (Admin)
+    post:
+      consumes:
+      - application/json
+      description: Menambahkan modules ke subscription plan (admin only)
+      parameters:
+      - description: Subscription Plan ID
+        in: path
+        name: plan_id
+        required: true
+        type: integer
+      - description: Modules to add
+        in: body
+        name: modules
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_subscription.AddModulesToPlanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Modules berhasil ditambahkan ke plan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid plan ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Subscription plan tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Add modules to plan (Admin)
+      tags:
+      - Subscription Plans (Admin)
+  /api/v1/admin/plan-modules/{plan_id}/{module_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus module dari subscription plan (admin only)
+      parameters:
+      - description: Subscription Plan ID
+        in: path
+        name: plan_id
+        required: true
+        type: integer
+      - description: Module ID
+        in: path
+        name: module_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Module berhasil dihapus dari plan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Plan atau module tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove module from plan (Admin)
+      tags:
+      - Subscription Plans (Admin)
+  /api/v1/admin/subscription-plans:
+    post:
+      consumes:
+      - application/json
+      description: Membuat subscription plan baru (admin only)
+      parameters:
+      - description: Subscription plan data
+        in: body
+        name: plan
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_subscription.CreateSubscriptionPlanRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Subscription plan berhasil dibuat
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_subscription.SubscriptionPlanResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "409":
+          description: Conflict - plan name sudah ada
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create subscription plan (Admin)
+      tags:
+      - Subscription Plans (Admin)
+  /api/v1/admin/subscription-plans/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus subscription plan (admin only)
+      parameters:
+      - description: Subscription Plan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Subscription plan berhasil dihapus
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid plan ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Subscription plan tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete subscription plan (Admin)
+      tags:
+      - Subscription Plans (Admin)
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui subscription plan (admin only)
+      parameters:
+      - description: Subscription Plan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Subscription plan data yang akan diupdate
+        in: body
+        name: plan
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_subscription.UpdateSubscriptionPlanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Subscription plan berhasil diupdate
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_subscription.SubscriptionPlanResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid plan ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Subscription plan tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update subscription plan (Admin)
+      tags:
+      - Subscription Plans (Admin)
+  /api/v1/applications:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar semua applications dengan filter opsional dan
+        pagination
+      parameters:
+      - description: Limit jumlah data
+        in: query
+        name: limit
+        type: integer
+      - description: Offset data
+        in: query
+        name: offset
+        type: integer
+      - description: Search by name atau code
+        in: query
+        name: search
+        type: string
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Applications berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_application.ApplicationListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all applications
+      tags:
+      - Applications
+    post:
+      consumes:
+      - application/json
+      description: Membuat application baru
+      parameters:
+      - description: Application data
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_application.CreateApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Application berhasil dibuat
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_application.ApplicationResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "409":
+          description: Conflict - application code sudah ada
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new application
+      tags:
+      - Applications
+  /api/v1/applications/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus application berdasarkan ID
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Application berhasil dihapus
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid application ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Application tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete application
+      tags:
+      - Applications
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail application berdasarkan ID
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Application berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_application.ApplicationResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid application ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Application tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get application by ID
+      tags:
+      - Applications
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi application
+      parameters:
+      - description: Application ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Application data yang akan diupdate
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_application.UpdateApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Application berhasil diupdate
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_application.ApplicationResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid application ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Application tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update application
+      tags:
+      - Applications
+  /api/v1/applications/code/{code}:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail application berdasarkan application code
+      parameters:
+      - description: Application code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Application berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_application.ApplicationResponse'
+              type: object
+        "400":
+          description: Bad request - Application code diperlukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Application tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get application by code
+      tags:
+      - Applications
+  /api/v1/audit/logs:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar audit logs dengan filter opsional dan pagination
+      parameters:
+      - description: Limit jumlah data
+        in: query
+        name: limit
+        type: integer
+      - description: Offset data
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by user ID
+        in: query
+        name: user_id
+        type: integer
+      - description: Filter by action
+        in: query
+        name: action
+        type: string
+      - description: Filter by entity type
+        in: query
+        name: entity_type
+        type: string
+      - description: Filter by start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: Filter by end date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Audit logs berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_audit.AuditListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get audit logs
+      tags:
+      - Audit
+    post:
+      consumes:
+      - application/json
+      description: Membuat audit log entry baru
+      parameters:
+      - description: Audit log data
+        in: body
+        name: audit
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_audit.CreateAuditLogRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Audit log berhasil dibuat
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_audit.AuditLogResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create audit log
+      tags:
+      - Audit
+  /api/v1/audit/stats:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan statistik audit logs (total logs, logs by action, logs
+        by entity type, dll)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Audit statistics berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_audit.AuditStatsResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get audit statistics
+      tags:
+      - Audit
+  /api/v1/audit/users/{userId}/logs:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan audit logs untuk user tertentu berdasarkan user ID
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: 'Limit jumlah data (default: 50)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User audit logs berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_audit.AuditLogResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request - Invalid user ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user audit logs by ID
+      tags:
+      - Audit
+  /api/v1/audit/users/identity/{identity}/logs:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan audit logs untuk user tertentu berdasarkan user identity
+      parameters:
+      - description: User identity
+        in: path
+        name: identity
+        required: true
+        type: string
+      - description: 'Limit jumlah data (default: 50)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User audit logs berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_audit.AuditLogResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request - User identity diperlukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user audit logs by identity
+      tags:
+      - Audit
+  /api/v1/auth/check-tokens:
+    get:
+      consumes:
+      - application/json
+      description: Memeriksa status token pengguna berdasarkan user_identity
+      parameters:
+      - description: User identity
+        in: query
+        name: user_identity
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token check berhasil
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - user_identity diperlukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      summary: Check user tokens
+      tags:
+      - "\U0001F510 Authentication"
+  /api/v1/auth/cleanup-expired:
+    post:
+      consumes:
+      - application/json
+      description: Membersihkan token yang sudah expired dari database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cleanup berhasil
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      summary: Cleanup expired tokens
+      tags:
+      - "\U0001F510 Authentication"
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentikasi pengguna menggunakan user_identity atau email dan mengembalikan
+        access token dan refresh token
+      parameters:
+      - description: Login credentials (user_identity atau email dengan password)
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login berhasil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_auth.LoginResponse'
+              type: object
+        "400":
+          description: Bad request - format request tidak valid
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "401":
+          description: Unauthorized - kredensial tidak valid
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      summary: Login dengan user identity
+      tags:
+      - "\U0001F510 Authentication"
+  /api/v1/auth/login-email:
+    post:
+      consumes:
+      - application/json
+      description: Autentikasi pengguna menggunakan email dan password, mengembalikan
+        access token dan refresh token
+      parameters:
+      - description: Login credentials dengan email
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_auth.LoginEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login berhasil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_auth.LoginResponse'
+              type: object
+        "400":
+          description: Bad request - format request tidak valid
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "401":
+          description: Unauthorized - kredensial tidak valid
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      summary: Login dengan email
+      tags:
+      - "\U0001F510 Authentication"
+  /api/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Menghapus session pengguna berdasarkan token atau user_id
+      parameters:
+      - description: Logout request (token atau user_id)
+        in: body
+        name: logout
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_auth.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout berhasil
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - token atau user_id harus disediakan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      summary: Logout user
+      tags:
+      - "\U0001F510 Authentication"
+  /api/v1/auth/profile:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan profil pengguna berdasarkan user_identity dan application_code
+      parameters:
+      - description: User identity
+        in: query
+        name: user_identity
+        required: true
+        type: string
+      - description: Application code
+        in: query
+        name: application_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_auth.ProfileResponse'
+              type: object
+        "400":
+          description: Bad request - parameter diperlukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User atau application tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      summary: Get user profile
+      tags:
+      - "\U0001F510 Authentication"
+  /api/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Memperbarui access token menggunakan refresh token yang valid
+      parameters:
+      - description: Refresh token
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_auth.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token berhasil diperbarui
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_auth.RefreshTokenResponse'
+              type: object
+        "400":
+          description: Bad request - format request tidak valid
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "401":
+          description: Unauthorized - refresh token tidak valid atau expired
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      summary: Refresh access token
+      tags:
+      - "\U0001F510 Authentication"
+  /api/v1/auth/session-count:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan jumlah session aktif pengguna berdasarkan user_identity
+      parameters:
+      - description: User identity
+        in: query
+        name: user_identity
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Session count berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Bad request - user_identity diperlukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      summary: Get user session count
+      tags:
+      - "\U0001F510 Authentication"
+  /api/v1/branches:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar semua branch dengan filter opsional dan pagination.
+        Mendukung nested hierarchy dengan query parameter nested=true
+      parameters:
+      - description: Limit jumlah data
+        in: query
+        name: limit
+        type: integer
+      - description: Offset data
+        in: query
+        name: offset
+        type: integer
+      - description: Search by name atau code
+        in: query
+        name: search
+        type: string
+      - description: Filter by company ID
+        in: query
+        name: company_id
+        type: integer
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      - description: Return nested hierarchy (true/false)
+        in: query
+        name: nested
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Branches berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_branch.BranchListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all branches
+      tags:
+      - Branches
+    post:
+      consumes:
+      - application/json
+      description: Membuat branch baru dengan support untuk hierarchical structure
+      parameters:
+      - description: Branch data
+        in: body
+        name: branch
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_branch.CreateBranchRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Branch berhasil dibuat
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_branch.BranchResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "409":
+          description: Conflict - branch code sudah ada
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new branch
+      tags:
+      - Branches
+  /api/v1/branches/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus branch berdasarkan ID
+      parameters:
+      - description: Branch ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Branch berhasil dihapus
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid branch ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Branch tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete branch
+      tags:
+      - Branches
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail branch berdasarkan ID
+      parameters:
+      - description: Branch ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Branch berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_branch.BranchResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid branch ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Branch tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get branch by ID
+      tags:
+      - Branches
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi branch
+      parameters:
+      - description: Branch ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Branch data yang akan diupdate
+        in: body
+        name: branch
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_branch.UpdateBranchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Branch berhasil diupdate
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_branch.BranchResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid branch ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Branch tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update branch
+      tags:
+      - Branches
+  /api/v1/branches/{id}/children:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar child branches dari branch tertentu
+      parameters:
+      - description: Branch ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Branch children berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_branch.BranchResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request - Invalid branch ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Branch tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get branch children
+      tags:
+      - Branches
+  /api/v1/branches/{id}/hierarchy:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan hierarchy branch berdasarkan ID. Mendukung nested format
+        dengan query parameter nested=true
+      parameters:
+      - description: Branch ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Return nested hierarchy (true/false)
+        in: query
+        name: nested
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Branch hierarchy berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_branch.BranchResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid branch ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Branch tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get branch hierarchy
+      tags:
+      - Branches
+  /api/v1/branches/{id}/units/hierarchy:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan unit hierarchy (tree structure) untuk branch tertentu
+      parameters:
+      - description: Branch ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Unit hierarchy berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_unit.UnitHierarchyResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request - Invalid branch ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Branch tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get unit hierarchy for branch
+      tags:
+      - Units
+  /api/v1/branches/company/{companyId}:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan semua branches dari company tertentu. Mendukung nested
+        hierarchy dengan query parameter nested=true
+      parameters:
+      - description: Company ID
+        in: path
+        name: companyId
+        required: true
+        type: integer
+      - description: Include hierarchy information (true/false)
+        in: query
+        name: include_hierarchy
+        type: string
+      - description: Return nested hierarchy (true/false)
+        in: query
+        name: nested
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Company branches berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_branch.BranchResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request - Invalid company ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Company tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get company branches
+      tags:
+      - Branches
+  /api/v1/companies:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar semua company dengan filter opsional dan pagination
+      parameters:
+      - description: Limit jumlah data
+        in: query
+        name: limit
+        type: integer
+      - description: Offset data
+        in: query
+        name: offset
+        type: integer
+      - description: Search by name atau code
+        in: query
+        name: search
+        type: string
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Companies berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_company.CompanyListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all companies
+      tags:
+      - Companies
+    post:
+      consumes:
+      - application/json
+      description: Membuat company baru
+      parameters:
+      - description: Company data
+        in: body
+        name: company
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_company.CreateCompanyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Company berhasil dibuat
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_company.CompanyResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "409":
+          description: Conflict - company code sudah ada
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new company
+      tags:
+      - Companies
+  /api/v1/companies/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus company berdasarkan ID
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Company berhasil dihapus
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid company ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Company tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete company
+      tags:
+      - Companies
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail company berdasarkan ID
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Company berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_company.CompanyResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid company ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Company tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get company by ID
+      tags:
+      - Companies
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi company
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Company data yang akan diupdate
+        in: body
+        name: company
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_company.UpdateCompanyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Company berhasil diupdate
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_company.CompanyResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid company ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Company tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update company
+      tags:
+      - Companies
+  /api/v1/companies/{id}/subscription:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan subscription aktif dari company
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Company subscription berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_subscription.SubscriptionResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid company ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Subscription tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get company subscription
+      tags:
+      - Subscriptions
+  /api/v1/modules:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar semua module dengan filter opsional dan pagination.
+        Filtered berdasarkan user access
+      parameters:
+      - description: Limit jumlah data
+        in: query
+        name: limit
+        type: integer
+      - description: Offset data
+        in: query
+        name: offset
+        type: integer
+      - description: Search by name
+        in: query
+        name: search
+        type: string
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - description: Filter by subscription tier
+        in: query
+        name: subscription_tier
+        type: string
+      - description: Filter by parent ID
+        in: query
+        name: parent_id
+        type: integer
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Modules berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_module.ModuleListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all modules
+      tags:
+      - Modules
+    post:
+      consumes:
+      - application/json
+      description: Membuat module baru dengan support untuk hierarchical structure
+      parameters:
+      - description: Module data
+        in: body
+        name: module
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_module.CreateModuleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Module berhasil dibuat
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_module.ModuleResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "409":
+          description: Conflict - module URL sudah ada
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new module
+      tags:
+      - Modules
+  /api/v1/modules/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus module berdasarkan ID
+      parameters:
+      - description: Module ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Module berhasil dihapus
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid module ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Module tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete module
+      tags:
+      - Modules
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail module berdasarkan ID
+      parameters:
+      - description: Module ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Module berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_module.ModuleResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid module ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Module tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get module by ID
+      tags:
+      - Modules
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi module
+      parameters:
+      - description: Module ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Module data yang akan diupdate
+        in: body
+        name: module
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_module.UpdateModuleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Module berhasil diupdate
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_module.ModuleResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid module ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Module tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update module
+      tags:
+      - Modules
+  /api/v1/modules/{id}/ancestors:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar ancestor modules (parent hierarchy) dari module
+        tertentu. Filtered berdasarkan user access
+      parameters:
+      - description: Module ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Module ancestors berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_module.ModuleResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request - Invalid module ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Module tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get module ancestors
+      tags:
+      - Modules
+  /api/v1/modules/{id}/children:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar child modules dari module tertentu. Filtered
+        berdasarkan user access
+      parameters:
+      - description: Module ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Module children berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_module.ModuleResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request - Invalid module ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Module tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get module children
+      tags:
+      - Modules
+  /api/v1/modules/tree:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan module tree structure dengan filter category atau parent.
+        Filtered berdasarkan user access
+      parameters:
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - description: Filter by parent name
+        in: query
+        name: parent
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Module tree berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_module.ModuleTreeResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get module tree
+      tags:
+      - Modules
+  /api/v1/role-management/assign-user-role:
+    post:
+      consumes:
+      - application/json
+      description: Menugaskan role ke user dengan scope company, branch, atau unit
+      parameters:
+      - description: Role assignment data
+        in: body
+        name: assignment
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_role.AssignRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Role berhasil ditugaskan
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_role.UserRoleAssignmentResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User atau role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Assign role to user
+      tags:
+      - Role Management
+  /api/v1/role-management/bulk-assign-roles:
+    post:
+      consumes:
+      - application/json
+      description: Menugaskan role ke multiple users sekaligus
+      parameters:
+      - description: Bulk role assignment data
+        in: body
+        name: bulk_assignment
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_role.BulkAssignRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Roles berhasil ditugaskan ke users
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User atau role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Bulk assign roles to users
+      tags:
+      - Role Management
+  /api/v1/role-management/role/{roleId}/modules:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus modules dari role
+      parameters:
+      - description: Role ID
+        in: path
+        name: roleId
+        required: true
+        type: integer
+      - description: Module IDs to remove
+        in: body
+        name: modules
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_role.RemoveRoleModulesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Modules berhasil dihapus
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid role ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove modules from role
+      tags:
+      - Role Management
+    post:
+      consumes:
+      - application/json
+      description: Menambahkan modules ke role (append operation)
+      parameters:
+      - description: Role ID
+        in: path
+        name: roleId
+        required: true
+        type: integer
+      - description: Modules to add
+        in: body
+        name: modules
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_role.AddRoleModulesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Modules berhasil ditambahkan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid role ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Add modules to role
+      tags:
+      - Role Management
+    put:
+      consumes:
+      - application/json
+      description: Mengganti semua permissions/modules dari role (replace operation)
+      parameters:
+      - description: Role ID
+        in: path
+        name: roleId
+        required: true
+        type: integer
+      - description: Role permissions data
+        in: body
+        name: permissions
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_role.UpdateRolePermissionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permissions berhasil diupdate
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid role ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update role permissions (replace all)
+      tags:
+      - Role Management
+  /api/v1/role-management/role/{roleId}/users:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar users yang memiliki role tertentu
+      parameters:
+      - description: Role ID
+        in: path
+        name: roleId
+        required: true
+        type: integer
+      - description: 'Limit jumlah data (default: 10)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Users berhasil diambil
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid role ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get users by role
+      tags:
+      - Role Management
+  /api/v1/role-management/user/{userId}/access-summary:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan ringkasan akses user termasuk semua roles dan permissions
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User access summary berhasil diambil
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid user ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user access summary
+      tags:
+      - Role Management
+  /api/v1/role-management/user/{userId}/role/{roleId}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus role assignment dari user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: roleId
+        required: true
+        type: integer
+      - description: Company ID
+        in: query
+        name: company_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Role berhasil dihapus dari user
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid ID atau company_id diperlukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User role assignment tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove role from user
+      tags:
+      - Role Management
+  /api/v1/role-management/user/{userId}/roles:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan semua role assignments dari user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User roles berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_role.UserRoleAssignmentResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request - Invalid user ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user roles
+      tags:
+      - Role Management
+  /api/v1/roles:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar semua role dengan filter opsional dan pagination
+      parameters:
+      - description: Limit jumlah data
+        in: query
+        name: limit
+        type: integer
+      - description: Offset data
+        in: query
+        name: offset
+        type: integer
+      - description: Search by name
+        in: query
+        name: search
+        type: string
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Roles berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_role.RoleListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all roles
+      tags:
+      - Roles
+    post:
+      consumes:
+      - application/json
+      description: Membuat role baru
+      parameters:
+      - description: Role data
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_role.CreateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Role berhasil dibuat
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_role.RoleResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "409":
+          description: Conflict - role name sudah ada
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new role
+      tags:
+      - Roles
+  /api/v1/roles/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus role berdasarkan ID
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Role berhasil dihapus
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid role ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete role
+      tags:
+      - Roles
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail role berdasarkan ID
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Role berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_role.RoleResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid role ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get role by ID
+      tags:
+      - Roles
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi role
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role data yang akan diupdate
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_role.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Role berhasil diupdate
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_role.RoleResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid role ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update role
+      tags:
+      - Roles
+  /api/v1/roles/{id}/permissions:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail role dengan daftar permissions/modules
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Role with permissions berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_role.RoleWithPermissionsResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid role ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get role with permissions
+      tags:
+      - Roles
+  /api/v1/subscription-plans:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar semua subscription plans (public endpoint)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Subscription plans berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_subscription.SubscriptionPlanResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      summary: Get all subscription plans
+      tags:
+      - Subscription Plans
+  /api/v1/subscription-plans/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail subscription plan berdasarkan ID (public endpoint)
+      parameters:
+      - description: Subscription Plan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Subscription plan berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_subscription.SubscriptionPlanResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid plan ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Subscription plan tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      summary: Get subscription plan by ID
+      tags:
+      - Subscription Plans
+  /api/v1/subscriptions:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar semua subscriptions dengan filter opsional
+      parameters:
+      - description: Limit jumlah data
+        in: query
+        name: limit
+        type: integer
+      - description: Offset data
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by company ID
+        in: query
+        name: company_id
+        type: integer
+      - description: Filter by plan ID
+        in: query
+        name: plan_id
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Subscriptions berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_subscription.SubscriptionListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all subscriptions
+      tags:
+      - Subscriptions
+    post:
+      consumes:
+      - application/json
+      description: Membuat subscription baru untuk company
+      parameters:
+      - description: Subscription data
+        in: body
+        name: subscription
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_subscription.CreateSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Subscription berhasil dibuat
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_subscription.SubscriptionResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "409":
+          description: Conflict - company sudah memiliki subscription aktif
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create subscription
+      tags:
+      - Subscriptions
+  /api/v1/subscriptions/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail subscription berdasarkan ID
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Subscription berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_subscription.SubscriptionResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid subscription ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Subscription tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get subscription by ID
+      tags:
+      - Subscriptions
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui subscription
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Subscription data yang akan diupdate
+        in: body
+        name: subscription
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_subscription.UpdateSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Subscription berhasil diupdate
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_subscription.SubscriptionResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid subscription ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Subscription tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update subscription
+      tags:
+      - Subscriptions
+  /api/v1/unit-roles/{unit_role_id}/permissions:
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui permissions/modules untuk unit role
+      parameters:
+      - description: Unit Role ID
+        in: path
+        name: unit_role_id
+        required: true
+        type: integer
+      - description: Permissions data
+        in: body
+        name: permissions
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_unit.BulkUpdateUnitRoleModulesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permissions berhasil diupdate
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid unit role ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update unit role permissions
+      tags:
+      - Unit Roles
+  /api/v1/units:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar semua unit dengan filter opsional dan pagination
+      parameters:
+      - description: Limit jumlah data
+        in: query
+        name: limit
+        type: integer
+      - description: Offset data
+        in: query
+        name: offset
+        type: integer
+      - description: Search by name atau code
+        in: query
+        name: search
+        type: string
+      - description: Filter by branch ID
+        in: query
+        name: branch_id
+        type: integer
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Units berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_unit.UnitListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all units
+      tags:
+      - Units
+    post:
+      consumes:
+      - application/json
+      description: Membuat unit baru dengan support untuk hierarchical structure
+      parameters:
+      - description: Unit data
+        in: body
+        name: unit
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_unit.CreateUnitRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Unit berhasil dibuat
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_unit.UnitResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "409":
+          description: Conflict - unit code sudah ada
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new unit
+      tags:
+      - Units
+  /api/v1/units/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus unit berdasarkan ID
+      parameters:
+      - description: Unit ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Unit berhasil dihapus
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid unit ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete unit
+      tags:
+      - Units
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail unit berdasarkan ID
+      parameters:
+      - description: Unit ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Unit berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_unit.UnitResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid unit ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get unit by ID
+      tags:
+      - Units
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi unit
+      parameters:
+      - description: Unit ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Unit data yang akan diupdate
+        in: body
+        name: unit
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_unit.UpdateUnitRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Unit berhasil diupdate
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_unit.UnitResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid unit ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update unit
+      tags:
+      - Units
+  /api/v1/units/{id}/roles:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar roles yang ditugaskan ke unit
+      parameters:
+      - description: Unit ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Unit roles berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_modules_unit.UnitRoleResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad request - Invalid unit ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get unit roles
+      tags:
+      - Units
+  /api/v1/units/{id}/roles/{role_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus role dari unit
+      parameters:
+      - description: Unit ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Role berhasil dihapus dari unit
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit role assignment tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove role from unit
+      tags:
+      - Units
+    post:
+      consumes:
+      - application/json
+      description: Menugaskan role ke unit
+      parameters:
+      - description: Unit ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Role berhasil ditugaskan ke unit
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit atau role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Assign role to unit
+      tags:
+      - Units
+  /api/v1/units/{id}/roles/{role_id}/permissions:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan permissions/modules yang dapat diakses unit untuk role
+        tertentu
+      parameters:
+      - description: Unit ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Unit permissions berhasil diambil
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit atau role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get unit permissions for specific role
+      tags:
+      - Units
+  /api/v1/units/{id}/stats:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail unit dengan statistik (jumlah users, roles,
+        dll)
+      parameters:
+      - description: Unit ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Unit stats berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_unit.UnitWithStatsResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid unit ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get unit with statistics
+      tags:
+      - Units
+  /api/v1/units/copy-permissions:
+    post:
+      consumes:
+      - application/json
+      description: Menyalin permissions dari satu unit ke unit lain
+      parameters:
+      - description: Copy permissions request
+        in: body
+        name: copy
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_unit.CopyUnitPermissionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permissions berhasil disalin
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Copy permissions between units
+      tags:
+      - Units
+  /api/v1/units/copy-unit-role-permissions:
+    post:
+      consumes:
+      - application/json
+      description: Menyalin permissions dari satu unit role ke unit role lain
+      parameters:
+      - description: Copy unit role permissions request
+        in: body
+        name: copy
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_unit.CopyUnitRolePermissionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Permissions berhasil disalin
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit role tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Copy permissions between unit roles
+      tags:
+      - Units
+  /api/v1/units/unit-role-info:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan informasi unit role berdasarkan unit_id
+      parameters:
+      - description: Unit ID
+        in: query
+        name: unit_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Unit role info berhasil diambil
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - unit_id diperlukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: Unit tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get unit role information
+      tags:
+      - Units
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar semua user dengan filter opsional dan pagination
+      parameters:
+      - description: Limit jumlah data
+        in: query
+        name: limit
+        type: integer
+      - description: Offset data
+        in: query
+        name: offset
+        type: integer
+      - description: Search by name atau email
+        in: query
+        name: search
+        type: string
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Users berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_user.UserListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Membuat user baru dengan role assignments
+      parameters:
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_user.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User berhasil dibuat
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_user.UserResponse'
+              type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "409":
+          description: Conflict - user sudah ada
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new user
+      tags:
+      - Users
+  /api/v1/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Menghapus user dan semua asosiasi terkait
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User berhasil dihapus
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid user ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - Users
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan detail user berdasarkan ID dengan roles dan permissions
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_user.UserResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid user ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi user dan role assignments
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User data yang akan diupdate
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_user.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User berhasil diupdate
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_modules_user.UserResponse'
+              type: object
+        "400":
+          description: Bad request - Invalid user ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - Users
+  /api/v1/users/{id}/effective-permissions:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan effective permissions user (gabungan dari semua roles
+        dan units)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User effective permissions berhasil diambil
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid user ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user effective permissions
+      tags:
+      - Users
+  /api/v1/users/{id}/modules:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar modul yang dapat diakses user dengan subscription
+        check
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Group modules by category (true/false)
+        in: query
+        name: grouped
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User modules berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        "400":
+          description: Bad request - Invalid user ID
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user modules
+      tags:
+      - Users
+  /api/v1/users/{id}/password:
+    put:
+      consumes:
+      - application/json
+      description: Mengubah password user dengan validasi password lama
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Password change request
+        in: body
+        name: password
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_user.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password berhasil diubah
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "400":
+          description: Bad request - Invalid user ID atau validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "404":
+          description: User tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - Users
+  /api/v1/users/check-access:
+    post:
+      consumes:
+      - application/json
+      description: Memeriksa apakah user memiliki akses ke module URL tertentu
+      parameters:
+      - description: Access check request
+        in: body
+        name: access
+        required: true
+        schema:
+          $ref: '#/definitions/internal_modules_user.AccessCheckRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access check berhasil
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request - validation failed
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Check user access
+      tags:
+      - Users
+  /api/v1/users/identity/{identity}/modules:
+    get:
+      consumes:
+      - application/json
+      description: Mendapatkan daftar modul yang dapat diakses user berdasarkan user
+        identity dengan subscription check
+      parameters:
+      - description: User identity
+        in: path
+        name: identity
+        required: true
+        type: string
+      - description: Group modules by category (true/false)
+        in: query
+        name: grouped
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User modules berhasil diambil
+          schema:
+            allOf:
+            - $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+        "404":
+          description: User tidak ditemukan
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/gin-scalable-api_pkg_response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user modules by identity
+      tags:
+      - Users
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check if the API is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - System
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
+tags:
+- description: Authentication endpoints - Login, logout, token refresh
+  name: "\U0001F510 Authentication"
+- description: User management endpoints
+  name: Users
+- description: Company management endpoints
+  name: Companies
+- description: Branch management endpoints with hierarchy support
+  name: Branches
+- description: Role management endpoints
+  name: Roles
+- description: Advanced role management and assignments
+  name: Role Management
+- description: Module/menu management endpoints
+  name: Modules
+- description: Subscription management endpoints
+  name: Subscriptions
+- description: Subscription plan management endpoints
+  name: Subscription Plans
+- description: Unit management endpoints
+  name: Units
+- description: Application management endpoints
+  name: Applications
+- description: Audit log endpoints
+  name: Audit
+- description: System health and status endpoints
+  name: System

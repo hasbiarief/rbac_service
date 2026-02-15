@@ -19,6 +19,25 @@ func NewHandler(service *Service) *Handler {
 }
 
 // Handler methods
+
+// GetAuditLogs godoc
+// @Summary      Get audit logs
+// @Description  Mendapatkan daftar audit logs dengan filter opsional dan pagination
+// @Tags         Audit
+// @Accept       json
+// @Produce      json
+// @Param        limit       query     int     false  "Limit jumlah data"
+// @Param        offset      query     int     false  "Offset data"
+// @Param        user_id     query     int     false  "Filter by user ID"
+// @Param        action      query     string  false  "Filter by action"
+// @Param        entity_type query     string  false  "Filter by entity type"
+// @Param        start_date  query     string  false  "Filter by start date (YYYY-MM-DD)"
+// @Param        end_date    query     string  false  "Filter by end date (YYYY-MM-DD)"
+// @Success      200         {object}  response.Response{data=audit.AuditListResponse}  "Audit logs berhasil diambil"
+// @Failure      400         {object}  response.Response  "Bad request"
+// @Failure      500         {object}  response.Response  "Internal server error"
+// @Router       /api/v1/audit/logs [get]
+// @Security     BearerAuth
 func (h *Handler) GetAuditLogs(c *gin.Context) {
 	var req AuditListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -35,6 +54,18 @@ func (h *Handler) GetAuditLogs(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgAuditLogsRetrieved, auditResponse)
 }
 
+// CreateAuditLog godoc
+// @Summary      Create audit log
+// @Description  Membuat audit log entry baru
+// @Tags         Audit
+// @Accept       json
+// @Produce      json
+// @Param        audit  body      audit.CreateAuditLogRequest  true  "Audit log data"
+// @Success      201    {object}  response.Response{data=audit.AuditLogResponse}  "Audit log berhasil dibuat"
+// @Failure      400    {object}  response.Response  "Bad request - validation failed"
+// @Failure      500    {object}  response.Response  "Internal server error"
+// @Router       /api/v1/audit/logs [post]
+// @Security     BearerAuth
 func (h *Handler) CreateAuditLog(c *gin.Context) {
 	var req CreateAuditLogRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -51,6 +82,19 @@ func (h *Handler) CreateAuditLog(c *gin.Context) {
 	response.Success(c, http.StatusCreated, constants.MsgAuditLogCreated, auditResponse)
 }
 
+// GetUserAuditLogs godoc
+// @Summary      Get user audit logs by ID
+// @Description  Mendapatkan audit logs untuk user tertentu berdasarkan user ID
+// @Tags         Audit
+// @Accept       json
+// @Produce      json
+// @Param        userId  path      int  true   "User ID"
+// @Param        limit   query     int  false  "Limit jumlah data (default: 50)"
+// @Success      200     {object}  response.Response{data=[]audit.AuditLogResponse}  "User audit logs berhasil diambil"
+// @Failure      400     {object}  response.Response  "Bad request - Invalid user ID"
+// @Failure      500     {object}  response.Response  "Internal server error"
+// @Router       /api/v1/audit/users/{userId}/logs [get]
+// @Security     BearerAuth
 func (h *Handler) GetUserAuditLogs(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)
 	if err != nil {
@@ -73,6 +117,19 @@ func (h *Handler) GetUserAuditLogs(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgAuditLogsRetrieved, auditResponse)
 }
 
+// GetUserAuditLogsByIdentity godoc
+// @Summary      Get user audit logs by identity
+// @Description  Mendapatkan audit logs untuk user tertentu berdasarkan user identity
+// @Tags         Audit
+// @Accept       json
+// @Produce      json
+// @Param        identity  path      string  true   "User identity"
+// @Param        limit     query     int     false  "Limit jumlah data (default: 50)"
+// @Success      200       {object}  response.Response{data=[]audit.AuditLogResponse}  "User audit logs berhasil diambil"
+// @Failure      400       {object}  response.Response  "Bad request - User identity diperlukan"
+// @Failure      500       {object}  response.Response  "Internal server error"
+// @Router       /api/v1/audit/users/identity/{identity}/logs [get]
+// @Security     BearerAuth
 func (h *Handler) GetUserAuditLogsByIdentity(c *gin.Context) {
 	identity := c.Param("identity")
 	if identity == "" {
@@ -95,6 +152,16 @@ func (h *Handler) GetUserAuditLogsByIdentity(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgAuditLogsRetrieved, auditResponse)
 }
 
+// GetAuditStats godoc
+// @Summary      Get audit statistics
+// @Description  Mendapatkan statistik audit logs (total logs, logs by action, logs by entity type, dll)
+// @Tags         Audit
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  response.Response{data=audit.AuditStatsResponse}  "Audit statistics berhasil diambil"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/audit/stats [get]
+// @Security     BearerAuth
 func (h *Handler) GetAuditStats(c *gin.Context) {
 	statsResponse, err := h.service.GetAuditStats()
 	if err != nil {

@@ -1,644 +1,270 @@
-# RBAC API - Module-Based Architecture (5-File Structure)
+# RBAC Service - Huminor
 
-> **Made with ❤️ by Hasbi**  
-> 📧 hasbiarief7@gmail.com
-
-Sistem ERP dengan Role-Based Access Control (RBAC) menggunakan **Module-Based Architecture** (Express.js style), Go, PostgreSQL, dan Redis. Menggunakan raw SQL tanpa ORM untuk performa optimal.
-
-**✅ REFACTORING COMPLETED**: Struktur telah berhasil direfactor dari 7-file menjadi 5-file per module untuk meningkatkan developer experience dan mengurangi cognitive load.
-
-## 🏗️ Arsitektur
-
-Project ini menggunakan **vertical module-based structure** dengan prinsip: **1 fitur = 1 folder**
-
-```
-internal/
-├── app/           # Server initialization & route registration
-├── modules/       # 🔥 SEMUA FITUR DI SINI (5 files per module)
-│   ├── auth/      # Authentication (dto, model, repository, route, service)
-│   ├── user/      # User management
-│   ├── role/      # Role management
-│   ├── company/   # Company management
-│   ├── branch/    # Branch management (hierarchical)
-│   ├── module/    # Module system (menu/features)
-│   ├── unit/      # Unit management (unit-based RBAC)
-│   ├── subscription/  # Subscription system
-│   └── audit/     # Audit logging
-└── constants/     # Shared constants
-
-middleware/        # HTTP middleware (auth, CORS, rate limit)
-pkg/              # Reusable utilities (generic only)
-migrations/       # SQL migrations
-```
-
-**Refactoring Benefits:**
-- ✅ File count berkurang: 63 → 45 files (28% reduction)
-- ✅ Faster navigation: Less file switching untuk developer
-- ✅ Cleaner structure: Logical grouping of related code
-- ✅ Easier onboarding: New developers less overwhelmed
-- ✅ Maintained modularity: Zero impact ke cross-module dependencies
-
-**Key Differences:**
-- ❌ Tidak ada folder `interfaces/`, `mapper/`, `dto/` global
-- ❌ Tidak ada separation `handlers/`, `service/`, `repository/` terpisah
-- ❌ Tidak ada `handler.go` dan `validator.go` terpisah (merged ke route.go dan dto.go)
-- ✅ Setiap module punya semua layer-nya sendiri (5 files: dto, model, repository, route, service)
-- ✅ Model lokal per module (tidak shared)
-- ✅ No cross-module imports
-
-## ✨ Fitur Utama
-
-- **Module-Based Architecture** - 1 fitur = 1 folder (5-file structure)
-- **Module Generator** - Otomatis generate module dengan Makefile commands
-- **Authentication** - JWT token system dengan Redis storage
-- **Unit-Based RBAC** - Hierarchical RBAC: Company → Branch → Unit → Role → User
-- **Multi-Company** - Company dan branch hierarchy dengan unit management
-- **Subscription** - Tiered subscription dengan module access control
-- **Audit Logging** - Complete audit trail untuk semua actions
-- **User Management** - User lifecycle dengan soft delete
-- **Module System** - Dynamic menu/feature management
-- **Raw SQL** - Tanpa ORM untuk performa optimal
-- **Validation Middleware** - Centralized input validation dengan `ValidateRequest`
-- **CORS & Rate Limiting** - Production-ready security
-
-## 🛠️ Tech Stack
-
-- **Go 1.21+** dengan Gin framework
-- **PostgreSQL 13+** dengan raw SQL (tanpa ORM)
-- **Redis 6+** untuk token storage dan caching
-- **Module-Based Architecture** (Express.js style)
-- **JWT Authentication** dengan refresh token
-- **Validation Middleware** dengan go-playground/validator
-- **bcrypt** untuk password hashing
-- **Air** untuk hot reload development
+Role-Based Access Control (RBAC) service dengan module-based architecture untuk sistem manajemen akses dan permission.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Go 1.25+
-- PostgreSQL 12+
-- Redis 6+
+- Go 1.21+
+- PostgreSQL 14+
+- Redis 7+
+- Make
 
-### Development Setup
+### Setup Development
 
 ```bash
-# 1. Clone dan setup
-git clone <repository>
+# Clone repository
+git clone <repository-url>
 cd rbac-service
-make dev-setup  # Install dependencies + create .env
 
-# 2. Edit environment variables
-# Edit .env dengan konfigurasi database dan Redis
+# Copy environment file
+cp .env.example .env
 
-# 3. Setup database
-make db-create
-make db-seed    # Seed with template data (recommended)
-# atau
-make migrate-up # Run migrations only
+# Install dependencies
+go mod download
 
-# 4. Start development server
-air  # dengan live reload
-# atau
-make run
+# Setup database
+make db-setup
+
+# Run migrations
+make migrate-up
+
+# Run seeders
+make seed
+
+# Start development server
+make dev
 ```
 
 Server akan berjalan di `http://localhost:8081`
 
-### Quick Database Setup (New Projects)
+## 📖 Dokumentasi API
 
+### Swagger UI (Recommended)
+Akses dokumentasi interaktif dan test endpoints:
+```
+http://localhost:8081/swagger/index.html
+```
+
+### Import ke Postman/Insomnia
+1. Download file: `docs/swagger.json` atau `docs/swagger.yaml`
+2. Import ke Postman atau Insomnia
+3. Set environment variables
+4. Ready to test!
+
+**Via URL (jika server running):**
+```
+http://localhost:8081/swagger/doc.json
+```
+
+### Generate Swagger Documentation
 ```bash
-# One-command setup for new projects
-make db-seed-fresh  # Drop, create, and seed database
-
-# Or step by step
-make db-create      # Create database
-make db-seed        # Seed with template data
+make swagger-gen
 ```
 
-**Template includes:**
-- ✅ 11 sample users with different roles
-- ✅ 3 companies with hierarchical branches
-- ✅ 128+ modules across 12 categories
-- ✅ Complete RBAC with unit-based permissions
-- ✅ 3 subscription plans (Basic, Pro, Enterprise)
-- ✅ Ready-to-use data for testing
+## 🏗️ Arsitektur
 
-### Module Development
-
-```bash
-# Generate module baru dengan boilerplate code
-make newmodule name=employee
-
-# List semua modules
-make listmodules
-
-# Remove module jika diperlukan
-make removemodule name=employee
-
-# Build dan test
-make build
-go build ./cmd/api
+### Module-Based Architecture
+Setiap fitur adalah satu module dengan struktur:
+```
+internal/modules/<module-name>/
+├── route.go       # HTTP routes & handlers
+├── service.go     # Business logic
+├── repository.go  # Database operations
+├── model.go       # Database models
+├── dto.go         # Request/Response DTOs
 ```
 
-### Production Deployment
-
-```bash
-# Build binary
-make prod-build
-
-# Run migrations
-./bin/migrate -action=up -dir=migrations
-
-# Start server
-GIN_MODE=release ./bin/server
-```
-
-**Docker Compose (Recommended):**
-```bash
-cp .env.production .env
-make prod-start
-make prod-migrate
-make prod-status
-```
-
-## 📚 API Documentation
-
-### Test Users
-Default users untuk testing (password: `password123`):
-- `naruto@company.com` (ID: 100000001) - Super Admin (akses penuh)
-- `sakura@company.com` (ID: 100000002) - HR Admin (modul HR)
-- `sasuke@company.com` (ID: 100000003) - Recruiter (recruitment)
-- `ino@company.com` (ID: 100000006) - Employee (akses terbatas)
-- `hasbi@company.com` (ID: 800000001) - Console Admin (akses penuh)
-
-### Key Endpoints
-
-**Authentication:**
-```bash
-# Login
-POST /api/v1/auth/login
-{
-  "user_identity": "800000001",
-  "password": "password123"
-}
-
-# Refresh token
-POST /api/v1/auth/refresh
-{
-  "refresh_token": "your_refresh_token"
-}
-
-# Logout
-POST /api/v1/auth/logout
-```
-
-**User Management:**
-```bash
-# List users dengan pagination
-GET /api/v1/users?limit=10&offset=0&search=admin
-
-# Create user
-POST /api/v1/users
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password123"
-}
-
-# Update user
-PUT /api/v1/users/1
-{
-  "name": "John Updated",
-  "is_active": true
-}
-```
-
-**Company & Branch:**
-```bash
-# List companies
-GET /api/v1/companies
-
-# Company branches (hierarchy)
-GET /api/v1/branches/company/1?nested=true
-
-# Create branch
-POST /api/v1/branches
-{
-  "company_id": 1,
-  "name": "Jakarta Branch",
-  "code": "JKT",
-  "parent_id": null
-}
-```
-
-**Subscription:**
-```bash
-# List plans (public)
-GET /api/v1/plans
-
-# Create subscription
-POST /api/v1/subscription/subscriptions
-{
-  "company_id": 1,
-  "plan_id": 1,
-  "billing_cycle": "monthly"
-}
-
-# Check module access
-GET /api/v1/subscription/module-access/1/1
-```
-
-### Response Format
-
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Pengguna berhasil dibuat",
-  "data": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "john@example.com",
-    "is_active": true,
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-}
-```
-
-**Error Response:**
-```json
-{
-  "success": false,
-  "message": "Validasi gagal",
-  "error": "Email sudah ada"
-}
-```
-
-**Paginated Response:**
-```json
-{
-  "success": true,
-  "message": "Pengguna berhasil diambil",
-  "data": {
-    "data": [...],
-    "total": 100,
-    "limit": 10,
-    "offset": 0,
-    "has_more": true
-  }
-}
-```
-
-## 🏗️ Development Guide
-
-### Membuat Module Baru
-
-#### ⚡ Otomatis dengan Makefile (Recommended)
-```bash
-# 1. Generate module dengan boilerplate code
-make newmodule name=employee
-
-# 2. Register module di internal/app/routes.go dan internal/app/server.go
-
-# 3. Test build
-go build ./cmd/api
-
-# 4. Implement business logic sesuai kebutuhan
-```
-
-#### 🔧 Manual (jika diperlukan)
-1. **Buat folder module** di `internal/modules/feature_name/`
-2. **Buat 5 file standar:**
-   - `dto.go` - Request/Response structures + validation logic
-   - `model.go` - Database entities (local)
-   - `repository.go` - Database queries (raw SQL)
-   - `route.go` - Route registration + HTTP handlers
-   - `service.go` - Business logic
-3. **Register module** di `internal/app/routes.go`
-
-### Module Structure (5 Files)
-
-Setiap module memiliki 5 file standar setelah refactoring:
-
-**Model:**
-```go
-// internal/modules/employee/model.go
-package employee
-
-import "time"
-
-type employee struct {
-    ID        int64     `json:"id" db:"id"`
-    Name      string    `json:"name" db:"name"`
-    Email     string    `json:"email" db:"email"`
-    IsActive  bool      `json:"is_active" db:"is_active"`
-    CreatedAt time.Time `json:"created_at" db:"created_at"`
-    UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
-}
-
-func (employee) TableName() string {
-    return "employees"
-}
-```
-
-**DTO:**
-```go
-// internal/modules/employee/dto.go
-package employee
-
-type createemployeerequest struct {
-    Name  string `json:"name" validate:"required,min=2,max=100"`
-    Email string `json:"email" validate:"required,email"`
-}
-
-type employeeresponse struct {
-    ID        int64  `json:"id"`
-    Name      string `json:"name"`
-    Email     string `json:"email"`
-    IsActive  bool   `json:"is_active"`
-    CreatedAt string `json:"created_at"`
-    UpdatedAt string `json:"updated_at"`
-}
-
-// Validation logic (merged from validator.go)
-func ValidateEmployeeEmail(email string) bool {
-    // Custom validation logic
-    return len(email) > 0
-}
-```
-
-**Repository:**
-```go
-// internal/modules/employee/repository.go
-package employee
-
-import (
-    "database/sql"
-    "gin-scalable-api/pkg/model"
-)
-
-type repository struct {
-    *model.Repository
-    db *sql.DB
-}
-
-func newrepository(db *sql.DB) *repository {
-    return &repository{
-        Repository: model.NewRepository(db),
-        db:         db,
-    }
-}
-
-func (r *repository) create(emp *employee) error {
-    query := `INSERT INTO employees (name, email, is_active, created_at, updated_at)
-              VALUES ($1, $2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-              RETURNING id, created_at, updated_at`
-    return r.db.QueryRow(query, emp.Name, emp.Email).Scan(&emp.ID, &emp.CreatedAt, &emp.UpdatedAt)
-}
-```
-
-**Service:**
-```go
-// internal/modules/employee/service.go
-package employee
-
-import "time"
-
-type service struct {
-    repo *repository
-}
-
-func newservice(repo *repository) *service {
-    return &service{repo: repo}
-}
-
-func (s *service) createemployee(req *createemployeerequest) (*employeeresponse, error) {
-    emp := &employee{Name: req.Name, Email: req.Email}
-    if err := s.repo.create(emp); err != nil {
-        return nil, err
-    }
-    return &employeeresponse{
-        ID:        emp.ID,
-        Name:      emp.Name,
-        Email:     emp.Email,
-        IsActive:  emp.IsActive,
-        CreatedAt: emp.CreatedAt.Format(time.RFC3339),
-        UpdatedAt: emp.UpdatedAt.Format(time.RFC3339),
-    }, nil
-}
-```
-
-**Route (with Handler):**
-```go
-// internal/modules/employee/route.go
-package employee
-
-import (
-    "gin-scalable-api/middleware"
-    "gin-scalable-api/pkg/response"
-    "net/http"
-    "github.com/gin-gonic/gin"
-)
-
-// Handler struct (merged from handler.go)
-type handler struct {
-    service *service
-}
-
-func newhandler(service *service) *handler {
-    return &handler{service: service}
-}
-
-// Handler methods (merged from handler.go)
-func (h *handler) createemployee(c *gin.Context) {
-    validatedBody, _ := c.Get("validated_body")
-    req := validatedBody.(*createemployeerequest)
-    
-    result, err := h.service.createemployee(req)
-    if err != nil {
-        response.ErrorWithAutoStatus(c, "Failed to create employee", err.Error())
-        return
-    }
-    
-    response.Success(c, http.StatusCreated, "Employee created", result)
-}
-
-// Route registration
-func RegisterRoutes(router *gin.RouterGroup, handler *handler) {
-    employees := router.Group("/employees")
-    {
-        // POST /api/v1/employees - Create new employee
-        employees.POST("", 
-            middleware.ValidateRequest(middleware.ValidationRules{
-                Body: &createemployeerequest{},
-            }),
-            handler.createemployee,
-        )
-        
-        // GET /api/v1/employees/:id - Get employee by ID
-        employees.GET("/:id", handler.getemployeebyid)
-    }
-}
-```
-
-## 📖 Documentation
-
-- **[📚 Documentation Index](docs/INDEX.md)** - Navigasi dokumentasi lengkap
-- **[🚀 Quick Start Guide](docs/QUICK_START.md)** - Setup cepat & Makefile commands
-- **[🏗️ Project Structure](docs/PROJECT_STRUCTURE.md)** - Module-based architecture (5-file structure)
-- **[👨‍💻 Backend Engineer Rules](docs/ENGINEER_RULES.md)** - Development guide
-- **[📡 API Overview](docs/apidoc/API_OVERVIEW.md)** - API documentation
-- **[🔄 Module Structure Refactoring](docs/MODULE_STRUCTURE_REFACTORING.md)** - Refactoring details
-- **[🗄️ Database Documentation](database/README.md)** - Database dumps and seeders
-- **[🧪 Postman Collection](docs/HUMINOR_RBAC_API_MODULE_BASED.postman_collection.json)** - API testing
-
-## ⚙️ Environment Variables
-
-```bash
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=password
-DB_NAME=huminor_rbac
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-REDIS_DB=0
-
-# JWT
-JWT_SECRET=your-secret-key
-
-# Server
-PORT=8081
-GIN_MODE=debug
-
-# CORS
-CORS_ORIGINS=http://localhost:3000,http://localhost:3001
-ENVIRONMENT=development
-```
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-go test ./...
-
-# Run tests dengan coverage
-go test -cover ./...
-
-# Run specific test
-go test ./internal/modules/user -v
-
-# Test dengan race detection
-go test -race ./...
-
-# Build validation
-go build ./cmd/api
-```
+### Modules
+- **auth** - Authentication & authorization
+- **user** - User management
+- **company** - Company management
+- **branch** - Branch management (hierarchical)
+- **role** - Role management
+- **module** - Module management
+- **subscription** - Subscription & plan management
+- **unit** - Unit management
+- **application** - Application management
+- **audit** - Audit logging
+
+## 🛠️ Development
 
 ### Makefile Commands
 
 ```bash
 # Development
-make dev-setup      # Setup development environment
-make build          # Build application
-make run            # Build and run server
-make test           # Run tests
-make clean          # Clean build artifacts
-
-# Module Management
-make newmodule name=<name>     # Generate new module
-make removemodule name=<name>  # Remove existing module
-make listmodules               # List all modules
+make dev              # Run with hot reload
+make build            # Build binary
+make run              # Run binary
 
 # Database
-make db-create      # Create database
-make db-drop        # Drop database
-make db-reset       # Reset database and run migrations
-make db-dump        # Create database dump and seeder files
-make db-seed        # Seed database with template data
-make db-seed-fresh  # Drop, create, and seed database
-make migrate-up     # Run migrations
-make migrate-status # Check migration status
+make db-setup         # Create database
+make migrate-up       # Run migrations
+make migrate-down     # Rollback migrations
+make seed             # Run seeders
 
-# Production
-make prod-build     # Build for production
-make prod-start     # Start production services
-make prod-stop      # Stop production services
-make prod-logs      # View production logs
+# Swagger
+make swagger-gen      # Generate Swagger docs
+make swagger-validate # Validate annotations
 
-# Help
-make help           # Show all available commands
+# Testing
+make test             # Run tests
+make test-coverage    # Run with coverage
+
+# Docker
+make docker-build     # Build Docker image
+make docker-up        # Start containers
+make docker-down      # Stop containers
 ```
 
-## 📊 Monitoring
+### Adding New Module
 
-### Health Check
+1. Create module directory:
 ```bash
-curl http://localhost:8081/health
+mkdir -p internal/modules/<module-name>
 ```
 
-### Metrics
-- Response time monitoring
-- Error rate tracking
-- Database connection pooling
-- Redis cache hit rates
+2. Create required files (route.go, service.go, repository.go, model.go, dto.go)
 
-## 🔧 Troubleshooting
+3. Add Swagger annotations directly above handler methods
 
-### Common Issues
+4. Register routes in `internal/app/routes.go`
 
-**Database Connection:**
+5. Generate Swagger docs:
 ```bash
-# Check database
-pg_isready -h localhost -p 5432
-
-# Check environment
-cat .env | grep DB_
+make swagger-gen
 ```
 
-**Migration Error:**
+## 📝 Swagger Annotations
+
+Tambahkan anotasi langsung di atas handler method:
+
+```go
+// @Summary      Get user by ID
+// @Description  Mendapatkan detail user berdasarkan ID
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  response.Response{data=user.UserResponse}
+// @Failure      404  {object}  response.Response
+// @Router       /api/v1/users/{id} [get]
+// @Security     BearerAuth
+func (h *Handler) GetByID(c *gin.Context) {
+    // handler implementation
+}
+```
+
+Template lengkap: `docs/SWAGGER_ANNOTATION_TEMPLATE.go`
+
+## 🔑 Authentication
+
+Service menggunakan JWT dengan refresh token:
+
+1. **Login**: `POST /api/v1/auth/login`
+2. **Refresh**: `POST /api/v1/auth/refresh`
+3. **Logout**: `POST /api/v1/auth/logout`
+
+Gunakan Bearer token di header:
+```
+Authorization: Bearer <access_token>
+```
+
+## 🗄️ Database
+
+### Migrations
+Migrations menggunakan `golang-migrate`:
 ```bash
-# Check status
-make migrate-status
+# Create new migration
+migrate create -ext sql -dir database/migrations -seq <migration_name>
 
-# Force version (hati-hati!)
-migrate -path migrations -database "postgres://..." force VERSION
+# Run migrations
+make migrate-up
+
+# Rollback
+make migrate-down
 ```
 
-**Build Error:**
+### Seeders
+Seeder files di `database/seeders/`:
 ```bash
-# Clean cache
-go clean -modcache
-go mod download
-go mod tidy
+make seed
 ```
+
+## 🐳 Docker
+
+### Development
+```bash
+docker-compose up -d
+```
+
+### Production
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+## 📊 API Documentation System
+
+Service memiliki built-in API documentation system yang mendukung:
+- Collection management
+- Folder organization
+- Endpoint documentation
+- Environment variables
+- Export ke Postman, OpenAPI, Insomnia, Swagger, Apidog
+
+Dokumentasi lengkap: `docs/apidoc/`
+
+## 🔒 Security
+
+- JWT authentication dengan refresh token
+- Password hashing menggunakan bcrypt
+- Role-based access control (RBAC)
+- Module-based permissions
+- Subscription-based feature access
+- Audit logging untuk semua operasi
+
+## 📚 Dokumentasi
+
+- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Setup, architecture, dan development workflow
+- **[Swagger Guide](docs/SWAGGER_GUIDE.md)** - API documentation dengan Swagger
+- **[Integration Guide](docs/INTEGRATION_GUIDE.md)** - Integrasi dengan external apps
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+make test
+
+# Run with coverage
+make test-coverage
+
+# Run specific test
+go test ./internal/modules/auth/...
+```
+
+## 📦 Tech Stack
+
+- **Framework**: Gin
+- **Database**: PostgreSQL (raw SQL)
+- **Cache**: Redis
+- **Auth**: JWT
+- **Documentation**: Swagger/OpenAPI
+- **Migration**: golang-migrate
+- **Hot Reload**: Air
 
 ## 🤝 Contributing
 
-1. Fork repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Follow clean architecture patterns
-4. Add tests untuk fitur baru
+1. Create feature branch
+2. Follow module-based architecture
+3. Add Swagger annotations
+4. Write tests
 5. Update documentation
-6. Commit changes (`git commit -m 'Add amazing feature'`)
-7. Push branch (`git push origin feature/amazing-feature`)
-8. Open Pull Request
+6. Submit pull request
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+[Your License]
 
----
+## 👥 Team
 
-**Built with Module-Based Architecture (5-File Structure) + Go + PostgreSQL + Redis**
-
-**Key Features:**
-- ✅ 28% file reduction (63 → 45 files)
-- ✅ Automated module generation with Makefile
-- ✅ Consistent 5-file structure per module
-- ✅ Production-ready with Docker support
+[Your Team Info]

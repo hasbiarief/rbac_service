@@ -52,3 +52,6 @@ Thumbs.db
 
 # kiro
 .kiro
+
+# Environment Variable
+.env

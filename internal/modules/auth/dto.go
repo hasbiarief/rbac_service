@@ -6,19 +6,14 @@ import (
 
 // Auth Request DTO
 type LoginRequest struct {
-	Email        string  `json:"email" validate:"omitempty,email"`
-	UserIdentity string  `json:"user_identity" validate:"omitempty"`
-	Password     string  `json:"password" validate:"required,min=6"`
-	UserAgent    *string `json:"user_agent,omitempty"`
-	IP           *string `json:"ip,omitempty"`
+	UserIdentity string `json:"user_identity" validate:"required"`
+	Password     string `json:"password" validate:"required,min=6"`
 }
 
 // Login with Email Request DTO (specific for email login)
 type LoginEmailRequest struct {
-	Email     string  `json:"email" validate:"required,email"`
-	Password  string  `json:"password" validate:"required,min=6"`
-	UserAgent *string `json:"user_agent,omitempty"`
-	IP        *string `json:"ip,omitempty"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=6"`
 }
 
 // Register Request DTO
@@ -49,6 +44,17 @@ type ForgotPasswordRequest struct {
 type ResetPasswordRequest struct {
 	Token       string `json:"token" validate:"required"`
 	NewPassword string `json:"new_password" validate:"required,min=6"`
+}
+
+// Profile Request DTO
+type ProfileRequest struct {
+	UserIdentity    string `json:"user_identity" validate:"required"`
+	ApplicationCode string `json:"application_code" validate:"required"`
+}
+
+// Profile Response DTO
+type ProfileResponse struct {
+	User interface{} `json:"user"`
 }
 
 // Auth Response DTO
@@ -113,5 +119,10 @@ func ValidateForgotPasswordRequest(req *ForgotPasswordRequest) error {
 
 // ValidateResetPasswordRequest validates reset password request
 func ValidateResetPasswordRequest(req *ResetPasswordRequest) error {
+	return validate.Struct(req)
+}
+
+// ValidateProfileRequest validates profile request
+func ValidateProfileRequest(req *ProfileRequest) error {
 	return validate.Struct(req)
 }

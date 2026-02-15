@@ -3,9 +3,13 @@
 .PHONY: build run migrate-up migrate-status clean test newmodule removemodule listmodules db-dump db-seed
 
 # Build the application
-build:
+build: swagger-gen
 	go build -o bin/server cmd/api/main.go
 	go build -o bin/migrate cmd/migrate/main.go
+
+# Build swagger CLI tool
+build-swagger:
+	go build -o bin/swagger cmd/swagger/main.go
 
 # Run the application
 run: build
@@ -449,10 +453,41 @@ fmt:
 lint:
 	golangci-lint run
 
+# Swagger documentation
+swagger-gen:
+	@echo "🔄 Generating Swagger documentation..."
+	@swag init -g cmd/api/main.go --output docs/ --parseDependency --parseInternal
+	@echo "✅ Swagger documentation generated successfully!"
+	@echo "📄 Files: docs/swagger.json, docs/swagger.yaml"
+
+swagger-validate:
+	@echo "🔍 Validating Swagger annotations..."
+	@swag init -g cmd/api/main.go --output docs/ --parseDependency --parseInternal
+	@echo "✅ Swagger annotations are valid!"
+
+swagger-watch:
+	@echo "👀 Watching for changes and regenerating Swagger docs..."
+	@echo "Press Ctrl+C to stop watching"
+	@while true; do \
+		$(MAKE) -s swagger-gen; \
+		echo "⏳ Waiting for changes (checking every 5 seconds)..."; \
+		sleep 5; \
+	done
+
+swagger-clean:
+	@echo "🗑️  Cleaning generated Swagger files..."
+	@rm -f docs/swagger.json docs/swagger.yaml
+	@echo "✅ Swagger files cleaned!"
+
+# Migrate Postman collection to Swagger
+migrate-postman:
+	@chmod +x scripts/migrate-postman.sh
+	@./scripts/migrate-postman.sh $(ARGS)
+
 # Generate documentation
-docs:
-	@echo "Generating API documentation..."
-	@echo "Documentation available in docs/ folder"
+docs: swagger-gen
+	@echo "📚 API documentation generated!"
+	@echo "📄 Swagger UI will be available at http://localhost:8081/swagger/index.html"
 
 # Production build
 prod-build:
@@ -503,4 +538,9 @@ help:
 	@echo ""
 	@echo "Utilities:"
 	@echo "  clean        - Clean build artifacts"
+	@echo "  swagger-gen  - Generate Swagger documentation"
+	@echo "  swagger-validate - Validate Swagger annotations"
+	@echo "  swagger-clean - Clean generated Swagger files"
+	@echo "  migrate-postman - Migrate Postman collection to Swagger (Usage: make migrate-postman ARGS='-f collection.json')"
+	@echo "  docs         - Generate API documentation (alias for swagger-gen)"
 	@echo "  help         - Show this help"

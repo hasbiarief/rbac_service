@@ -25,6 +25,21 @@ func NewHandler(service *Service, userRepo *UserRepository) *Handler {
 }
 
 // Handler methods
+
+// @Summary      Get all users
+// @Description  Mendapatkan daftar semua user dengan filter opsional dan pagination
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        limit      query     int     false  "Limit jumlah data"
+// @Param        offset     query     int     false  "Offset data"
+// @Param        search     query     string  false  "Search by name atau email"
+// @Param        is_active  query     bool    false  "Filter by active status"
+// @Success      200        {object}  response.Response{data=user.UserListResponse}  "Users berhasil diambil"
+// @Failure      400        {object}  response.Response  "Bad request"
+// @Failure      500        {object}  response.Response  "Internal server error"
+// @Router       /api/v1/users [get]
+// @Security     BearerAuth
 func (h *Handler) GetUsers(c *gin.Context) {
 	var req UserListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -41,6 +56,17 @@ func (h *Handler) GetUsers(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgUsersRetrieved, result)
 }
 
+// @Summary      Get user by ID
+// @Description  Mendapatkan detail user berdasarkan ID dengan roles dan permissions
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  response.Response{data=user.UserResponse}  "User berhasil diambil"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid user ID"
+// @Failure      404  {object}  response.Response  "User tidak ditemukan"
+// @Router       /api/v1/users/{id} [get]
+// @Security     BearerAuth
 func (h *Handler) GetUserByID(c *gin.Context) {
 	if strings.Contains(c.Request.URL.Path, "/modules") {
 		c.Next()
@@ -62,6 +88,18 @@ func (h *Handler) GetUserByID(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgUserRetrieved, result)
 }
 
+// @Summary      Create new user
+// @Description  Membuat user baru dengan role assignments
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        user  body      user.CreateUserRequest  true  "User data"
+// @Success      201   {object}  response.Response{data=user.UserResponse}  "User berhasil dibuat"
+// @Failure      400   {object}  response.Response  "Bad request - validation failed"
+// @Failure      409   {object}  response.Response  "Conflict - user sudah ada"
+// @Failure      500   {object}  response.Response  "Internal server error"
+// @Router       /api/v1/users [post]
+// @Security     BearerAuth
 func (h *Handler) CreateUser(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -84,6 +122,19 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	response.Success(c, http.StatusCreated, constants.MsgUserCreated, result)
 }
 
+// @Summary      Update user
+// @Description  Memperbarui informasi user dan role assignments
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                     true  "User ID"
+// @Param        user  body      user.UpdateUserRequest  true  "User data yang akan diupdate"
+// @Success      200   {object}  response.Response{data=user.UserResponse}  "User berhasil diupdate"
+// @Failure      400   {object}  response.Response  "Bad request - Invalid user ID atau validation failed"
+// @Failure      404   {object}  response.Response  "User tidak ditemukan"
+// @Failure      500   {object}  response.Response  "Internal server error"
+// @Router       /api/v1/users/{id} [put]
+// @Security     BearerAuth
 func (h *Handler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -112,6 +163,18 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgUserUpdated, result)
 }
 
+// @Summary      Delete user
+// @Description  Menghapus user dan semua asosiasi terkait
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  response.Response  "User berhasil dihapus"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid user ID"
+// @Failure      404  {object}  response.Response  "User tidak ditemukan"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/users/{id} [delete]
+// @Security     BearerAuth
 func (h *Handler) DeleteUser(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -127,6 +190,19 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgUserDeleted, nil)
 }
 
+// @Summary      Get user modules
+// @Description  Mendapatkan daftar modul yang dapat diakses user dengan subscription check
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        id       path      int     true   "User ID"
+// @Param        grouped  query     string  false  "Group modules by category (true/false)"
+// @Success      200      {object}  response.Response{data=[]string}  "User modules berhasil diambil"
+// @Failure      400      {object}  response.Response  "Bad request - Invalid user ID"
+// @Failure      404      {object}  response.Response  "User tidak ditemukan"
+// @Failure      500      {object}  response.Response  "Internal server error"
+// @Router       /api/v1/users/{id}/modules [get]
+// @Security     BearerAuth
 func (h *Handler) GetUserModules(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -154,6 +230,18 @@ func (h *Handler) GetUserModules(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgUserModulesRetrieved, result)
 }
 
+// @Summary      Get user modules by identity
+// @Description  Mendapatkan daftar modul yang dapat diakses user berdasarkan user identity dengan subscription check
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        identity  path      string  true   "User identity"
+// @Param        grouped   query     string  false  "Group modules by category (true/false)"
+// @Success      200       {object}  response.Response{data=[]string}  "User modules berhasil diambil"
+// @Failure      404       {object}  response.Response  "User tidak ditemukan"
+// @Failure      500       {object}  response.Response  "Internal server error"
+// @Router       /api/v1/users/identity/{identity}/modules [get]
+// @Security     BearerAuth
 func (h *Handler) GetUserModulesByIdentity(c *gin.Context) {
 	identity := c.Param("identity")
 
@@ -183,6 +271,18 @@ func (h *Handler) GetUserModulesByIdentity(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgUserModulesRetrieved, result)
 }
 
+// @Summary      Check user access
+// @Description  Memeriksa apakah user memiliki akses ke module URL tertentu
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        access  body      user.AccessCheckRequest  true  "Access check request"
+// @Success      200     {object}  map[string]interface{}  "Access check berhasil"
+// @Failure      400     {object}  response.Response  "Bad request - validation failed"
+// @Failure      401     {object}  response.Response  "Unauthorized"
+// @Failure      500     {object}  response.Response  "Internal server error"
+// @Router       /api/v1/users/check-access [post]
+// @Security     BearerAuth
 func (h *Handler) CheckAccess(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -235,6 +335,18 @@ func (h *Handler) checkUserModuleAccess(userID int64, moduleURL string) (bool, e
 	return false, nil
 }
 
+// @Summary      Change user password
+// @Description  Mengubah password user dengan validasi password lama
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        id        path      int                           true  "User ID"
+// @Param        password  body      user.ChangePasswordRequest    true  "Password change request"
+// @Success      200       {object}  response.Response  "Password berhasil diubah"
+// @Failure      400       {object}  response.Response  "Bad request - Invalid user ID atau validation failed"
+// @Failure      404       {object}  response.Response  "User tidak ditemukan"
+// @Router       /api/v1/users/{id}/password [put]
+// @Security     BearerAuth
 func (h *Handler) ChangeUserPassword(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

@@ -20,6 +20,23 @@ func NewHandler(service *Service) *Handler {
 }
 
 // Handler methods
+
+// GetUnits godoc
+// @Summary      Get all units
+// @Description  Mendapatkan daftar semua unit dengan filter opsional dan pagination
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        limit      query     int     false  "Limit jumlah data"
+// @Param        offset     query     int     false  "Offset data"
+// @Param        search     query     string  false  "Search by name atau code"
+// @Param        branch_id  query     int     false  "Filter by branch ID"
+// @Param        is_active  query     bool    false  "Filter by active status"
+// @Success      200        {object}  response.Response{data=unit.UnitListResponse}  "Units berhasil diambil"
+// @Failure      400        {object}  response.Response  "Bad request"
+// @Failure      500        {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units [get]
+// @Security     BearerAuth
 func (h *Handler) GetUnits(c *gin.Context) {
 	var req UnitListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -36,6 +53,18 @@ func (h *Handler) GetUnits(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgDataRetrieved, result)
 }
 
+// GetUnitByID godoc
+// @Summary      Get unit by ID
+// @Description  Mendapatkan detail unit berdasarkan ID
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Unit ID"
+// @Success      200  {object}  response.Response{data=unit.UnitResponse}  "Unit berhasil diambil"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid unit ID"
+// @Failure      404  {object}  response.Response  "Unit tidak ditemukan"
+// @Router       /api/v1/units/{id} [get]
+// @Security     BearerAuth
 func (h *Handler) GetUnitByID(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -52,6 +81,19 @@ func (h *Handler) GetUnitByID(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgDataRetrieved, result)
 }
 
+// GetUnitHierarchy godoc
+// @Summary      Get unit hierarchy for branch
+// @Description  Mendapatkan unit hierarchy (tree structure) untuk branch tertentu
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Branch ID"
+// @Success      200  {object}  response.Response{data=[]unit.UnitHierarchyResponse}  "Unit hierarchy berhasil diambil"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid branch ID"
+// @Failure      404  {object}  response.Response  "Branch tidak ditemukan"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/branches/{id}/units/hierarchy [get]
+// @Security     BearerAuth
 func (h *Handler) GetUnitHierarchy(c *gin.Context) {
 	branchID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -68,6 +110,19 @@ func (h *Handler) GetUnitHierarchy(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgDataRetrieved, result)
 }
 
+// GetUnitWithStats godoc
+// @Summary      Get unit with statistics
+// @Description  Mendapatkan detail unit dengan statistik (jumlah users, roles, dll)
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Unit ID"
+// @Success      200  {object}  response.Response{data=unit.UnitWithStatsResponse}  "Unit stats berhasil diambil"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid unit ID"
+// @Failure      404  {object}  response.Response  "Unit tidak ditemukan"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units/{id}/stats [get]
+// @Security     BearerAuth
 func (h *Handler) GetUnitWithStats(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -84,6 +139,19 @@ func (h *Handler) GetUnitWithStats(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgDataRetrieved, result)
 }
 
+// CreateUnit godoc
+// @Summary      Create new unit
+// @Description  Membuat unit baru dengan support untuk hierarchical structure
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        unit  body      unit.CreateUnitRequest  true  "Unit data"
+// @Success      201   {object}  response.Response{data=unit.UnitResponse}  "Unit berhasil dibuat"
+// @Failure      400   {object}  response.Response  "Bad request - validation failed"
+// @Failure      409   {object}  response.Response  "Conflict - unit code sudah ada"
+// @Failure      500   {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units [post]
+// @Security     BearerAuth
 func (h *Handler) CreateUnit(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -106,6 +174,20 @@ func (h *Handler) CreateUnit(c *gin.Context) {
 	response.Success(c, http.StatusCreated, constants.MsgDataCreated, result)
 }
 
+// UpdateUnit godoc
+// @Summary      Update unit
+// @Description  Memperbarui informasi unit
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                     true  "Unit ID"
+// @Param        unit  body      unit.UpdateUnitRequest  true  "Unit data yang akan diupdate"
+// @Success      200   {object}  response.Response{data=unit.UnitResponse}  "Unit berhasil diupdate"
+// @Failure      400   {object}  response.Response  "Bad request - Invalid unit ID atau validation failed"
+// @Failure      404   {object}  response.Response  "Unit tidak ditemukan"
+// @Failure      500   {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units/{id} [put]
+// @Security     BearerAuth
 func (h *Handler) UpdateUnit(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -134,6 +216,19 @@ func (h *Handler) UpdateUnit(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgDataUpdated, result)
 }
 
+// DeleteUnit godoc
+// @Summary      Delete unit
+// @Description  Menghapus unit berdasarkan ID
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Unit ID"
+// @Success      200  {object}  response.Response  "Unit berhasil dihapus"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid unit ID"
+// @Failure      404  {object}  response.Response  "Unit tidak ditemukan"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units/{id} [delete]
+// @Security     BearerAuth
 func (h *Handler) DeleteUnit(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -149,6 +244,20 @@ func (h *Handler) DeleteUnit(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgDataDeleted, nil)
 }
 
+// AssignRoleToUnit godoc
+// @Summary      Assign role to unit
+// @Description  Menugaskan role ke unit
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        id       path      int  true  "Unit ID"
+// @Param        role_id  path      int  true  "Role ID"
+// @Success      200      {object}  response.Response  "Role berhasil ditugaskan ke unit"
+// @Failure      400      {object}  response.Response  "Bad request - Invalid ID"
+// @Failure      404      {object}  response.Response  "Unit atau role tidak ditemukan"
+// @Failure      500      {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units/{id}/roles/{role_id} [post]
+// @Security     BearerAuth
 func (h *Handler) AssignRoleToUnit(c *gin.Context) {
 	unitID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -170,6 +279,20 @@ func (h *Handler) AssignRoleToUnit(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Role successfully assigned to unit", nil)
 }
 
+// RemoveRoleFromUnit godoc
+// @Summary      Remove role from unit
+// @Description  Menghapus role dari unit
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        id       path      int  true  "Unit ID"
+// @Param        role_id  path      int  true  "Role ID"
+// @Success      200      {object}  response.Response  "Role berhasil dihapus dari unit"
+// @Failure      400      {object}  response.Response  "Bad request - Invalid ID"
+// @Failure      404      {object}  response.Response  "Unit role assignment tidak ditemukan"
+// @Failure      500      {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units/{id}/roles/{role_id} [delete]
+// @Security     BearerAuth
 func (h *Handler) RemoveRoleFromUnit(c *gin.Context) {
 	unitID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -191,6 +314,19 @@ func (h *Handler) RemoveRoleFromUnit(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Role successfully removed from unit", nil)
 }
 
+// GetUnitRoles godoc
+// @Summary      Get unit roles
+// @Description  Mendapatkan daftar roles yang ditugaskan ke unit
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Unit ID"
+// @Success      200  {object}  response.Response{data=[]unit.UnitRoleResponse}  "Unit roles berhasil diambil"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid unit ID"
+// @Failure      404  {object}  response.Response  "Unit tidak ditemukan"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units/{id}/roles [get]
+// @Security     BearerAuth
 func (h *Handler) GetUnitRoles(c *gin.Context) {
 	unitID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -207,6 +343,20 @@ func (h *Handler) GetUnitRoles(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgDataRetrieved, result)
 }
 
+// GetUnitPermissions godoc
+// @Summary      Get unit permissions for specific role
+// @Description  Mendapatkan permissions/modules yang dapat diakses unit untuk role tertentu
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        id       path      int  true  "Unit ID"
+// @Param        role_id  path      int  true  "Role ID"
+// @Success      200      {object}  response.Response  "Unit permissions berhasil diambil"
+// @Failure      400      {object}  response.Response  "Bad request - Invalid ID"
+// @Failure      404      {object}  response.Response  "Unit atau role tidak ditemukan"
+// @Failure      500      {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units/{id}/roles/{role_id}/permissions [get]
+// @Security     BearerAuth
 func (h *Handler) GetUnitPermissions(c *gin.Context) {
 	unitID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -229,6 +379,20 @@ func (h *Handler) GetUnitPermissions(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgDataRetrieved, result)
 }
 
+// UpdateUnitPermissions godoc
+// @Summary      Update unit role permissions
+// @Description  Memperbarui permissions/modules untuk unit role
+// @Tags         Unit Roles
+// @Accept       json
+// @Produce      json
+// @Param        unit_role_id  path      int                                     true  "Unit Role ID"
+// @Param        permissions   body      unit.BulkUpdateUnitRoleModulesRequest   true  "Permissions data"
+// @Success      200           {object}  response.Response  "Permissions berhasil diupdate"
+// @Failure      400           {object}  response.Response  "Bad request - Invalid unit role ID atau validation failed"
+// @Failure      404           {object}  response.Response  "Unit role tidak ditemukan"
+// @Failure      500           {object}  response.Response  "Internal server error"
+// @Router       /api/v1/unit-roles/{unit_role_id}/permissions [put]
+// @Security     BearerAuth
 func (h *Handler) UpdateUnitPermissions(c *gin.Context) {
 	unitRoleID, err := strconv.ParseInt(c.Param("unit_role_id"), 10, 64)
 	if err != nil {
@@ -256,6 +420,19 @@ func (h *Handler) UpdateUnitPermissions(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Permissions successfully updated", nil)
 }
 
+// CopyPermissions godoc
+// @Summary      Copy permissions between units
+// @Description  Menyalin permissions dari satu unit ke unit lain
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        copy  body      unit.CopyUnitPermissionsRequest  true  "Copy permissions request"
+// @Success      200   {object}  response.Response  "Permissions berhasil disalin"
+// @Failure      400   {object}  response.Response  "Bad request - validation failed"
+// @Failure      404   {object}  response.Response  "Unit tidak ditemukan"
+// @Failure      500   {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units/copy-permissions [post]
+// @Security     BearerAuth
 func (h *Handler) CopyPermissions(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -277,7 +454,19 @@ func (h *Handler) CopyPermissions(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Permissions successfully copied", nil)
 }
 
-// CopyUnitRolePermissions - More flexible version using unit_role_id directly
+// CopyUnitRolePermissions godoc
+// @Summary      Copy permissions between unit roles
+// @Description  Menyalin permissions dari satu unit role ke unit role lain
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        copy  body      unit.CopyUnitRolePermissionsRequest  true  "Copy unit role permissions request"
+// @Success      200   {object}  response.Response  "Permissions berhasil disalin"
+// @Failure      400   {object}  response.Response  "Bad request - validation failed"
+// @Failure      404   {object}  response.Response  "Unit role tidak ditemukan"
+// @Failure      500   {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units/copy-unit-role-permissions [post]
+// @Security     BearerAuth
 func (h *Handler) CopyUnitRolePermissions(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -299,6 +488,19 @@ func (h *Handler) CopyUnitRolePermissions(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Permissions successfully copied", nil)
 }
 
+// GetUserEffectivePermissions godoc
+// @Summary      Get user effective permissions
+// @Description  Mendapatkan effective permissions user (gabungan dari semua roles dan units)
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  response.Response  "User effective permissions berhasil diambil"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid user ID"
+// @Failure      404  {object}  response.Response  "User tidak ditemukan"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/users/{id}/effective-permissions [get]
+// @Security     BearerAuth
 func (h *Handler) GetUserEffectivePermissions(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -315,7 +517,19 @@ func (h *Handler) GetUserEffectivePermissions(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgDataRetrieved, result)
 }
 
-// GetUnitRoleInfo - Helper endpoint to get unit_role_id information
+// GetUnitRoleInfo godoc
+// @Summary      Get unit role information
+// @Description  Mendapatkan informasi unit role berdasarkan unit_id
+// @Tags         Units
+// @Accept       json
+// @Produce      json
+// @Param        unit_id  query     int  true  "Unit ID"
+// @Success      200      {object}  response.Response  "Unit role info berhasil diambil"
+// @Failure      400      {object}  response.Response  "Bad request - unit_id diperlukan"
+// @Failure      404      {object}  response.Response  "Unit tidak ditemukan"
+// @Failure      500      {object}  response.Response  "Internal server error"
+// @Router       /api/v1/units/unit-role-info [get]
+// @Security     BearerAuth
 func (h *Handler) GetUnitRoleInfo(c *gin.Context) {
 	unitID, err := strconv.ParseInt(c.Query("unit_id"), 10, 64)
 	if err != nil {

@@ -24,22 +24,11 @@ func NewService(repo *Repository, tokenService *token.SimpleTokenService, jwtSec
 	}
 }
 
-func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
-	userIdentity := ""
-	if req.UserIdentity != "" {
-		userIdentity = req.UserIdentity
-	} else if req.Email != "" {
-		userIdentity = req.Email
-	} else {
-		return nil, errors.New("user identity atau email harus diisi")
-	}
-
-	user, err := s.repo.GetByUserIdentity(userIdentity)
+func (s *Service) Login(req *LoginRequest, userAgent, ip string) (*LoginResponse, error) {
+	// Get user by user_identity
+	user, err := s.repo.GetByUserIdentity(req.UserIdentity)
 	if err != nil {
-		user, err = s.repo.GetByEmail(userIdentity)
-		if err != nil {
-			return nil, errors.New("kredensial tidak valid")
-		}
+		return nil, errors.New("kredensial tidak valid")
 	}
 
 	if !user.IsActive {
@@ -50,15 +39,7 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 		return nil, errors.New("kredensial tidak valid")
 	}
 
-	userAgent := ""
-	ip := ""
-	if req.UserAgent != nil {
-		userAgent = *req.UserAgent
-	}
-	if req.IP != nil {
-		ip = *req.IP
-	}
-
+	// UserAgent and IP are now passed as parameters
 	userWithRoles, err := s.repo.GetByIDWithRoles(user.ID)
 	if err != nil || userWithRoles == nil {
 		userWithRoles = map[string]interface{}{
@@ -74,9 +55,16 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 		userWithRoles["total_roles"] = 0
 	}
 
-	modules, err := s.repo.GetUserModulesGroupedWithSubscription(user.ID)
+	// Get applications with modules (new hierarchical structure)
+	applications, err := s.repo.GetUserApplicationsWithModules(user.ID)
 	if err != nil {
-		modules = make(map[string][][]string)
+		applications = make(map[string]interface{})
+	}
+
+	// Extract application codes for simplified login response
+	var applicationCodes []string
+	for appCode := range applications {
+		applicationCodes = append(applicationCodes, appCode)
 	}
 
 	moduleURLs, err := s.repo.GetUserModulesWithSubscription(user.ID)
@@ -134,25 +122,15 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 
 	expiresIn := int64(15 * 60)
 
-	// Build user response
-	roleAssignments, _ := userWithRoles["role_assignments"].([]map[string]interface{})
-	if roleAssignments == nil {
-		roleAssignments = []map[string]interface{}{}
-	}
-	totalRoles, _ := userWithRoles["total_roles"].(int)
-
-	userResponse := map[string]interface{}{
-		"id":               user.ID,
-		"name":             user.Name,
-		"email":            user.Email,
-		"user_identity":    user.UserIdentity,
-		"is_active":        user.IsActive,
-		"created_at":       user.CreatedAt.Format(time.RFC3339),
-		"updated_at":       user.UpdatedAt.Format(time.RFC3339),
-		"modules":          modules,
-		"role_assignments": roleAssignments,
-		"total_roles":      totalRoles,
-		"subscription":     subscriptionInfo,
+	// Build simplified login response
+	loginData := map[string]interface{}{
+		"user_identity": user.UserIdentity,
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+		"token_type":    "Bearer",
+		"expires_in":    expiresIn,
+		"applications":  applicationCodes, // Simple array of application codes
+		"subscription":  subscriptionInfo,
 	}
 
 	return &LoginResponse{
@@ -160,8 +138,32 @@ func (s *Service) Login(req *LoginRequest) (*LoginResponse, error) {
 		RefreshToken: refreshToken,
 		TokenType:    "Bearer",
 		ExpiresIn:    expiresIn,
-		User:         userResponse,
+		User:         loginData,
 	}, nil
+}
+
+func (s *Service) LoginWithEmail(req *LoginEmailRequest, userAgent, ip string) (*LoginResponse, error) {
+	// Get user by email
+	user, err := s.repo.GetByEmail(req.Email)
+	if err != nil {
+		return nil, errors.New("kredensial tidak valid")
+	}
+
+	if !user.IsActive {
+		return nil, errors.New("akun pengguna tidak aktif")
+	}
+
+	if err := password.VerifyPassword(user.PasswordHash, req.Password); err != nil {
+		return nil, errors.New("kredensial tidak valid")
+	}
+
+	// Convert to LoginRequest and call Login
+	loginReq := &LoginRequest{
+		UserIdentity: *user.UserIdentity,
+		Password:     req.Password,
+	}
+
+	return s.Login(loginReq, userAgent, ip)
 }
 
 func (s *Service) generateFamilyID() (string, error) {
@@ -286,4 +288,14 @@ func (s *Service) GetUserRefreshTokenCount(userID int64) (int64, error) {
 	}
 
 	return int64(len(tokensResponse.RefreshTokens)), nil
+}
+func (s *Service) GetUserProfile(req *ProfileRequest) (*ProfileResponse, error) {
+	userProfile, err := s.repo.GetUserProfileByApplication(req.UserIdentity, req.ApplicationCode)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ProfileResponse{
+		User: userProfile,
+	}, nil
 }

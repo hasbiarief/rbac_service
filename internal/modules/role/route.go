@@ -22,6 +22,21 @@ func NewHandler(service *Service) *Handler {
 }
 
 // Handler methods
+
+// @Summary      Get all roles
+// @Description  Mendapatkan daftar semua role dengan filter opsional dan pagination
+// @Tags         Roles
+// @Accept       json
+// @Produce      json
+// @Param        limit      query     int     false  "Limit jumlah data"
+// @Param        offset     query     int     false  "Offset data"
+// @Param        search     query     string  false  "Search by name"
+// @Param        is_active  query     bool    false  "Filter by active status"
+// @Success      200        {object}  response.Response{data=role.RoleListResponse}  "Roles berhasil diambil"
+// @Failure      400        {object}  response.Response  "Bad request"
+// @Failure      500        {object}  response.Response  "Internal server error"
+// @Router       /api/v1/roles [get]
+// @Security     BearerAuth
 func (h *Handler) GetRoles(c *gin.Context) {
 	var req RoleListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -38,6 +53,17 @@ func (h *Handler) GetRoles(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgRolesRetrieved, result)
 }
 
+// @Summary      Get role by ID
+// @Description  Mendapatkan detail role berdasarkan ID
+// @Tags         Roles
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Role ID"
+// @Success      200  {object}  response.Response{data=role.RoleResponse}  "Role berhasil diambil"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid role ID"
+// @Failure      404  {object}  response.Response  "Role tidak ditemukan"
+// @Router       /api/v1/roles/{id} [get]
+// @Security     BearerAuth
 func (h *Handler) GetRoleByID(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -54,6 +80,17 @@ func (h *Handler) GetRoleByID(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgRoleRetrieved, result)
 }
 
+// @Summary      Get role with permissions
+// @Description  Mendapatkan detail role dengan daftar permissions/modules
+// @Tags         Roles
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Role ID"
+// @Success      200  {object}  response.Response{data=role.RoleWithPermissionsResponse}  "Role with permissions berhasil diambil"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid role ID"
+// @Failure      404  {object}  response.Response  "Role tidak ditemukan"
+// @Router       /api/v1/roles/{id}/permissions [get]
+// @Security     BearerAuth
 func (h *Handler) GetRoleWithPermissions(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -70,6 +107,18 @@ func (h *Handler) GetRoleWithPermissions(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Role with permissions successfully retrieved", result)
 }
 
+// @Summary      Create new role
+// @Description  Membuat role baru
+// @Tags         Roles
+// @Accept       json
+// @Produce      json
+// @Param        role  body      role.CreateRoleRequest  true  "Role data"
+// @Success      201   {object}  response.Response{data=role.RoleResponse}  "Role berhasil dibuat"
+// @Failure      400   {object}  response.Response  "Bad request - validation failed"
+// @Failure      409   {object}  response.Response  "Conflict - role name sudah ada"
+// @Failure      500   {object}  response.Response  "Internal server error"
+// @Router       /api/v1/roles [post]
+// @Security     BearerAuth
 func (h *Handler) CreateRole(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -92,6 +141,19 @@ func (h *Handler) CreateRole(c *gin.Context) {
 	response.Success(c, http.StatusCreated, constants.MsgRoleCreated, result)
 }
 
+// @Summary      Update role
+// @Description  Memperbarui informasi role
+// @Tags         Roles
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                     true  "Role ID"
+// @Param        role  body      role.UpdateRoleRequest  true  "Role data yang akan diupdate"
+// @Success      200   {object}  response.Response{data=role.RoleResponse}  "Role berhasil diupdate"
+// @Failure      400   {object}  response.Response  "Bad request - Invalid role ID atau validation failed"
+// @Failure      404   {object}  response.Response  "Role tidak ditemukan"
+// @Failure      500   {object}  response.Response  "Internal server error"
+// @Router       /api/v1/roles/{id} [put]
+// @Security     BearerAuth
 func (h *Handler) UpdateRole(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -120,6 +182,18 @@ func (h *Handler) UpdateRole(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgRoleUpdated, result)
 }
 
+// @Summary      Delete role
+// @Description  Menghapus role berdasarkan ID
+// @Tags         Roles
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Role ID"
+// @Success      200  {object}  response.Response  "Role berhasil dihapus"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid role ID"
+// @Failure      404  {object}  response.Response  "Role tidak ditemukan"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/roles/{id} [delete]
+// @Security     BearerAuth
 func (h *Handler) DeleteRole(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -135,6 +209,18 @@ func (h *Handler) DeleteRole(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgRoleDeleted, nil)
 }
 
+// @Summary      Assign role to user
+// @Description  Menugaskan role ke user dengan scope company, branch, atau unit
+// @Tags         Role Management
+// @Accept       json
+// @Produce      json
+// @Param        assignment  body      role.AssignRoleRequest  true  "Role assignment data"
+// @Success      200         {object}  response.Response{data=role.UserRoleAssignmentResponse}  "Role berhasil ditugaskan"
+// @Failure      400         {object}  response.Response  "Bad request - validation failed"
+// @Failure      404         {object}  response.Response  "User atau role tidak ditemukan"
+// @Failure      500         {object}  response.Response  "Internal server error"
+// @Router       /api/v1/role-management/assign-user-role [post]
+// @Security     BearerAuth
 func (h *Handler) AssignUserRole(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -157,6 +243,18 @@ func (h *Handler) AssignUserRole(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgRoleAssigned, result)
 }
 
+// @Summary      Bulk assign roles to users
+// @Description  Menugaskan role ke multiple users sekaligus
+// @Tags         Role Management
+// @Accept       json
+// @Produce      json
+// @Param        bulk_assignment  body      role.BulkAssignRoleRequest  true  "Bulk role assignment data"
+// @Success      200              {object}  response.Response  "Roles berhasil ditugaskan ke users"
+// @Failure      400              {object}  response.Response  "Bad request - validation failed"
+// @Failure      404              {object}  response.Response  "User atau role tidak ditemukan"
+// @Failure      500              {object}  response.Response  "Internal server error"
+// @Router       /api/v1/role-management/bulk-assign-roles [post]
+// @Security     BearerAuth
 func (h *Handler) BulkAssignUserRole(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -182,6 +280,19 @@ func (h *Handler) BulkAssignUserRole(c *gin.Context) {
 	})
 }
 
+// @Summary      Update role permissions (replace all)
+// @Description  Mengganti semua permissions/modules dari role (replace operation)
+// @Tags         Role Management
+// @Accept       json
+// @Produce      json
+// @Param        roleId       path      int                                  true  "Role ID"
+// @Param        permissions  body      role.UpdateRolePermissionsRequest    true  "Role permissions data"
+// @Success      200          {object}  response.Response  "Permissions berhasil diupdate"
+// @Failure      400          {object}  response.Response  "Bad request - Invalid role ID atau validation failed"
+// @Failure      404          {object}  response.Response  "Role tidak ditemukan"
+// @Failure      500          {object}  response.Response  "Internal server error"
+// @Router       /api/v1/role-management/role/{roleId}/modules [put]
+// @Security     BearerAuth
 func (h *Handler) UpdateRoleModules(c *gin.Context) {
 	roleID, err := strconv.ParseInt(c.Param("roleId"), 10, 64)
 	if err != nil {
@@ -209,6 +320,20 @@ func (h *Handler) UpdateRoleModules(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgPermissionsUpdated, nil)
 }
 
+// @Summary      Remove role from user
+// @Description  Menghapus role assignment dari user
+// @Tags         Role Management
+// @Accept       json
+// @Produce      json
+// @Param        userId      path      int    true  "User ID"
+// @Param        roleId      path      int    true  "Role ID"
+// @Param        company_id  query     int    true  "Company ID"
+// @Success      200         {object}  response.Response  "Role berhasil dihapus dari user"
+// @Failure      400         {object}  response.Response  "Bad request - Invalid ID atau company_id diperlukan"
+// @Failure      404         {object}  response.Response  "User role assignment tidak ditemukan"
+// @Failure      500         {object}  response.Response  "Internal server error"
+// @Router       /api/v1/role-management/user/{userId}/role/{roleId} [delete]
+// @Security     BearerAuth
 func (h *Handler) RemoveUserRole(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)
 	if err != nil {
@@ -242,6 +367,18 @@ func (h *Handler) RemoveUserRole(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgRoleUnassigned, nil)
 }
 
+// @Summary      Get users by role
+// @Description  Mendapatkan daftar users yang memiliki role tertentu
+// @Tags         Role Management
+// @Accept       json
+// @Produce      json
+// @Param        roleId  path      int  true   "Role ID"
+// @Param        limit   query     int  false  "Limit jumlah data (default: 10)"
+// @Success      200     {object}  response.Response  "Users berhasil diambil"
+// @Failure      400     {object}  response.Response  "Bad request - Invalid role ID"
+// @Failure      500     {object}  response.Response  "Internal server error"
+// @Router       /api/v1/role-management/role/{roleId}/users [get]
+// @Security     BearerAuth
 func (h *Handler) GetUsersByRole(c *gin.Context) {
 	roleID, err := strconv.ParseInt(c.Param("roleId"), 10, 64)
 	if err != nil {
@@ -265,6 +402,17 @@ func (h *Handler) GetUsersByRole(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgUsersRetrieved, result)
 }
 
+// @Summary      Get user roles
+// @Description  Mendapatkan semua role assignments dari user
+// @Tags         Role Management
+// @Accept       json
+// @Produce      json
+// @Param        userId  path      int  true  "User ID"
+// @Success      200     {object}  response.Response{data=[]role.UserRoleAssignmentResponse}  "User roles berhasil diambil"
+// @Failure      400     {object}  response.Response  "Bad request - Invalid user ID"
+// @Failure      500     {object}  response.Response  "Internal server error"
+// @Router       /api/v1/role-management/user/{userId}/roles [get]
+// @Security     BearerAuth
 func (h *Handler) GetUserRoles(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)
 	if err != nil {
@@ -281,6 +429,17 @@ func (h *Handler) GetUserRoles(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgRolesRetrieved, result)
 }
 
+// @Summary      Get user access summary
+// @Description  Mendapatkan ringkasan akses user termasuk semua roles dan permissions
+// @Tags         Role Management
+// @Accept       json
+// @Produce      json
+// @Param        userId  path      int  true  "User ID"
+// @Success      200     {object}  response.Response  "User access summary berhasil diambil"
+// @Failure      400     {object}  response.Response  "Bad request - Invalid user ID"
+// @Failure      500     {object}  response.Response  "Internal server error"
+// @Router       /api/v1/role-management/user/{userId}/access-summary [get]
+// @Security     BearerAuth
 func (h *Handler) GetUserAccessSummary(c *gin.Context) {
 	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)
 	if err != nil {
@@ -385,6 +544,20 @@ func RegisterRoutes(api *gin.RouterGroup, handler *Handler) {
 		roles.DELETE("/:id", handler.DeleteRole)
 	}
 }
+
+// @Summary      Add modules to role
+// @Description  Menambahkan modules ke role (append operation)
+// @Tags         Role Management
+// @Accept       json
+// @Produce      json
+// @Param        roleId   path      int                           true  "Role ID"
+// @Param        modules  body      role.AddRoleModulesRequest    true  "Modules to add"
+// @Success      200      {object}  response.Response  "Modules berhasil ditambahkan"
+// @Failure      400      {object}  response.Response  "Bad request - Invalid role ID atau validation failed"
+// @Failure      404      {object}  response.Response  "Role tidak ditemukan"
+// @Failure      500      {object}  response.Response  "Internal server error"
+// @Router       /api/v1/role-management/role/{roleId}/modules [post]
+// @Security     BearerAuth
 func (h *Handler) AddRoleModules(c *gin.Context) {
 	roleID, err := strconv.ParseInt(c.Param("roleId"), 10, 64)
 	if err != nil {
@@ -412,6 +585,19 @@ func (h *Handler) AddRoleModules(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Modules successfully added to role", nil)
 }
 
+// @Summary      Remove modules from role
+// @Description  Menghapus modules dari role
+// @Tags         Role Management
+// @Accept       json
+// @Produce      json
+// @Param        roleId   path      int                              true  "Role ID"
+// @Param        modules  body      role.RemoveRoleModulesRequest    true  "Module IDs to remove"
+// @Success      200      {object}  response.Response  "Modules berhasil dihapus"
+// @Failure      400      {object}  response.Response  "Bad request - Invalid role ID atau validation failed"
+// @Failure      404      {object}  response.Response  "Role tidak ditemukan"
+// @Failure      500      {object}  response.Response  "Internal server error"
+// @Router       /api/v1/role-management/role/{roleId}/modules [delete]
+// @Security     BearerAuth
 func (h *Handler) RemoveRoleModules(c *gin.Context) {
 	roleID, err := strconv.ParseInt(c.Param("roleId"), 10, 64)
 	if err != nil {

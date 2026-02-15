@@ -20,6 +20,23 @@ func NewHandler(service *Service) *Handler {
 }
 
 // Handler methods
+
+// @Summary      Get all branches
+// @Description  Mendapatkan daftar semua branch dengan filter opsional dan pagination. Mendukung nested hierarchy dengan query parameter nested=true
+// @Tags         Branches
+// @Accept       json
+// @Produce      json
+// @Param        limit       query     int     false  "Limit jumlah data"
+// @Param        offset      query     int     false  "Offset data"
+// @Param        search      query     string  false  "Search by name atau code"
+// @Param        company_id  query     int     false  "Filter by company ID"
+// @Param        is_active   query     bool    false  "Filter by active status"
+// @Param        nested      query     string  false  "Return nested hierarchy (true/false)"
+// @Success      200         {object}  response.Response{data=branch.BranchListResponse}  "Branches berhasil diambil"
+// @Failure      400         {object}  response.Response  "Bad request"
+// @Failure      500         {object}  response.Response  "Internal server error"
+// @Router       /api/v1/branches [get]
+// @Security     BearerAuth
 func (h *Handler) GetBranches(c *gin.Context) {
 	var req BranchListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -48,6 +65,17 @@ func (h *Handler) GetBranches(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgBranchesRetrieved, result)
 }
 
+// @Summary      Get branch by ID
+// @Description  Mendapatkan detail branch berdasarkan ID
+// @Tags         Branches
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Branch ID"
+// @Success      200  {object}  response.Response{data=branch.BranchResponse}  "Branch berhasil diambil"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid branch ID"
+// @Failure      404  {object}  response.Response  "Branch tidak ditemukan"
+// @Router       /api/v1/branches/{id} [get]
+// @Security     BearerAuth
 func (h *Handler) GetBranchByID(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -64,6 +92,18 @@ func (h *Handler) GetBranchByID(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgBranchRetrieved, result)
 }
 
+// @Summary      Create new branch
+// @Description  Membuat branch baru dengan support untuk hierarchical structure
+// @Tags         Branches
+// @Accept       json
+// @Produce      json
+// @Param        branch  body      branch.CreateBranchRequest  true  "Branch data"
+// @Success      201     {object}  response.Response{data=branch.BranchResponse}  "Branch berhasil dibuat"
+// @Failure      400     {object}  response.Response  "Bad request - validation failed"
+// @Failure      409     {object}  response.Response  "Conflict - branch code sudah ada"
+// @Failure      500     {object}  response.Response  "Internal server error"
+// @Router       /api/v1/branches [post]
+// @Security     BearerAuth
 func (h *Handler) CreateBranch(c *gin.Context) {
 	validatedBody, exists := c.Get("validated_body")
 	if !exists {
@@ -86,6 +126,19 @@ func (h *Handler) CreateBranch(c *gin.Context) {
 	response.Success(c, http.StatusCreated, constants.MsgBranchCreated, result)
 }
 
+// @Summary      Update branch
+// @Description  Memperbarui informasi branch
+// @Tags         Branches
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int                         true  "Branch ID"
+// @Param        branch  body      branch.UpdateBranchRequest  true  "Branch data yang akan diupdate"
+// @Success      200     {object}  response.Response{data=branch.BranchResponse}  "Branch berhasil diupdate"
+// @Failure      400     {object}  response.Response  "Bad request - Invalid branch ID atau validation failed"
+// @Failure      404     {object}  response.Response  "Branch tidak ditemukan"
+// @Failure      500     {object}  response.Response  "Internal server error"
+// @Router       /api/v1/branches/{id} [put]
+// @Security     BearerAuth
 func (h *Handler) UpdateBranch(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -114,6 +167,18 @@ func (h *Handler) UpdateBranch(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgBranchUpdated, result)
 }
 
+// @Summary      Delete branch
+// @Description  Menghapus branch berdasarkan ID
+// @Tags         Branches
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Branch ID"
+// @Success      200  {object}  response.Response  "Branch berhasil dihapus"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid branch ID"
+// @Failure      404  {object}  response.Response  "Branch tidak ditemukan"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/branches/{id} [delete]
+// @Security     BearerAuth
 func (h *Handler) DeleteBranch(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -129,6 +194,20 @@ func (h *Handler) DeleteBranch(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgBranchDeleted, nil)
 }
 
+// @Summary      Get company branches
+// @Description  Mendapatkan semua branches dari company tertentu. Mendukung nested hierarchy dengan query parameter nested=true
+// @Tags         Branches
+// @Accept       json
+// @Produce      json
+// @Param        companyId          path      int     true   "Company ID"
+// @Param        include_hierarchy  query     string  false  "Include hierarchy information (true/false)"
+// @Param        nested             query     string  false  "Return nested hierarchy (true/false)"
+// @Success      200                {object}  response.Response{data=[]branch.BranchResponse}  "Company branches berhasil diambil"
+// @Failure      400                {object}  response.Response  "Bad request - Invalid company ID"
+// @Failure      404                {object}  response.Response  "Company tidak ditemukan"
+// @Failure      500                {object}  response.Response  "Internal server error"
+// @Router       /api/v1/branches/company/{companyId} [get]
+// @Security     BearerAuth
 func (h *Handler) GetCompanyBranches(c *gin.Context) {
 	companyID, err := strconv.ParseInt(c.Param("companyId"), 10, 64)
 	if err != nil {
@@ -158,6 +237,18 @@ func (h *Handler) GetCompanyBranches(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgCompanyBranchesRetrieved, result)
 }
 
+// @Summary      Get branch children
+// @Description  Mendapatkan daftar child branches dari branch tertentu
+// @Tags         Branches
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "Branch ID"
+// @Success      200  {object}  response.Response{data=[]branch.BranchResponse}  "Branch children berhasil diambil"
+// @Failure      400  {object}  response.Response  "Bad request - Invalid branch ID"
+// @Failure      404  {object}  response.Response  "Branch tidak ditemukan"
+// @Failure      500  {object}  response.Response  "Internal server error"
+// @Router       /api/v1/branches/{id}/children [get]
+// @Security     BearerAuth
 func (h *Handler) GetBranchChildren(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -174,6 +265,19 @@ func (h *Handler) GetBranchChildren(c *gin.Context) {
 	response.Success(c, http.StatusOK, constants.MsgBranchChildrenRetrieved, result)
 }
 
+// @Summary      Get branch hierarchy
+// @Description  Mendapatkan hierarchy branch berdasarkan ID. Mendukung nested format dengan query parameter nested=true
+// @Tags         Branches
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int     true   "Branch ID"
+// @Param        nested  query     string  false  "Return nested hierarchy (true/false)"
+// @Success      200     {object}  response.Response{data=branch.BranchResponse}  "Branch hierarchy berhasil diambil"
+// @Failure      400     {object}  response.Response  "Bad request - Invalid branch ID"
+// @Failure      404     {object}  response.Response  "Branch tidak ditemukan"
+// @Failure      500     {object}  response.Response  "Internal server error"
+// @Router       /api/v1/branches/{id}/hierarchy [get]
+// @Security     BearerAuth
 func (h *Handler) GetBranchHierarchy(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
