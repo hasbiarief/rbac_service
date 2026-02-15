@@ -25,7 +25,7 @@ func (r *Repository) GetByUserIdentity(userIdentity string) (*User, error) {
 	query := `
 		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at
 		FROM users 
-		WHERE user_identity = $1 AND is_active = true AND deleted_at IS NULL
+		WHERE user_identity = $1 AND is_active = true
 	`
 
 	err := r.db.QueryRow(query, userIdentity).Scan(
@@ -48,7 +48,7 @@ func (r *Repository) GetByEmail(email string) (*User, error) {
 	query := `
 		SELECT id, name, email, user_identity, password_hash, is_active, created_at, updated_at
 		FROM users 
-		WHERE email = $1 AND is_active = true AND deleted_at IS NULL
+		WHERE email = $1 AND is_active = true
 	`
 
 	err := r.db.QueryRow(query, email).Scan(

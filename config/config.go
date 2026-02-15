@@ -29,6 +29,7 @@ type RedisConfig struct {
 	Port     int
 	Password string
 	DB       int
+	UseTLS   bool
 }
 
 type JWTConfig struct {
@@ -59,6 +60,7 @@ func Load() *Config {
 			Port:     getEnvAsInt("REDIS_PORT", 6379),
 			Password: getEnv("REDIS_PASSWORD", ""),
 			DB:       getEnvAsInt("REDIS_DB", 0),
+			UseTLS:   getEnvAsBool("REDIS_USE_TLS", false),
 		},
 		JWT: JWTConfig{
 			Secret: getEnv("JWT_SECRET", "your-super-secret-jwt-key"),
@@ -81,6 +83,15 @@ func getEnvAsInt(key string, defaultValue int) int {
 	if value := os.Getenv(key); value != "" {
 		if intValue, err := strconv.Atoi(value); err == nil {
 			return intValue
+		}
+	}
+	return defaultValue
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if boolValue, err := strconv.ParseBool(value); err == nil {
+			return boolValue
 		}
 	}
 	return defaultValue

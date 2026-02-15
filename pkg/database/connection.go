@@ -23,7 +23,7 @@ type Config struct {
 }
 
 func NewConnection(config Config) (*DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s connect_timeout=60",
 		config.Host, config.Port, config.User, config.Password, config.DBName, config.SSLMode)
 
 	db, err := sql.Open("postgres", dsn)
@@ -32,17 +32,27 @@ func NewConnection(config Config) (*DB, error) {
 	}
 
 	// Configure connection pool
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(2)
 	db.SetConnMaxLifetime(5 * time.Minute)
 
-	// Test connection
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+	// Test connection with retry
+	var pingErr error
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		log.Printf("Attempting to connect to database (attempt %d/%d)...", i+1, maxRetries)
+		pingErr = db.Ping()
+		if pingErr == nil {
+			log.Println("✅ Database connection established successfully")
+			return &DB{db}, nil
+		}
+		log.Printf("❌ Ping attempt %d failed: %v", i+1, pingErr)
+		if i < maxRetries-1 {
+			time.Sleep(3 * time.Second)
+		}
 	}
 
-	log.Println("Database connection established successfully")
-	return &DB{db}, nil
+	return nil, fmt.Errorf("failed to ping database after %d attempts: %w", maxRetries, pingErr)
 }
 
 func (db *DB) Close() error {

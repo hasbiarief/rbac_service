@@ -37,174 +37,122 @@ func (ts *SimpleTokenService) HashToken(token string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// StoreAccessToken stores access token - 1 token per user (overwrites existing)
+// StoreAccessToken stores access token with token as key
 func (ts *SimpleTokenService) StoreAccessToken(token string, metadata TokenMetadata, ttl time.Duration) error {
 	ctx := context.Background()
 
-	// Single key per user - this ensures only 1 access token per user
-	key := fmt.Sprintf("access:user:%d", metadata.UserID)
+	// Use token as key directly
+	tokenKey := fmt.Sprintf("access:token:%s", token)
+	userKey := fmt.Sprintf("access:user:%d", metadata.UserID)
 
-	// Store both the token and metadata
-	sessionData := map[string]interface{}{
-		"token":    token,
-		"metadata": metadata,
-	}
-
-	data, err := json.Marshal(sessionData)
+	// Store token metadata
+	data, err := json.Marshal(metadata)
 	if err != nil {
 		return err
 	}
 
-	return ts.redis.Set(ctx, key, data, ttl).Err()
+	// Store token with metadata
+	if err := ts.redis.Set(ctx, tokenKey, data, ttl).Err(); err != nil {
+		return err
+	}
+
+	// Store user -> token mapping (for logout all)
+	return ts.redis.Set(ctx, userKey, token, ttl).Err()
 }
 
-// StoreRefreshToken stores refresh token - 1 token per user (overwrites existing)
+// StoreRefreshToken stores refresh token with token as key
 func (ts *SimpleTokenService) StoreRefreshToken(token string, metadata RefreshTokenMetadata, ttl time.Duration) error {
 	ctx := context.Background()
 
-	// Single key per user - this ensures only 1 refresh token per user
-	key := fmt.Sprintf("refresh:user:%d", metadata.UserID)
+	// Use token as key directly
+	tokenKey := fmt.Sprintf("refresh:token:%s", token)
+	userKey := fmt.Sprintf("refresh:user:%d", metadata.UserID)
 
-	// Store both the token and metadata
-	sessionData := map[string]interface{}{
-		"token":    token,
-		"metadata": metadata,
-	}
-
-	data, err := json.Marshal(sessionData)
+	// Store token metadata
+	data, err := json.Marshal(metadata)
 	if err != nil {
 		return err
 	}
 
-	return ts.redis.Set(ctx, key, data, ttl).Err()
+	// Store token with metadata
+	if err := ts.redis.Set(ctx, tokenKey, data, ttl).Err(); err != nil {
+		return err
+	}
+
+	// Store user -> token mapping (for logout all)
+	return ts.redis.Set(ctx, userKey, token, ttl).Err()
 }
 
 // GetAccessToken retrieves access token metadata from Redis
 func (ts *SimpleTokenService) GetAccessToken(token string) (*TokenMetadata, error) {
 	ctx := context.Background()
 
-	// Scan all access keys to find the matching token
-	pattern := "access:user:*"
-	keys, err := ts.redis.Keys(ctx, pattern).Result()
+	// Direct key lookup - no KEYS command needed
+	tokenKey := fmt.Sprintf("access:token:%s", token)
+	data, err := ts.redis.Get(ctx, tokenKey).Result()
 	if err != nil {
+		return nil, fmt.Errorf("token not found or expired")
+	}
+
+	var metadata TokenMetadata
+	if err := json.Unmarshal([]byte(data), &metadata); err != nil {
 		return nil, err
 	}
 
-	for _, key := range keys {
-		data, err := ts.redis.Get(ctx, key).Result()
-		if err != nil {
-			continue
-		}
-
-		var sessionData map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &sessionData); err != nil {
-			continue
-		}
-
-		// Check if this is the token we're looking for
-		if storedToken, ok := sessionData["token"].(string); ok && storedToken == token {
-			// Extract metadata
-			metadataBytes, err := json.Marshal(sessionData["metadata"])
-			if err != nil {
-				continue
-			}
-
-			var metadata TokenMetadata
-			if err := json.Unmarshal(metadataBytes, &metadata); err != nil {
-				continue
-			}
-
-			return &metadata, nil
-		}
-	}
-
-	return nil, fmt.Errorf("token not found")
+	return &metadata, nil
 }
 
 // GetRefreshToken retrieves refresh token metadata from Redis
 func (ts *SimpleTokenService) GetRefreshToken(token string) (*RefreshTokenMetadata, error) {
 	ctx := context.Background()
 
-	// Scan all refresh keys to find the matching token
-	pattern := "refresh:user:*"
-	keys, err := ts.redis.Keys(ctx, pattern).Result()
+	// Direct key lookup - no KEYS command needed
+	tokenKey := fmt.Sprintf("refresh:token:%s", token)
+	data, err := ts.redis.Get(ctx, tokenKey).Result()
 	if err != nil {
+		return nil, fmt.Errorf("token not found or expired")
+	}
+
+	var metadata RefreshTokenMetadata
+	if err := json.Unmarshal([]byte(data), &metadata); err != nil {
 		return nil, err
 	}
 
-	for _, key := range keys {
-		data, err := ts.redis.Get(ctx, key).Result()
-		if err != nil {
-			continue
-		}
-
-		var sessionData map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &sessionData); err != nil {
-			continue
-		}
-
-		// Check if this is the token we're looking for
-		if storedToken, ok := sessionData["token"].(string); ok && storedToken == token {
-			// Extract metadata
-			metadataBytes, err := json.Marshal(sessionData["metadata"])
-			if err != nil {
-				continue
-			}
-
-			var metadata RefreshTokenMetadata
-			if err := json.Unmarshal(metadataBytes, &metadata); err != nil {
-				continue
-			}
-
-			return &metadata, nil
-		}
-	}
-
-	return nil, fmt.Errorf("token not found")
+	return &metadata, nil
 }
 
 // RevokeToken removes token from Redis
 func (ts *SimpleTokenService) RevokeToken(token string, tokenType string) error {
 	ctx := context.Background()
 
-	// Find the token key by scanning
-	pattern := fmt.Sprintf("%s:user:*", tokenType)
-	keys, err := ts.redis.Keys(ctx, pattern).Result()
-	if err != nil {
-		return err
-	}
-
-	for _, key := range keys {
-		data, err := ts.redis.Get(ctx, key).Result()
-		if err != nil {
-			continue
-		}
-
-		var sessionData map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &sessionData); err != nil {
-			continue
-		}
-
-		// Check if this is the token we're looking for
-		if storedToken, ok := sessionData["token"].(string); ok && storedToken == token {
-			return ts.redis.Del(ctx, key).Err()
-		}
-	}
-
-	return nil
+	// Direct key deletion - no KEYS command needed
+	tokenKey := fmt.Sprintf("%s:token:%s", tokenType, token)
+	return ts.redis.Del(ctx, tokenKey).Err()
 }
 
 // RevokeAllUserTokens removes all tokens for a user
 func (ts *SimpleTokenService) RevokeAllUserTokens(userID int64) error {
 	ctx := context.Background()
 
-	// Delete access token
-	accessKey := fmt.Sprintf("access:user:%d", userID)
-	ts.redis.Del(ctx, accessKey)
+	// Get user's tokens from user mapping
+	accessUserKey := fmt.Sprintf("access:user:%d", userID)
+	refreshUserKey := fmt.Sprintf("refresh:user:%d", userID)
 
-	// Delete refresh token
-	refreshKey := fmt.Sprintf("refresh:user:%d", userID)
-	ts.redis.Del(ctx, refreshKey)
+	// Get access token
+	if accessToken, err := ts.redis.Get(ctx, accessUserKey).Result(); err == nil {
+		accessTokenKey := fmt.Sprintf("access:token:%s", accessToken)
+		ts.redis.Del(ctx, accessTokenKey)
+	}
+
+	// Get refresh token
+	if refreshToken, err := ts.redis.Get(ctx, refreshUserKey).Result(); err == nil {
+		refreshTokenKey := fmt.Sprintf("refresh:token:%s", refreshToken)
+		ts.redis.Del(ctx, refreshTokenKey)
+	}
+
+	// Delete user mappings
+	ts.redis.Del(ctx, accessUserKey)
+	ts.redis.Del(ctx, refreshUserKey)
 
 	return nil
 }
@@ -216,49 +164,43 @@ func (ts *SimpleTokenService) GetUserTokens(userID int64) (*UserTokensResponse, 
 	var accessTokens []TokenInfo
 	var refreshTokens []TokenInfo
 
-	// Check access token
-	accessKey := fmt.Sprintf("access:user:%d", userID)
-	accessData, err := ts.redis.Get(ctx, accessKey).Result()
-	if err == nil {
-		var sessionData map[string]interface{}
-		if err := json.Unmarshal([]byte(accessData), &sessionData); err == nil {
-			if metadataRaw, ok := sessionData["metadata"]; ok {
-				metadataBytes, _ := json.Marshal(metadataRaw)
-				var metadata TokenMetadata
-				if err := json.Unmarshal(metadataBytes, &metadata); err == nil {
-					// Check if token is still valid
-					if time.Now().Unix() < metadata.ExpiresAt {
-						accessTokens = append(accessTokens, TokenInfo{
-							Type:      "access",
-							ExpiresAt: metadata.ExpiresAt,
-							UserAgent: metadata.UserAgent,
-							IP:        metadata.IP,
-						})
-					}
+	// Check access token via user mapping
+	accessUserKey := fmt.Sprintf("access:user:%d", userID)
+	if accessToken, err := ts.redis.Get(ctx, accessUserKey).Result(); err == nil {
+		accessTokenKey := fmt.Sprintf("access:token:%s", accessToken)
+		accessData, err := ts.redis.Get(ctx, accessTokenKey).Result()
+		if err == nil {
+			var metadata TokenMetadata
+			if err := json.Unmarshal([]byte(accessData), &metadata); err == nil {
+				// Check if token is still valid
+				if time.Now().Unix() < metadata.ExpiresAt {
+					accessTokens = append(accessTokens, TokenInfo{
+						Type:      "access",
+						ExpiresAt: metadata.ExpiresAt,
+						UserAgent: metadata.UserAgent,
+						IP:        metadata.IP,
+					})
 				}
 			}
 		}
 	}
 
-	// Check refresh token
-	refreshKey := fmt.Sprintf("refresh:user:%d", userID)
-	refreshData, err := ts.redis.Get(ctx, refreshKey).Result()
-	if err == nil {
-		var sessionData map[string]interface{}
-		if err := json.Unmarshal([]byte(refreshData), &sessionData); err == nil {
-			if metadataRaw, ok := sessionData["metadata"]; ok {
-				metadataBytes, _ := json.Marshal(metadataRaw)
-				var metadata RefreshTokenMetadata
-				if err := json.Unmarshal(metadataBytes, &metadata); err == nil {
-					// Get TTL for refresh token
-					ttl, err := ts.redis.TTL(ctx, refreshKey).Result()
-					if err == nil && ttl > 0 {
-						refreshTokens = append(refreshTokens, TokenInfo{
-							Type:     "refresh",
-							TTL:      int64(ttl.Seconds()),
-							FamilyID: metadata.FamilyID,
-						})
-					}
+	// Check refresh token via user mapping
+	refreshUserKey := fmt.Sprintf("refresh:user:%d", userID)
+	if refreshToken, err := ts.redis.Get(ctx, refreshUserKey).Result(); err == nil {
+		refreshTokenKey := fmt.Sprintf("refresh:token:%s", refreshToken)
+		refreshData, err := ts.redis.Get(ctx, refreshTokenKey).Result()
+		if err == nil {
+			var metadata RefreshTokenMetadata
+			if err := json.Unmarshal([]byte(refreshData), &metadata); err == nil {
+				// Get TTL for refresh token
+				ttl, err := ts.redis.TTL(ctx, refreshTokenKey).Result()
+				if err == nil && ttl > 0 {
+					refreshTokens = append(refreshTokens, TokenInfo{
+						Type:     "refresh",
+						TTL:      int64(ttl.Seconds()),
+						FamilyID: metadata.FamilyID,
+					})
 				}
 			}
 		}
@@ -287,38 +229,9 @@ func (ts *SimpleTokenService) GetUserSessionCount(userID int64) (int, error) {
 }
 
 // CleanupExpiredTokens removes expired tokens from Redis
+// Note: This is a no-op since Redis TTL handles expiration automatically
 func (ts *SimpleTokenService) CleanupExpiredTokens() error {
-	ctx := context.Background()
-
-	// Clean up expired access tokens
-	accessPattern := "access:user:*"
-	accessKeys, err := ts.redis.Keys(ctx, accessPattern).Result()
-	if err != nil {
-		return err
-	}
-
-	for _, key := range accessKeys {
-		data, err := ts.redis.Get(ctx, key).Result()
-		if err != nil {
-			continue
-		}
-
-		var sessionData map[string]interface{}
-		if err := json.Unmarshal([]byte(data), &sessionData); err != nil {
-			continue
-		}
-
-		if metadataRaw, ok := sessionData["metadata"]; ok {
-			metadataBytes, _ := json.Marshal(metadataRaw)
-			var metadata TokenMetadata
-			if err := json.Unmarshal(metadataBytes, &metadata); err == nil {
-				// Check if token is expired
-				if time.Now().Unix() > metadata.ExpiresAt {
-					ts.redis.Del(ctx, key)
-				}
-			}
-		}
-	}
-
+	// Redis automatically removes expired keys with TTL
+	// No manual cleanup needed
 	return nil
 }
